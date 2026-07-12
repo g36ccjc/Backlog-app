@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e1012" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Backlog</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230e1012'/%3E%3Cpath d='M26 34h48M26 50h48M26 66h30' stroke='%23e4572e' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #0e1012;
+    --panel: #17191d;
+    --panel-2: #202329;
+    --line: #2b2f37;
+    --ink: #f2f0eb;
+    --ink-dim: #969ba6;
+    --rust: #e4572e;      /* signature accent: HLTB-ish burnt orange */
+    --gold: #e8b64c;      /* achievement gold */
+    --green: #58c98b;     /* 100% complete */
+    --radius: 12px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", ui-monospace, "Roboto Mono", monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    padding: max(14px, env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
+  }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; margin: 0; }
+  h1 span { color: var(--rust); }
+  .count { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); }
+
+  /* Sort bar */
+  .sortbar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+  .sortbar button {
+    white-space: nowrap; font-family: var(--sans); font-size: 13px; color: var(--ink-dim);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  }
+  .sortbar button.on { background: var(--rust); color: #1a0d06; border-color: var(--rust); font-weight: 700; }
+  .sortbar button .dir { font-size: 10px; opacity: 0.8; margin-left: 3px; }
+
+  /* Game cards */
+  ul.games { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .card-main { display: flex; gap: 11px; align-items: center; padding: 11px; }
+  .cover { width: 60px; height: 28px; border-radius: 5px; object-fit: cover; background: var(--panel-2); flex-shrink: 0; }
+  .name { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .del { background: none; border: none; color: var(--ink-dim); font-size: 18px; padding: 4px 6px; flex-shrink: 0; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--line); }
+  .stat { padding: 8px 6px; text-align: center; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: none; }
+  .stat .v { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .stat .k { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-dim); margin-top: 2px; }
+  .stat.ach .v { color: var(--gold); }
+  .stat.ach .v.done { color: var(--green); }
+  .stat.main .v { color: var(--ink); }
+  .stat.comp .v { color: var(--rust); }
+  .v.na { color: var(--ink-dim); font-weight: 400; }
+
+  .empty { text-align: center; color: var(--ink-dim); padding: 50px 20px; }
+  .empty h3 { color: var(--ink); margin: 0 0 6px; }
+
+  /* Bottom action bar */
+  .actions {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, var(--bg) 22%); z-index: 10;
+  }
+  .actions button {
+    flex: 1; font-family: var(--sans); font-size: 14px; font-weight: 700; padding: 13px;
+    border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  }
+  .actions .primary { background: var(--rust); color: #1a0d06; border: none; }
+  .actions button:active { transform: scale(0.98); }
+
+  /* Modal */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; z-index: 20; }
+  .modal.show { display: flex; }
+  .sheet {
+    background: var(--panel); width: 100%; border-radius: 18px 18px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+    max-height: 82vh; display: flex; flex-direction: column;
+  }
+  .sheet h2 { margin: 0 0 12px; font-size: 17px; }
+  .sheet input {
+    width: 100%; font-family: var(--sans); font-size: 15px; color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+  }
+  .sresults { overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .sresult { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; background: var(--panel-2); }
+  .sresult img { width: 54px; height: 25px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+  .sresult .n { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sresult .add { background: var(--rust); color: #1a0d06; border: none; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 13px; }
+  .sresult.added .add { background: var(--green); }
+  .sheet .close { margin-top: 12px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 12px; font-weight: 700; }
+  .hint { font-size: 12px; color: var(--ink-dim); margin: 8px 2px 0; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+    padding: 9px 15px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 30;
+  }
+  .toast.show { opacity: 1; }
+  .spin { display:inline-block; width:13px; height:13px; border:2px solid var(--ink-dim); border-top-color: var(--rust); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Back<span>log</span></h1>
+    <span class="count" id="count">0 games</span>
+  </header>
+
+  <div class="sortbar" id="sortbar"></div>
+
+  <ul class="games" id="list"></ul>
+  <div class="empty" id="empty">
+    <h3>Your backlog is empty</h3>
+    <div>Add a game to get started.</div>
+  </div>
+
+  <div class="actions">
+    <button id="imageBtn">📷 Image</button>
+    <button id="importBtn">Import</button>
+    <button class="primary" id="addBtn">+ Add</button>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none" />
+
+  <!-- Add / search modal -->
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h2 id="sheetTitle">Add a game</h2>
+      <input id="searchInput" type="search" placeholder="Search Steam for a game…" autocomplete="off" />
+      <div class="hint" id="sheetHint">Type a game name — results come from the Steam store.</div>
+      <div class="sresults" id="sresults"></div>
+      <button class="close" id="closeSheet">Done</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Image review modal -->
+  <div class="modal" id="imgModal">
+    <div class="sheet">
+      <h2 id="imgTitle">Games found in image</h2>
+      <div class="hint" id="imgHint"></div>
+      <div class="sresults" id="imgResults"></div>
+      <div style="display:flex; gap:8px; margin-top:12px">
+        <button class="close" id="imgCancel" style="flex:1; margin:0">Cancel</button>
+        <button class="close" id="imgConfirm" style="flex:1; margin:0; background:var(--rust); color:#1a0d06; border:none">Add selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag-drop overlay -->
+  <div id="dropzone" style="position:fixed; inset:0; background:rgba(14,16,18,0.92); z-index:40; display:none; align-items:center; justify-content:center; pointer-events:none">
+    <div style="border:2px dashed var(--rust); border-radius:16px; padding:40px 30px; text-align:center; color:var(--ink)">
+      <div style="font-size:34px">📷</div>
+      <div style="font-weight:700; margin-top:8px">Drop an image to read games</div>
+      <div class="hint" style="margin-top:4px">Steam list, wishlist, or a shelf photo</div>
+    </div>
+  </div>
+
+<script>
+  const LIST_KEY = "backlog.list.v2";     // array of {appid,name,icon}
+  const STATS_KEY = "backlog.stats.v2";   // appid -> {achUnlocked,achTotal,mainStory,completionist}
+  const SORT_KEY = "backlog.sort.v2";
+
+  const SORTS = [
+    { id: "name",   label: "A–Z" },
+    { id: "ach",    label: "Achievements" },
+    { id: "main",   label: "Main story" },
+    { id: "comp",   label: "Completionist" },
+  ];
+
+  let list = load(LIST_KEY, []);
+  let stats = load(STATS_KEY, {});
+  let sort = load(SORT_KEY, { id: "name", asc: true });
+  let importMode = false;
+
+  function load(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
+  function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.innerHTML = msg; t.classList.add("show");
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+  function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):v)+"h"; }
+  function achVal(s){
+    if(!s || s.achTotal==null) return {txt:"—", na:true, done:false, pct:-1};
+    if(s.achTotal===0) return {txt:"none", na:true, done:false, pct:-1};
+    return {txt:`${s.achUnlocked}/${s.achTotal}`, na:false, done:s.achUnlocked===s.achTotal, pct:s.achUnlocked/s.achTotal};
+  }
+
+  function sortedList() {
+    const arr = [...list];
+    const dir = sort.asc ? 1 : -1;
+    arr.sort((a,b) => {
+      const sa = stats[a.appid]||{}, sb = stats[b.appid]||{};
+      if (sort.id==="name") return dir * a.name.localeCompare(b.name);
+      if (sort.id==="main") return dir * cmpNum(sa.mainStory, sb.mainStory);
+      if (sort.id==="comp") return dir * cmpNum(sa.completionist, sb.completionist);
+      if (sort.id==="ach")  return dir * cmpNum(achVal(sa).pct, achVal(sb).pct);
+      return 0;
+    });
+    return arr;
+  }
+  // Nulls always sort to the bottom regardless of direction
+  function cmpNum(a,b){
+    const an = (a==null||a<0), bn = (b==null||b<0);
+    if (an && bn) return 0;
+    if (an) return 1;
+    if (bn) return -1;
+    return a-b;
+  }
+
+  function renderSort() {
+    document.getElementById("sortbar").innerHTML = SORTS.map(s => {
+      const on = s.id===sort.id;
+      const arrow = on ? `<span class="dir">${sort.asc?"▲":"▼"}</span>` : "";
+      return `<button class="${on?"on":""}" data-sort="${s.id}">${s.label}${arrow}</button>`;
+    }).join("");
+    document.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => {
+      const id = b.dataset.sort;
+      if (sort.id===id) sort.asc = !sort.asc; else sort = { id, asc: id==="name" };
+      save(SORT_KEY, sort); renderSort(); renderList();
+    });
+  }
+
+  function renderList() {
+    const ul = document.getElementById("list");
+    document.getElementById("empty").style.display = list.length ? "none" : "block";
+    document.getElementById("count").textContent = list.length + (list.length===1?" game":" games");
+
+    ul.innerHTML = sortedList().map(g => {
+      const s = stats[g.appid] || {};
+      const a = achVal(s);
+      const main = hrs(s.mainStory), comp = hrs(s.completionist);
+      return `<li class="card">
+        <div class="card-main">
+          ${g.icon?`<img class="cover" src="${g.icon}" alt="" loading="lazy">`:`<div class="cover"></div>`}
+          <div class="name">${esc(g.name)}</div>
+          <button class="del" data-del="${g.appid}" aria-label="Remove">✕</button>
+        </div>
+        <div class="stats">
+          <div class="stat ach"><div class="v ${a.done?"done":""} ${a.na?"na":""}">${a.txt}</div><div class="k">🏆 Achv</div></div>
+          <div class="stat main"><div class="v ${main?"":"na"}">${main||"—"}</div><div class="k">Main story</div></div>
+          <div class="stat comp"><div class="v ${comp?"":"na"}">${comp||"—"}</div><div class="k">100%</div></div>
+        </div>
+      </li>`;
+    }).join("");
+
+    ul.querySelectorAll("[data-del]").forEach(b => b.onclick = () => removeGame(+b.dataset.del));
+  }
+
+  function hasGame(appid){ return list.some(g=>g.appid===appid); }
+
+  function addGame(g) {
+    if (hasGame(g.appid)) return false;
+    list.push({ appid: g.appid, name: g.name, icon: g.icon || null });
+    save(LIST_KEY, list);
+    renderList();
+    fetchStats([g.appid]); // fetch this game's stats in the background
+    return true;
+  }
+  function removeGame(appid) {
+    list = list.filter(g => g.appid!==appid);
+    save(LIST_KEY, list);
+    renderList();
+  }
+
+  // ---- stats (achievements + HLTB) ----
+  async function fetchStats(appids) {
+    if (!appids.length) return;
+    try {
+      const r = await fetch("/api/stats", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ appids })
+      });
+      const data = await r.json();
+      if (data.stats) {
+        Object.assign(stats, data.stats);
+        save(STATS_KEY, stats);
+        renderList();
+      }
+    } catch(e) { /* offline or endpoint down — cards show — */ }
+  }
+  function refreshAll() {
+    if (!list.length) { toast("Add some games first"); return; }
+    toast(`Refreshing stats <span class="spin"></span>`);
+    // chunk to stay under the endpoint's per-request cap
+    const ids = list.map(g=>g.appid);
+    const chunks = [];
+    for (let i=0;i<ids.length;i+=50) chunks.push(ids.slice(i,i+50));
+    Promise.all(chunks.map(fetchStats)).then(()=>toast("Stats updated"));
+  }
+
+  // ---- search modal ----
+  const modal = document.getElementById("modal");
+  const searchInput = document.getElementById("searchInput");
+  const sresults = document.getElementById("sresults");
+  let searchTimer;
+
+  function openSheet(mode) {
+    importMode = (mode==="import");
+    document.getElementById("sheetTitle").textContent = importMode ? "Import from your library" : "Add a game";
+    document.getElementById("sheetHint").textContent = importMode
+      ? "Your owned Steam games. Tap to add any to your backlog."
+      : "Type a game name — results come from the Steam store.";
+    searchInput.style.display = importMode ? "none" : "block";
+    sresults.innerHTML = "";
+    modal.classList.add("show");
+    if (importMode) loadLibrary();
+    else { searchInput.value=""; setTimeout(()=>searchInput.focus(), 100); }
+  }
+  function closeSheet(){ modal.classList.remove("show"); }
+
+  function renderResults(items) {
+    if (!items.length) { sresults.innerHTML = `<div class="hint">No matches.</div>`; return; }
+    sresults.innerHTML = items.map(it => `
+      <div class="sresult ${hasGame(it.appid)?"added":""}" data-appid="${it.appid}">
+        ${it.icon?`<img src="${it.icon}" alt="">`:`<div style="width:54px;height:25px;background:var(--line);border-radius:4px"></div>`}
+        <div class="n">${esc(it.name)}</div>
+        <button class="add">${hasGame(it.appid)?"✓":"Add"}</button>
+      </div>`).join("");
+    sresults.querySelectorAll(".sresult").forEach(row => {
+      row.querySelector(".add").onclick = () => {
+        const appid = +row.dataset.appid;
+        const it = items.find(x=>x.appid===appid);
+        if (addGame(it)) { row.classList.add("added"); row.querySelector(".add").textContent="✓"; }
+      };
+    });
+  }
+
+  async function doSearch(q) {
+    if (!q.trim()) { sresults.innerHTML=""; return; }
+    sresults.innerHTML = `<div class="hint">Searching <span class="spin"></span></div>`;
+    try {
+      const r = await fetch("/api/search?q="+encodeURIComponent(q));
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      renderResults(data.results||[]);
+    } catch(e) { sresults.innerHTML = `<div class="hint">Search failed: ${esc(e.message)}</div>`; }
+  }
+
+  async function loadLibrary() {
+    sresults.innerHTML = `<div class="hint">Loading your library <span class="spin"></span></div>`;
+    try {
+      const r = await fetch("/api/library");
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.games || !data.games.length) {
+        sresults.innerHTML = `<div class="hint">${esc(data.note||"No games found.")}</div>`; return;
+      }
+      renderResults(data.games);
+    } catch(e) { sresults.innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
+  }
+
+  searchInput.oninput = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>doSearch(searchInput.value), 350);
+  };
+
+  document.getElementById("addBtn").onclick = () => openSheet("add");
+  document.getElementById("importBtn").onclick = () => openSheet("import");
+  document.getElementById("closeSheet").onclick = closeSheet;
+  modal.onclick = (e) => { if (e.target===modal) closeSheet(); };
+
+  // ---- image reading ----
+  const imgModal = document.getElementById("imgModal");
+  const imgResults = document.getElementById("imgResults");
+  const fileInput = document.getElementById("fileInput");
+  let imgMatches = []; // [{title, chosen, options, include}]
+
+  document.getElementById("imageBtn").onclick = () => fileInput.click();
+  fileInput.onchange = () => { if (fileInput.files[0]) handleImageFile(fileInput.files[0]); fileInput.value=""; };
+  document.getElementById("imgCancel").onclick = () => imgModal.classList.remove("show");
+  imgModal.onclick = (e) => { if (e.target===imgModal) imgModal.classList.remove("show"); };
+  document.getElementById("imgConfirm").onclick = confirmImageAdds;
+
+  function fileToDataUrl(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => rej(new Error("Could not read the file."));
+      r.readAsDataURL(file);
+    });
+  }
+
+  // Downscale large images in-browser so uploads stay fast and under limits
+  async function shrinkImage(dataUrl, maxDim=1600) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (Math.max(width, height) <= maxDim) return resolve(dataUrl);
+        const scale = maxDim / Math.max(width, height);
+        const c = document.createElement("canvas");
+        c.width = Math.round(width*scale); c.height = Math.round(height*scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  async function handleImageFile(file) {
+    if (!file.type.startsWith("image/")) { toast("That's not an image"); return; }
+    toast(`Reading image <span class="spin"></span>`);
+    try {
+      let dataUrl = await fileToDataUrl(file);
+      dataUrl = await shrinkImage(dataUrl);
+      const r = await fetch("/api/read-image", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ image: dataUrl })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      const titles = data.titles || [];
+      if (!titles.length) { toast("No game titles found in that image"); return; }
+      await matchTitles(titles);
+    } catch(e) { toast("Couldn't read image: " + e.message); }
+  }
+
+  // For each detected title, search Steam and pick the best match
+  async function matchTitles(titles) {
+    document.getElementById("imgTitle").textContent = "Matching games…";
+    document.getElementById("imgHint").innerHTML = `Found ${titles.length} titles. Matching to Steam <span class="spin"></span>`;
+    imgResults.innerHTML = "";
+    imgModal.classList.add("show");
+
+    imgMatches = [];
+    for (const title of titles) {
+      let options = [];
+      try {
+        const r = await fetch("/api/search?q="+encodeURIComponent(title));
+        const d = await r.json();
+        options = d.results || [];
+      } catch { options = []; }
+      const chosen = options[0] || null; // top result is usually right
+      imgMatches.push({ title, options, chosen, include: !!chosen && !hasGame(chosen.appid) });
+    }
+    renderImgReview();
+  }
+
+  function renderImgReview() {
+    refreshImgHint();
+    document.getElementById("imgTitle").textContent = "Review games from image";
+
+    imgResults.innerHTML = imgMatches.map((m, i) => {
+      const c = m.chosen;
+      const already = c && hasGame(c.appid);
+      const label = c ? esc(c.name) : `<span style="color:var(--ink-dim)">No match for "${esc(m.title)}"</span>`;
+      const icon = c && c.icon ? `<img src="${c.icon}" alt="">` : `<div style="width:54px;height:25px;background:var(--line);border-radius:4px"></div>`;
+      const check = c && !already
+        ? `<input type="checkbox" data-i="${i}" ${m.include?"checked":""} style="width:20px;height:20px;accent-color:var(--rust);flex-shrink:0">`
+        : (already ? `<span style="font-size:12px;color:var(--green);flex-shrink:0">in list</span>` : "");
+      return `<div class="sresult" style="align-items:center">
+        ${icon}
+        <div class="n" style="line-height:1.3">
+          ${label}
+          ${c && m.options.length>1 ? `<div style="font-size:11px;color:var(--ink-dim)">read as "${esc(m.title)}" · tap to change</div>` : ""}
+        </div>
+        ${check}
+      </div>`;
+    }).join("");
+
+    imgResults.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.onchange = () => { imgMatches[+cb.dataset.i].include = cb.checked; refreshImgHint(); };
+    });
+    imgResults.querySelectorAll(".sresult").forEach((row, i) => {
+      const m = imgMatches[i];
+      if (m && m.options.length > 1) {
+        const n = row.querySelector(".n");
+        n.style.cursor = "pointer";
+        n.onclick = () => {
+          const idx = m.options.indexOf(m.chosen);
+          m.chosen = m.options[(idx+1) % m.options.length];
+          m.include = !hasGame(m.chosen.appid);
+          renderImgReview();
+        };
+      }
+    });
+  }
+  function refreshImgHint() {
+    const total = imgMatches.length;
+    const ready = imgMatches.filter(m => m.include && m.chosen).length;
+    document.getElementById("imgHint").innerHTML =
+      `${ready} of ${total} will be added. Untick wrong matches; tap a match to change it.`;
+  }
+
+  function confirmImageAdds() {
+    const toAdd = imgMatches.filter(m => m.include && m.chosen).map(m => m.chosen);
+    let added = 0;
+    toAdd.forEach(g => { if (addGame(g)) added++; });
+    imgModal.classList.remove("show");
+    toast(added ? `Added ${added} game${added>1?"s":""}` : "Nothing new to add");
+  }
+
+  // ---- drag & drop / paste anywhere ----
+  const dropzone = document.getElementById("dropzone");
+  let dragDepth = 0;
+  window.addEventListener("dragenter", (e) => { e.preventDefault(); dragDepth++; dropzone.style.display="flex"; });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("dragleave", (e) => { e.preventDefault(); if (--dragDepth<=0){ dragDepth=0; dropzone.style.display="none"; } });
+  window.addEventListener("drop", (e) => {
+    e.preventDefault(); dragDepth=0; dropzone.style.display="none";
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleImageFile(file);
+  });
+  window.addEventListener("paste", (e) => {
+    const item = [...(e.clipboardData?.items||[])].find(it => it.type.startsWith("image/"));
+    if (item) handleImageFile(item.getAsFile());
+  });
+
+  // long-press the count to refresh all stats
+  document.getElementById("count").onclick = refreshAll;
+
+  // boot
+  renderSort();
+  renderList();
+  // refresh stats for anything missing data on load
+  const stale = list.filter(g => !stats[g.appid]).map(g=>g.appid);
+  if (stale.length) fetchStats(stale);
+</script>
+</body>
+</html>
