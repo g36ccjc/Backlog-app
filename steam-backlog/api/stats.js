@@ -36,6 +36,21 @@ async function steamAchievements(appid, key, steamId) {
   }
 }
 
+// One call for the whole library: appid -> minutes played
+async function playtimeMap(key, steamId) {
+  try {
+    const d = await getJson(
+      `${STEAM_API}/IPlayerService/GetOwnedGames/v1/` +
+      `?key=${key}&steamid=${steamId}&include_played_free_games=true&format=json`
+    );
+    const map = new Map();
+    for (const g of d?.response?.games || []) map.set(g.appid, g.playtime_forever || 0);
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
 // Very small name similarity: normalized token overlap. Enough to pick the
 // right candidate out of a short list without pulling in a library.
 function similarity(a, b) {
@@ -103,6 +118,7 @@ export default async function handler(req, res) {
   if (!items.length) return res.status(400).json({ error: "No games provided." });
 
   const results = {};
+  const playtimes = key ? await playtimeMap(key, steamId) : new Map();
   await Promise.all(
     items.map(async ({ appid, name }) => {
       const [ach, hltb] = await Promise.all([
@@ -110,7 +126,9 @@ export default async function handler(req, res) {
             : Promise.resolve({ achTotal: null, achUnlocked: null }),
         hltbTimes(appid, name),
       ]);
-      results[appid] = { ...ach, ...hltb };
+      // null = not owned; a number (possibly 0) = owned
+      const playtimeMinutes = playtimes.has(appid) ? playtimes.get(appid) : null;
+      results[appid] = { ...ach, ...hltb, playtimeMinutes };
     })
   );
 
