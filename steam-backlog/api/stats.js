@@ -4,10 +4,13 @@
 //   mainStory / completionist hours (from a public HLTB-by-appid service)
 //
 // Env vars (set in Vercel):
-//   STEAM_API_KEY, STEAM_ID
+//   STEAM_API_KEY
+// The SteamID comes from the logged-in user's session.
 //
 // HLTB source: a community REST service that maps Steam appid -> HLTB times.
 // It's third-party and best-effort; failures degrade to null, never throw.
+
+import { getSession } from "./_session.js";
 
 const STEAM_API = "https://api.steampowered.com";
 const HLTB_BASE = "https://hltbapi.codepotatoes.de/steam"; // /{appid}
@@ -59,8 +62,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Use POST." });
   }
 
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: "Not logged in." });
   const key = process.env.STEAM_API_KEY;
-  const steamId = process.env.STEAM_ID;
+  const steamId = session.steamId;
 
   let body = req.body;
   if (typeof body === "string") {

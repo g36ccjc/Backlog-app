@@ -3,14 +3,18 @@
 // them into the backlog. Achievement + HLTB stats are fetched separately
 // via /api/stats once games are in the list.
 
+import { getSession } from "./_session.js";
+
 const STEAM_API = "https://api.steampowered.com";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: "Not logged in." });
   const key = process.env.STEAM_API_KEY;
-  const steamId = process.env.STEAM_ID;
-  if (!key || !steamId) {
-    return res.status(500).json({ error: "Server missing STEAM_API_KEY or STEAM_ID." });
+  const steamId = session.steamId;
+  if (!key) {
+    return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
   }
 
   try {

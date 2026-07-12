@@ -109,9 +109,22 @@
 </style>
 </head>
 <body>
+  <!-- Login screen (shown until signed in) -->
+  <div id="loginScreen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:50; align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:24px; text-align:center">
+    <h1 style="font-size:34px">Back<span style="color:var(--rust)">log</span></h1>
+    <div style="color:var(--ink-dim); max-width:320px; line-height:1.5">
+      Track your game backlog with Steam achievements and HowLongToBeat times, synced across your devices.
+    </div>
+    <a href="/api/auth/login" style="display:inline-block; background:var(--rust); color:#1a0d06; font-weight:800; text-decoration:none; padding:14px 26px; border-radius:12px; font-size:16px">Sign in through Steam</a>
+    <div class="hint" style="max-width:320px">Uses Steam's official login — your password never touches this site. Your Steam profile's <b>Game details</b> must be set to Public for achievements to show.</div>
+  </div>
+
   <header>
     <h1>Back<span>log</span></h1>
-    <span class="count" id="count">0 games</span>
+    <div style="display:flex; align-items:center; gap:10px">
+      <span class="count" id="count">0 games</span>
+      <img id="userAvatar" src="" alt="" style="display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--line)" title="Tap to log out">
+    </div>
   </header>
 
   <div class="sortbar" id="sortbar"></div>
@@ -123,8 +136,7 @@
   </div>
 
   <div class="actions">
-    <button id="imageBtn">📷 Image</button>
-    <button id="importBtn">Import</button>
+    <button id="importBtn">Import library</button>
     <button class="primary" id="addBtn">+ Add</button>
   </div>
   <input type="file" id="fileInput" accept="image/*" style="display:none" />
@@ -189,6 +201,45 @@
 
   function load(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
   function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  // ---- cloud sync (shared list across devices) ----
+  let syncTimer = null;
+  let syncEnabled = true; // flips false if the sync endpoint isn't configured
+
+  // Push current list+stats to the cloud, debounced so rapid edits batch.
+  function syncUp() {
+    if (!syncEnabled) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      try {
+        await fetch("/api/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ list, stats }),
+        });
+      } catch { /* offline — local copy is still saved, will sync next change */ }
+    }, 600);
+  }
+
+  // Pull the shared list from the cloud on startup and adopt it.
+  async function syncDown() {
+    try {
+      const r = await fetch("/api/list");
+      const data = await r.json();
+      if (data.error) { syncEnabled = false; return; } // not configured yet
+      // Adopt cloud data as the source of truth for cross-device consistency
+      if (Array.isArray(data.list)) {
+        list = data.list;
+        stats = data.stats || {};
+        save(LIST_KEY, list);
+        save(STATS_KEY, stats);
+        renderList();
+        // fetch stats for anything the cloud didn't have yet
+        const missing = list.filter(g => !stats[g.appid]).map(g => g.appid);
+        if (missing.length) fetchStats(missing);
+      }
+    } catch { /* offline — keep local copy */ }
+  }
 
   function toast(msg) {
     const t = document.getElementById("toast");
@@ -270,6 +321,7 @@
     if (hasGame(g.appid)) return false;
     list.push({ appid: g.appid, name: g.name, icon: g.icon || null });
     save(LIST_KEY, list);
+    syncUp();
     renderList();
     fetchStats([g.appid]); // fetch this game's stats in the background
     return true;
@@ -277,6 +329,7 @@
   function removeGame(appid) {
     list = list.filter(g => g.appid!==appid);
     save(LIST_KEY, list);
+    syncUp();
     renderList();
   }
 
@@ -292,6 +345,7 @@
       if (data.stats) {
         Object.assign(stats, data.stats);
         save(STATS_KEY, stats);
+        syncUp();
         renderList();
       }
     } catch(e) { /* offline or endpoint down — cards show — */ }
@@ -418,13 +472,13 @@
   document.getElementById("closeSheet").onclick = closeSheet;
   modal.onclick = (e) => { if (e.target===modal) closeSheet(); };
 
-  // ---- image reading ----
+  // ---- image reading (disabled for shared/multi-user site; review modal
+  //      is still used by the paste-list feature) ----
   const imgModal = document.getElementById("imgModal");
   const imgResults = document.getElementById("imgResults");
   const fileInput = document.getElementById("fileInput");
   let imgMatches = []; // [{title, chosen, options, include}]
 
-  document.getElementById("imageBtn").onclick = () => fileInput.click();
   fileInput.onchange = () => { if (fileInput.files[0]) handleImageFile(fileInput.files[0]); fileInput.value=""; };
   document.getElementById("imgCancel").onclick = () => imgModal.classList.remove("show");
   imgModal.onclick = (e) => { if (e.target===imgModal) imgModal.classList.remove("show"); };
@@ -550,31 +604,55 @@
     toast(added ? `Added ${added} game${added>1?"s":""}` : "Nothing new to add");
   }
 
-  // ---- drag & drop / paste anywhere ----
-  const dropzone = document.getElementById("dropzone");
-  let dragDepth = 0;
-  window.addEventListener("dragenter", (e) => { e.preventDefault(); dragDepth++; dropzone.style.display="flex"; });
+  // ---- drag & drop / paste (disabled with image feature) ----
   window.addEventListener("dragover", (e) => e.preventDefault());
-  window.addEventListener("dragleave", (e) => { e.preventDefault(); if (--dragDepth<=0){ dragDepth=0; dropzone.style.display="none"; } });
-  window.addEventListener("drop", (e) => {
-    e.preventDefault(); dragDepth=0; dropzone.style.display="none";
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) handleImageFile(file);
-  });
-  window.addEventListener("paste", (e) => {
-    const item = [...(e.clipboardData?.items||[])].find(it => it.type.startsWith("image/"));
-    if (item) handleImageFile(item.getAsFile());
-  });
+  window.addEventListener("drop", (e) => e.preventDefault());
 
   // long-press the count to refresh all stats
   document.getElementById("count").onclick = refreshAll;
 
-  // boot
-  renderSort();
-  renderList();
-  // refresh stats for anything missing data on load
-  const stale = list.filter(g => !stats[g.appid]).map(g=>g.appid);
-  if (stale.length) fetchStats(stale);
+  // ---- auth + boot ----
+  const loginScreen = document.getElementById("loginScreen");
+  const userAvatar = document.getElementById("userAvatar");
+
+  userAvatar.onclick = async () => {
+    if (!confirm("Log out?")) return;
+    await fetch("/api/auth/logout", { method: "POST" });
+    // Clear this device's cached copy of the account's data
+    localStorage.removeItem(LIST_KEY);
+    localStorage.removeItem(STATS_KEY);
+    location.reload();
+  };
+
+  async function boot() {
+    renderSort();
+    let user = null;
+    try {
+      const r = await fetch("/api/auth/me");
+      const d = await r.json();
+      user = d.user;
+    } catch { /* network issue — treat as logged out */ }
+
+    if (!user) {
+      loginScreen.style.display = "flex";
+      return;
+    }
+
+    loginScreen.style.display = "none";
+    if (user.avatar) { userAvatar.src = user.avatar; userAvatar.style.display = "block"; }
+
+    renderList();
+    // Pull this user's cloud list (source of truth), then fill missing stats.
+    syncDown().then(() => {
+      const stale = list.filter(g => !stats[g.appid]).map(g=>g.appid);
+      if (stale.length) fetchStats(stale);
+    });
+    // Re-pull when returning to the tab, so changes on another device show up.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") syncDown();
+    });
+  }
+  boot();
 </script>
 </body>
 </html>

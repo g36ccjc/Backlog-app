@@ -1,95 +1,70 @@
-# Backlog — a manual game backlog with Steam achievements + HowLongToBeat times
+# Backlog — a multi-user game backlog with Steam login
 
-A phone-friendly website where you build a backlog by hand and each game shows:
+A phone-friendly website where anyone signs in with their Steam account and
+gets their own backlog, synced across all their devices. Each game shows:
 
-- **Achievement progress** (unlocked / total) — from Steam, for games you own
-- **Main story hours** — from HowLongToBeat
-- **Completionist (100%) hours** — from HowLongToBeat
+- **Achievement progress** (unlocked / total) — from their Steam account
+- **Main story hours** and **Completionist (100%) hours** — from HowLongToBeat
 
-Sort the list on the fly by name, achievement progress, main-story length, or
-completionist length. Add games two ways: search the Steam store for any game,
-or one-tap import from your own owned library. Your list lives on your device.
+Sort by name, achievement progress, or either time stat. Add games by searching
+the Steam store, pasting a list of names, or one-tap importing your owned
+library. Share the site URL with friends — they sign in with Steam and get
+their own separate list. No passwords: login uses Steam's official OpenID flow.
 
 ---
 
-## What you need (all free)
+## One-time setup (site owner)
+
+You need, all free:
 
 1. **Steam Web API key** — https://steamcommunity.com/dev/apikey
-2. **Your steamID64** — paste your profile URL into https://steamid.io
-3. **Public privacy** — Steam → Edit Profile → Privacy → set **My profile** and
-   **Game details** to **Public** (needed for achievements + library import)
-4. **Anthropic API key** — https://console.anthropic.com (only needed for the
-   "read games from an image" feature; the rest of the app works without it)
-5. A **Vercel** account (hosting) and a **GitHub** account (easiest deploy)
+2. **A session secret** — any long random string you invent (30+ characters).
+3. **Vercel** account + **GitHub** account.
 
-Only the achievement and library-import features need the key + public profile.
-Store search and HowLongToBeat times work regardless.
+### Deploy
 
----
-
-## Deploy (about 5 minutes)
-
-1. **Put this folder on GitHub** — create a repo and upload every file, keeping
-   the structure: the `api/` folder (with `search.js`, `stats.js`, `library.js`),
-   the `public/` folder (with `index.html`), plus `vercel.json` and `package.json`.
-2. **Import into Vercel** — Add New → Project → Import your repo. Framework
-   preset: **Other**.
-3. **Add environment variables** (Settings → Environment Variables):
+1. **GitHub**: create a repo, upload every file keeping the structure
+   (`api/` with its `auth/` subfolder, `public/`, `vercel.json`, `package.json`).
+2. **Vercel**: Add New → Project → Import the repo. Framework preset: Other.
+3. **Environment variables** (Settings → Environment Variables):
    | Name | Value |
    |------|-------|
-   | `STEAM_API_KEY` | your key |
-   | `STEAM_ID` | your steamID64 |
-   | `ANTHROPIC_API_KEY` | your Anthropic key (for image reading) |
-   Apply to Production, then **Deploy** (or Redeploy).
-4. **Open the `.vercel.app` URL** on your phone. On iOS Safari: Share → Add to
-   Home Screen so it opens full-screen like an app.
+   | `STEAM_API_KEY` | your Steam key |
+   | `SESSION_SECRET` | your long random string |
+4. **Storage** (required — this is where user lists live): in the project's
+   **Storage** tab, create **Upstash Redis** (free plan), then **Connect
+   Project**. Credentials are injected automatically.
+5. **Deploy** (or Redeploy if you added vars after the first deploy).
 
-### Test locally first (optional, needs a computer with Node 18+)
-```
-npm i -g vercel
-cd steam-backlog
-```
-Create a `.env` file with:
-```
-STEAM_API_KEY=your_key
-STEAM_ID=your_steamid
-ANTHROPIC_API_KEY=your_anthropic_key
-```
-Then run `vercel dev` and open the localhost URL it prints.
+Note: `STEAM_ID` is no longer needed — each user's SteamID comes from their login.
+
+### Share it
+Send friends the `.vercel.app` URL. They tap **Sign in through Steam**, approve
+on Steam's own page, and get their own empty backlog. For achievements to show,
+their Steam profile's **Game details** must be Public
+(Steam → Edit Profile → Privacy Settings).
 
 ---
 
 ## Using it
 
-- **+ Add** — search the Steam store, tap Add on any result.
-- **Import** — pulls your owned games; tap any to add to the backlog.
-- **📷 Image** — pick a screenshot or photo (Steam list, wishlist, or game
-  shelf). The app reads the game titles, matches each to Steam, and shows a
-  review screen: untick any wrong matches, tap a match to cycle to an
-  alternative, then "Add selected". You can also **drag an image onto the page**
-  or **paste** a screenshot straight from your clipboard.
-- **Sort bar** — tap a sort (A–Z, Achievements, Main story, Completionist).
-  Tap the same one again to flip direction. Games missing that stat sort to
-  the bottom.
-- **Tap the game count** (top right) to refresh all stats.
-- **✕** on a card removes it.
+- **Sign in through Steam** — official Steam login; the site never sees passwords.
+- **+ Add** — search the Steam store (tab 1) or paste a list of names, one per
+  line (tab 2), review the matches, add them all.
+- **Import library** — pulls your owned Steam games; tap any to add.
+- **Sort bar** — A–Z, Achievements, Main story, Completionist; tap again to flip.
+- **Tap the game count** to refresh stats; **✕** removes a game; **tap your
+  avatar** to log out.
+- Lists sync automatically across devices — sign in on your phone and desktop
+  and you'll see the same backlog.
 
 ---
 
-## How the data works
+## Notes
 
-- **Achievements** come from Steam's `GetPlayerAchievements` using your key.
-  A game only shows achievement numbers if you own it and your profile is public;
-  otherwise it shows `—`.
-- **HowLongToBeat times** come from a community REST service that maps a Steam
-  appid to HLTB main-story and completionist hours. It's third-party and
-  best-effort: if it's ever unreachable, cards show `—` for hours and everything
-  else keeps working. HLTB has no official API, which is why this indirect route
-  is used.
-- Your backlog list and fetched stats are cached on your device (localStorage),
-  so the app loads instantly and works offline for browsing.
-
-## Customizing
-- Colors: the `:root` CSS variables near the top of `public/index.html`.
-- Sort options: the `SORTS` array in the script.
-- HLTB source: the `HLTB_BASE` constant in `api/stats.js` if you host your own.
+- **HowLongToBeat times** come from a community service mapping Steam appids to
+  HLTB hours; if it's unavailable, cards show “—” for hours.
+- **Image reading is disabled** in this multi-user version (it ran on the
+  owner's paid Anthropic key). The paste-list feature covers bulk adding.
+- Sync is last-write-wins per user; fine for personal lists.
+- Each user's data is stored under their SteamID in your Upstash database.
