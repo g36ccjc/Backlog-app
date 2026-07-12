@@ -40,7 +40,21 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const raw = await redis(["GET", KEY]);
+      let raw = await redis(["GET", KEY]);
+
+      // One-time migration: the original single-user version stored the list
+      // under "backlog:shared". If this account has no list yet but that old
+      // record exists, adopt it into this account and remove the old record.
+      // (First empty account to log in claims it — in practice, the owner.)
+      if (!raw) {
+        const legacy = await redis(["GET", "backlog:shared"]);
+        if (legacy) {
+          await redis(["SET", KEY, legacy]);
+          await redis(["DEL", "backlog:shared"]);
+          raw = legacy;
+        }
+      }
+
       if (!raw) return res.status(200).json({ list: [], stats: {}, updatedAt: 0 });
       const parsed = JSON.parse(raw);
       return res.status(200).json({
