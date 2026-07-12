@@ -49,14 +49,19 @@ their Steam profile's **Game details** must be Public
 ## Using it
 
 - **Sign in through Steam** — official Steam login; the site never sees passwords.
-- **+ Add** — search the Steam store (tab 1) or paste a list of names, one per
-  line (tab 2), review the matches, add them all.
-- **Import library** — pulls your owned Steam games; tap any to add.
-- **Sort bar** — A–Z, Achievements, Main story, Completionist; tap again to flip.
-- **Tap the game count** to refresh stats; **✕** removes a game; **tap your
-  avatar** to log out.
-- Lists sync automatically across devices — sign in on your phone and desktop
-  and you'll see the same backlog.
+- **Add games** — search the Steam store (Search tab) or paste a list of names,
+  one per line (Paste list tab), review the matches, add them all at once.
+- **Import library** — pulls your owned Steam games; tap Add on any.
+- **Filter box** — type to filter your list instantly.
+- **Sort chips** — A–Z, Achievements, Main story, 100% time; tap again to flip.
+- **Hero bar** — always shows how many games and main-story hours you have left,
+  with an overall achievement progress bar. Tap it to refresh all stats.
+- **Profile** — tap your avatar: stats (games, achievements, completion %,
+  hours left, hours to 100% everything), plus Share and Log out.
+- **Share** — creates a public read-only snapshot of your list at a unique URL
+  you can send to anyone (no login needed to view). Links expire after 90 days
+  and don't update when your list changes — share again for a fresh one.
+- Lists sync automatically across devices — sign in anywhere, same backlog.
 
 ---
 

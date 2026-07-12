@@ -3,653 +3,795 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0e1012" />
+<meta name="theme-color" content="#10141c" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Backlog</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230e1012'/%3E%3Cpath d='M26 34h48M26 50h48M26 66h30' stroke='%23e4572e' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
-    --bg: #0e1012;
-    --panel: #17191d;
-    --panel-2: #202329;
-    --line: #2b2f37;
-    --ink: #f2f0eb;
-    --ink-dim: #969ba6;
-    --rust: #e4572e;      /* signature accent: HLTB-ish burnt orange */
-    --gold: #e8b64c;      /* achievement gold */
-    --green: #58c98b;     /* 100% complete */
-    --radius: 12px;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --mono: "SF Mono", ui-monospace, "Roboto Mono", monospace;
+    --bg: #10141c;          /* deep slate navy */
+    --surface: #171c27;     /* card */
+    --surface-2: #1f2634;   /* raised */
+    --line: #29324333;      /* hairline */
+    --line-solid: #293243;
+    --ink: #eceae4;         /* warm off-white */
+    --ink-dim: #8f97a8;
+    --gold: #e8b64c;        /* achievement gold — the accent */
+    --teal: #4fc3a1;        /* 100% complete only */
+    --danger: #d4645c;
+    --r: 14px;
+    --display: "Chakra Petch", -apple-system, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
   body {
-    margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink);
-    padding: max(14px, env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom));
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body);
+    padding: max(14px, env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
+    max-width: 680px; margin-inline: auto;
     -webkit-font-smoothing: antialiased;
   }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
-  h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; margin: 0; }
-  h1 span { color: var(--rust); }
-  .count { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); }
 
-  /* Sort bar */
-  .sortbar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
-  .sortbar button {
-    white-space: nowrap; font-family: var(--sans); font-size: 13px; color: var(--ink-dim);
-    background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px;
+  /* ---------- top bar ---------- */
+  .top {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
   }
-  .sortbar button.on { background: var(--rust); color: #1a0d06; border-color: var(--rust); font-weight: 700; }
-  .sortbar button .dir { font-size: 10px; opacity: 0.8; margin-left: 3px; }
-
-  /* Game cards */
-  ul.games { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-  .card-main { display: flex; gap: 11px; align-items: center; padding: 11px; }
-  .cover { width: 60px; height: 28px; border-radius: 5px; object-fit: cover; background: var(--panel-2); flex-shrink: 0; }
-  .name { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .del { background: none; border: none; color: var(--ink-dim); font-size: 18px; padding: 4px 6px; flex-shrink: 0; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--line); }
-  .stat { padding: 8px 6px; text-align: center; border-right: 1px solid var(--line); }
-  .stat:last-child { border-right: none; }
-  .stat .v { font-family: var(--mono); font-size: 14px; font-weight: 700; }
-  .stat .k { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-dim); margin-top: 2px; }
-  .stat.ach .v { color: var(--gold); }
-  .stat.ach .v.done { color: var(--green); }
-  .stat.main .v { color: var(--ink); }
-  .stat.comp .v { color: var(--rust); }
-  .v.na { color: var(--ink-dim); font-weight: 400; }
-
-  .empty { text-align: center; color: var(--ink-dim); padding: 50px 20px; }
-  .empty h3 { color: var(--ink); margin: 0 0 6px; }
-
-  /* Bottom action bar */
-  .actions {
-    position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-    background: linear-gradient(transparent, var(--bg) 22%); z-index: 10;
+  .wordmark {
+    font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: 0.2px;
+    margin-right: auto; user-select: none;
   }
-  .actions button {
-    flex: 1; font-family: var(--sans); font-size: 14px; font-weight: 700; padding: 13px;
-    border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
-  }
-  .actions .primary { background: var(--rust); color: #1a0d06; border: none; }
-  .actions button:active { transform: scale(0.98); }
+  .wordmark b { color: var(--gold); font-weight: 700; }
+  .avatarBtn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line-solid); padding: 0; background: var(--surface-2); overflow: hidden; cursor: pointer; }
+  .avatarBtn img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  /* Modal */
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; z-index: 20; }
+  /* ---------- hero strip (signature) ---------- */
+  .hero { margin: 14px 0 6px; }
+  .hero .line {
+    font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim);
+  }
+  .hero .line b { color: var(--ink); font-size: 17px; }
+  .hero .line .g { color: var(--gold); }
+  .xp {
+    margin-top: 10px; height: 5px; border-radius: 3px; background: var(--surface-2);
+    overflow: hidden; position: relative;
+  }
+  .xp > i {
+    display: block; height: 100%; border-radius: 3px; background: var(--gold);
+    transition: width 0.6s cubic-bezier(.22,1,.36,1);
+  }
+  .xp.done > i { background: var(--teal); }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; gap: 8px; margin: 16px 0 10px; }
+  .filterBox {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line-solid); border-radius: 10px; padding: 0 12px;
+  }
+  .filterBox input {
+    flex: 1; border: none; background: none; color: var(--ink); font-family: var(--body);
+    font-size: 14px; padding: 10px 0; outline: none; min-width: 0;
+  }
+  .filterBox svg { flex-shrink: 0; opacity: 0.5; }
+  .sorts { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .sorts::-webkit-scrollbar { display: none; }
+  .sorts button {
+    font-family: var(--display); font-weight: 600; font-size: 12.5px; white-space: nowrap;
+    color: var(--ink-dim); background: none; border: 1px solid var(--line-solid);
+    border-radius: 999px; padding: 7px 13px; cursor: pointer;
+  }
+  .sorts button.on { color: #16130a; background: var(--gold); border-color: var(--gold); }
+
+  /* ---------- game cards ---------- */
+  .games { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r);
+    overflow: hidden; position: relative;
+  }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 12px 12px 10px; }
+  .cap {
+    width: 92px; height: 43px; border-radius: 7px; object-fit: cover; flex-shrink: 0;
+    background: var(--surface-2);
+  }
+  .info { flex: 1; min-width: 0; }
+  .gname {
+    font-weight: 650; font-size: 14.5px; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .nums {
+    display: flex; gap: 12px; margin-top: 5px;
+    font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink-dim);
+  }
+  .nums .a { color: var(--gold); }
+  .nums .a.full { color: var(--teal); }
+  .nums .na { opacity: 0.45; }
+  .rm {
+    background: none; border: none; color: var(--ink-dim); opacity: 0.55;
+    font-size: 16px; padding: 6px; cursor: pointer; flex-shrink: 0; align-self: flex-start;
+  }
+  .rm:hover { color: var(--danger); opacity: 1; }
+  /* per-game XP bar along the card's bottom edge */
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-2); }
+  .bar > i { display: block; height: 100%; background: var(--gold); }
+  .bar.full > i { background: var(--teal); }
+
+  .empty { text-align: center; color: var(--ink-dim); padding: 56px 20px; line-height: 1.6; }
+  .empty b { color: var(--ink); font-family: var(--display); font-size: 16px; display: block; margin-bottom: 4px; }
+
+  /* ---------- bottom actions ---------- */
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, var(--bg) 30%);
+    display: flex; gap: 8px; max-width: 680px; margin-inline: auto;
+  }
+  .dock button {
+    flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px;
+    padding: 13px; border-radius: 12px; cursor: pointer;
+    background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid);
+  }
+  .dock .primary { background: var(--gold); color: #16130a; border-color: var(--gold); }
+  .dock button:active { transform: scale(0.98); }
+
+  /* ---------- profile ---------- */
+  .profile { display: none; }
+  .pHead { display: flex; align-items: center; gap: 14px; margin: 18px 0 20px; }
+  .pHead img { width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--line-solid); }
+  .pHead .n { font-family: var(--display); font-weight: 700; font-size: 20px; }
+  .pHead .s { color: var(--ink-dim); font-size: 12.5px; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cell {
+    background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r);
+    padding: 15px 14px;
+  }
+  .cell .v { font-family: var(--display); font-weight: 700; font-size: 22px; }
+  .cell .v .u { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+  .cell .k { color: var(--ink-dim); font-size: 11.5px; margin-top: 3px; letter-spacing: 0.2px; }
+  .cell.gold .v { color: var(--gold); }
+  .cell.teal .v { color: var(--teal); }
+  .pActions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+  .pActions button {
+    font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px;
+    border-radius: 12px; cursor: pointer; border: 1px solid var(--line-solid);
+    background: var(--surface-2); color: var(--ink);
+  }
+  .pActions .share { background: var(--gold); color: #16130a; border-color: var(--gold); }
+  .pActions .out { color: var(--danger); }
+
+  /* ---------- shared (read-only) banner ---------- */
+  .sharedBanner {
+    display: none; background: var(--surface); border: 1px solid var(--line-solid);
+    border-radius: var(--r); padding: 12px 14px; margin: 12px 0 4px;
+    font-size: 13px; color: var(--ink-dim); line-height: 1.5;
+  }
+  .sharedBanner b { color: var(--ink); }
+  .sharedBanner a { color: var(--gold); text-decoration: none; font-weight: 700; }
+
+  /* ---------- login ---------- */
+  .login {
+    display: none; position: fixed; inset: 0; background: var(--bg); z-index: 50;
+    flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    padding: 28px; text-align: center;
+  }
+  .login .mark { font-family: var(--display); font-weight: 700; font-size: 34px; }
+  .login .mark b { color: var(--gold); }
+  .login p { color: var(--ink-dim); max-width: 300px; line-height: 1.6; margin: 0; font-size: 14.5px; }
+  .steamBtn {
+    display: inline-block; background: var(--gold); color: #16130a; text-decoration: none;
+    font-family: var(--display); font-weight: 700; font-size: 15.5px;
+    padding: 14px 28px; border-radius: 12px;
+  }
+  .login .fine { font-size: 12px; color: var(--ink-dim); max-width: 300px; line-height: 1.55; }
+
+  /* ---------- sheets & modals (add / review) ---------- */
+  .modal { position: fixed; inset: 0; background: rgba(6,8,12,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
   .modal.show { display: flex; }
   .sheet {
-    background: var(--panel); width: 100%; border-radius: 18px 18px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
-    max-height: 82vh; display: flex; flex-direction: column;
+    background: var(--surface); width: 100%; max-width: 680px; border-radius: 20px 20px 0 0;
+    padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+    max-height: 84vh; display: flex; flex-direction: column;
+    border: 1px solid var(--line-solid); border-bottom: none;
   }
-  .sheet h2 { margin: 0 0 12px; font-size: 17px; }
-  .sheet input {
-    width: 100%; font-family: var(--sans); font-size: 15px; color: var(--ink);
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+  .sheet h2 { margin: 0 0 12px; font-family: var(--display); font-size: 16.5px; font-weight: 700; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tabs button {
+    flex: 1; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px;
+    border-radius: 9px; border: 1px solid var(--line-solid); cursor: pointer;
+    background: var(--surface-2); color: var(--ink);
   }
-  .sresults { overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .sresult { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; background: var(--panel-2); }
-  .sresult img { width: 54px; height: 25px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
-  .sresult .n { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sresult .add { background: var(--rust); color: #1a0d06; border: none; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 13px; }
-  .sresult.added .add { background: var(--green); }
-  .sheet .close { margin-top: 12px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 12px; font-weight: 700; }
-  .hint { font-size: 12px; color: var(--ink-dim); margin: 8px 2px 0; }
+  .tabs button.on { background: var(--gold); color: #16130a; border-color: var(--gold); }
+  .sheet input[type=search], .sheet textarea {
+    width: 100%; font-family: var(--body); font-size: 15px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 12px;
+    outline: none;
+  }
+  .sheet textarea { min-height: 130px; resize: vertical; }
+  .hint { font-size: 12px; color: var(--ink-dim); margin: 8px 2px 0; line-height: 1.5; }
+  .results { overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .res { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; background: var(--surface-2); }
+  .res img { width: 62px; height: 29px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+  .res .ph { width: 62px; height: 29px; background: var(--line-solid); border-radius: 5px; flex-shrink: 0; }
+  .res .n { flex: 1; font-size: 13.5px; min-width: 0; line-height: 1.3; }
+  .res .sub { font-size: 11px; color: var(--ink-dim); }
+  .res button.addOne {
+    background: var(--gold); color: #16130a; border: none; border-radius: 8px;
+    padding: 7px 13px; font-family: var(--display); font-weight: 700; font-size: 12.5px; cursor: pointer;
+  }
+  .res.in button.addOne { background: var(--teal); }
+  .res input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--gold); flex-shrink: 0; }
+  .sheet .footRow { display: flex; gap: 8px; margin-top: 12px; }
+  .sheet .footRow button {
+    flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 12px;
+    border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid);
+    background: var(--surface-2); color: var(--ink);
+  }
+  .sheet .footRow .go { background: var(--gold); color: #16130a; border-color: var(--gold); }
 
   .toast {
-    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
-    padding: 9px 15px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 30;
+    position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); z-index: 30;
+    background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink);
+    padding: 10px 16px; border-radius: 999px; font-size: 13px;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap;
   }
   .toast.show { opacity: 1; }
-  .spin { display:inline-block; width:13px; height:13px; border:2px solid var(--ink-dim); border-top-color: var(--rust); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
+  .spin { display:inline-block; width:12px; height:12px; border:2px solid var(--ink-dim); border-top-color: var(--gold); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
   @keyframes sp { to { transform: rotate(360deg); } }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 </style>
 </head>
 <body>
-  <!-- Login screen (shown until signed in) -->
-  <div id="loginScreen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:50; align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:24px; text-align:center">
-    <h1 style="font-size:34px">Back<span style="color:var(--rust)">log</span></h1>
-    <div style="color:var(--ink-dim); max-width:320px; line-height:1.5">
-      Track your game backlog with Steam achievements and HowLongToBeat times, synced across your devices.
+
+  <!-- login -->
+  <div class="login" id="login">
+    <div class="mark">Back<b>log</b></div>
+    <p>Your game queue, with Steam achievements and HowLongToBeat times, synced everywhere you sign in.</p>
+    <a class="steamBtn" href="/api/auth/login">Sign in through Steam</a>
+    <div class="fine">Uses Steam's official sign-in — your password never touches this site. Set your Steam profile's <b>Game details</b> to Public so achievements can show.</div>
+  </div>
+
+  <!-- top bar -->
+  <div class="top">
+    <div class="wordmark">Back<b>log</b></div>
+    <button class="avatarBtn" id="avatarBtn" style="display:none" aria-label="Profile"><img id="avatarImg" src="" alt=""></button>
+  </div>
+
+  <!-- shared read-only banner -->
+  <div class="sharedBanner" id="sharedBanner"></div>
+
+  <!-- main list view -->
+  <div id="listView">
+    <div class="hero">
+      <div class="line" id="heroLine"></div>
+      <div class="xp" id="heroXp"><i style="width:0%"></i></div>
     </div>
-    <a href="/api/auth/login" style="display:inline-block; background:var(--rust); color:#1a0d06; font-weight:800; text-decoration:none; padding:14px 26px; border-radius:12px; font-size:16px">Sign in through Steam</a>
-    <div class="hint" style="max-width:320px">Uses Steam's official login — your password never touches this site. Your Steam profile's <b>Game details</b> must be set to Public for achievements to show.</div>
-  </div>
 
-  <header>
-    <h1>Back<span>log</span></h1>
-    <div style="display:flex; align-items:center; gap:10px">
-      <span class="count" id="count">0 games</span>
-      <img id="userAvatar" src="" alt="" style="display:none; width:28px; height:28px; border-radius:50%; border:1px solid var(--line)" title="Tap to log out">
-    </div>
-  </header>
-
-  <div class="sortbar" id="sortbar"></div>
-
-  <ul class="games" id="list"></ul>
-  <div class="empty" id="empty">
-    <h3>Your backlog is empty</h3>
-    <div>Add a game to get started.</div>
-  </div>
-
-  <div class="actions">
-    <button id="importBtn">Import library</button>
-    <button class="primary" id="addBtn">+ Add</button>
-  </div>
-  <input type="file" id="fileInput" accept="image/*" style="display:none" />
-
-  <!-- Add / search modal -->
-  <div class="modal" id="modal">
-    <div class="sheet">
-      <h2 id="sheetTitle">Add a game</h2>
-      <div id="addTabs" style="display:flex; gap:6px; margin-bottom:10px">
-        <button class="addtab on" data-tab="search" style="flex:1; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--rust); color:#1a0d06; font-weight:700; font-family:var(--sans); font-size:13px">Search one</button>
-        <button class="addtab" data-tab="paste" style="flex:1; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font-weight:700; font-family:var(--sans); font-size:13px">Paste list</button>
+    <div class="controls">
+      <div class="filterBox">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="filter" type="search" placeholder="Filter your list" autocomplete="off">
       </div>
-      <input id="searchInput" type="search" placeholder="Search Steam for a game…" autocomplete="off" />
-      <textarea id="pasteInput" placeholder="One game per line, e.g.&#10;Hollow Knight&#10;Hades&#10;Elden Ring" style="display:none; width:100%; min-height:130px; resize:vertical; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px"></textarea>
-      <button id="pasteGo" class="close" style="display:none; margin-top:10px; background:var(--rust); color:#1a0d06; border:none; font-weight:700">Match these games</button>
-      <div class="hint" id="sheetHint">Type a game name — results come from the Steam store.</div>
-      <div class="sresults" id="sresults"></div>
-      <button class="close" id="closeSheet">Done</button>
+    </div>
+    <div class="sorts" id="sorts"></div>
+
+    <ul class="games" id="games"></ul>
+    <div class="empty" id="empty" style="display:none">
+      <b>Nothing here yet</b>
+      Add a game below, or import your Steam library.
+    </div>
+  </div>
+
+  <!-- profile view -->
+  <div class="profile" id="profileView">
+    <div class="pHead">
+      <img id="pAvatar" src="" alt="">
+      <div>
+        <div class="n" id="pName"></div>
+        <div class="s" id="pSub"></div>
+      </div>
+    </div>
+    <div class="grid" id="pGrid"></div>
+    <div class="pActions">
+      <button class="share" id="shareBtn">Share this backlog</button>
+      <button id="backBtn">Back to list</button>
+      <button class="out" id="logoutBtn">Log out</button>
+    </div>
+  </div>
+
+  <!-- bottom dock -->
+  <div class="dock" id="dock">
+    <button id="importBtn">Import library</button>
+    <button class="primary" id="addBtn">Add games</button>
+  </div>
+
+  <!-- add sheet -->
+  <div class="modal" id="addModal">
+    <div class="sheet">
+      <h2>Add games</h2>
+      <div class="tabs" id="addTabs">
+        <button class="on" data-tab="search">Search</button>
+        <button data-tab="paste">Paste list</button>
+      </div>
+      <input id="searchInput" type="search" placeholder="Search the Steam store" autocomplete="off">
+      <textarea id="pasteInput" placeholder="One game per line, e.g.&#10;Hollow Knight&#10;Hades&#10;Elden Ring" style="display:none"></textarea>
+      <div class="hint" id="addHint">Results come from the Steam store.</div>
+      <div class="results" id="addResults"></div>
+      <div class="footRow">
+        <button id="addClose">Done</button>
+        <button class="go" id="pasteGo" style="display:none">Match these games</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- review sheet (paste matching) -->
+  <div class="modal" id="reviewModal">
+    <div class="sheet">
+      <h2>Review matches</h2>
+      <div class="hint" id="reviewHint"></div>
+      <div class="results" id="reviewResults"></div>
+      <div class="footRow">
+        <button id="reviewCancel">Cancel</button>
+        <button class="go" id="reviewConfirm">Add selected</button>
+      </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <!-- Image review modal -->
-  <div class="modal" id="imgModal">
-    <div class="sheet">
-      <h2 id="imgTitle">Games found in image</h2>
-      <div class="hint" id="imgHint"></div>
-      <div class="sresults" id="imgResults"></div>
-      <div style="display:flex; gap:8px; margin-top:12px">
-        <button class="close" id="imgCancel" style="flex:1; margin:0">Cancel</button>
-        <button class="close" id="imgConfirm" style="flex:1; margin:0; background:var(--rust); color:#1a0d06; border:none">Add selected</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Drag-drop overlay -->
-  <div id="dropzone" style="position:fixed; inset:0; background:rgba(14,16,18,0.92); z-index:40; display:none; align-items:center; justify-content:center; pointer-events:none">
-    <div style="border:2px dashed var(--rust); border-radius:16px; padding:40px 30px; text-align:center; color:var(--ink)">
-      <div style="font-size:34px">📷</div>
-      <div style="font-weight:700; margin-top:8px">Drop an image to read games</div>
-      <div class="hint" style="margin-top:4px">Steam list, wishlist, or a shelf photo</div>
-    </div>
-  </div>
-
 <script>
-  const LIST_KEY = "backlog.list.v2";     // array of {appid,name,icon}
-  const STATS_KEY = "backlog.stats.v2";   // appid -> {achUnlocked,achTotal,mainStory,completionist}
-  const SORT_KEY = "backlog.sort.v2";
+  // ============ state ============
+  const LIST_KEY = "backlog.list.v3";
+  const STATS_KEY = "backlog.stats.v3";
+  const SORT_KEY = "backlog.sort.v3";
 
   const SORTS = [
-    { id: "name",   label: "A–Z" },
-    { id: "ach",    label: "Achievements" },
-    { id: "main",   label: "Main story" },
-    { id: "comp",   label: "Completionist" },
+    { id: "name", label: "A–Z" },
+    { id: "ach",  label: "Achievements" },
+    { id: "main", label: "Main story" },
+    { id: "comp", label: "100% time" },
   ];
 
   let list = load(LIST_KEY, []);
   let stats = load(STATS_KEY, {});
   let sort = load(SORT_KEY, { id: "name", asc: true });
-  let importMode = false;
+  let filterText = "";
+  let me = null;            // { steamId, name, avatar }
+  let sharedMode = false;   // viewing someone else's snapshot
+  let sharedOwner = null;
 
   function load(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
   function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
-
-  // ---- cloud sync (shared list across devices) ----
-  let syncTimer = null;
-  let syncEnabled = true; // flips false if the sync endpoint isn't configured
-
-  // Push current list+stats to the cloud, debounced so rapid edits batch.
-  function syncUp() {
-    if (!syncEnabled) return;
-    clearTimeout(syncTimer);
-    syncTimer = setTimeout(async () => {
-      try {
-        await fetch("/api/list", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ list, stats }),
-        });
-      } catch { /* offline — local copy is still saved, will sync next change */ }
-    }, 600);
-  }
-
-  // Pull the shared list from the cloud on startup and adopt it.
-  async function syncDown() {
-    try {
-      const r = await fetch("/api/list");
-      const data = await r.json();
-      if (data.error) { syncEnabled = false; return; } // not configured yet
-      // Adopt cloud data as the source of truth for cross-device consistency
-      if (Array.isArray(data.list)) {
-        list = data.list;
-        stats = data.stats || {};
-        save(LIST_KEY, list);
-        save(STATS_KEY, stats);
-        renderList();
-        // fetch stats for anything the cloud didn't have yet
-        const missing = list.filter(g => !stats[g.appid]).map(g => g.appid);
-        if (missing.length) fetchStats(missing);
-      }
-    } catch { /* offline — keep local copy */ }
-  }
-
+  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
   function toast(msg) {
     const t = document.getElementById("toast");
     t.innerHTML = msg; t.classList.add("show");
     clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2400);
   }
-  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
-  function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):v)+"h"; }
-  function achVal(s){
-    if(!s || s.achTotal==null) return {txt:"—", na:true, done:false, pct:-1};
-    if(s.achTotal===0) return {txt:"none", na:true, done:false, pct:-1};
-    return {txt:`${s.achUnlocked}/${s.achTotal}`, na:false, done:s.achUnlocked===s.achTotal, pct:s.achUnlocked/s.achTotal};
+  const $ = id => document.getElementById(id);
+
+  // capsule art from Steam's CDN; falls back to stored icon, then blank
+  function capsule(g) {
+    return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_231x87.jpg`;
   }
 
+  // ============ derived numbers ============
+  function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
+  function achOf(appid){
+    const s = stats[appid];
+    if (!s || s.achTotal==null) return null;         // unknown / not owned
+    if (s.achTotal===0) return { none:true };
+    return { u:s.achUnlocked, t:s.achTotal, pct:s.achUnlocked/s.achTotal };
+  }
+  function totals() {
+    let mainLeft=0, compTotal=0, achU=0, achT=0, done=0, withHours=0;
+    for (const g of list) {
+      const s = stats[g.appid]||{};
+      const a = achOf(g.appid);
+      const finished = a && !a.none && a.pct===1;
+      if (finished) done++;
+      if (s.mainStory!=null) { withHours++; if (!finished) mainLeft += s.mainStory; }
+      if (s.completionist!=null) compTotal += s.completionist;
+      if (a && !a.none) { achU += a.u; achT += a.t; }
+    }
+    return { mainLeft: Math.round(mainLeft), compTotal: Math.round(compTotal),
+             achU, achT, done, withHours,
+             achPct: achT ? achU/achT : 0 };
+  }
+
+  // ============ hero ============
+  function renderHero() {
+    const t = totals();
+    const n = list.length;
+    let line;
+    if (!n) line = `Your queue is empty`;
+    else line = `<b>${n}</b> game${n===1?"":"s"} · <b class="g">${t.mainLeft}h</b> of stories left`
+      + (t.achT ? ` · ${t.achU}/${t.achT} achievements` : "");
+    $("heroLine").innerHTML = line;
+    const xp = $("heroXp");
+    xp.querySelector("i").style.width = Math.round(t.achPct*100) + "%";
+    xp.classList.toggle("done", t.achPct===1 && t.achT>0);
+  }
+
+  // ============ list ============
+  function cmpNum(a,b){
+    const an=(a==null||a<0), bn=(b==null||b<0);
+    if(an&&bn) return 0; if(an) return 1; if(bn) return -1; return a-b;
+  }
   function sortedList() {
-    const arr = [...list];
+    const q = filterText.trim().toLowerCase();
+    let arr = list.filter(g => !q || g.name.toLowerCase().includes(q));
     const dir = sort.asc ? 1 : -1;
     arr.sort((a,b) => {
-      const sa = stats[a.appid]||{}, sb = stats[b.appid]||{};
-      if (sort.id==="name") return dir * a.name.localeCompare(b.name);
-      if (sort.id==="main") return dir * cmpNum(sa.mainStory, sb.mainStory);
-      if (sort.id==="comp") return dir * cmpNum(sa.completionist, sb.completionist);
-      if (sort.id==="ach")  return dir * cmpNum(achVal(sa).pct, achVal(sb).pct);
+      const sa=stats[a.appid]||{}, sb=stats[b.appid]||{};
+      const aa=achOf(a.appid), ab=achOf(b.appid);
+      switch (sort.id) {
+        case "name": return dir * a.name.localeCompare(b.name);
+        case "main": return dir * cmpNum(sa.mainStory, sb.mainStory);
+        case "comp": return dir * cmpNum(sa.completionist, sb.completionist);
+        case "ach":  return dir * cmpNum(aa&&!aa.none?aa.pct:null, ab&&!ab.none?ab.pct:null);
+      }
       return 0;
     });
     return arr;
   }
-  // Nulls always sort to the bottom regardless of direction
-  function cmpNum(a,b){
-    const an = (a==null||a<0), bn = (b==null||b<0);
-    if (an && bn) return 0;
-    if (an) return 1;
-    if (bn) return -1;
-    return a-b;
-  }
 
-  function renderSort() {
-    document.getElementById("sortbar").innerHTML = SORTS.map(s => {
+  function renderSorts() {
+    $("sorts").innerHTML = SORTS.map(s => {
       const on = s.id===sort.id;
-      const arrow = on ? `<span class="dir">${sort.asc?"▲":"▼"}</span>` : "";
-      return `<button class="${on?"on":""}" data-sort="${s.id}">${s.label}${arrow}</button>`;
+      return `<button class="${on?"on":""}" data-s="${s.id}">${s.label}${on ? (sort.asc?" ↑":" ↓") : ""}</button>`;
     }).join("");
-    document.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => {
-      const id = b.dataset.sort;
-      if (sort.id===id) sort.asc = !sort.asc; else sort = { id, asc: id==="name" };
-      save(SORT_KEY, sort); renderSort(); renderList();
+    $("sorts").querySelectorAll("button").forEach(b => b.onclick = () => {
+      if (sort.id===b.dataset.s) sort.asc = !sort.asc;
+      else sort = { id: b.dataset.s, asc: b.dataset.s==="name" };
+      save(SORT_KEY, sort); renderSorts(); renderGames();
     });
   }
 
-  function renderList() {
-    const ul = document.getElementById("list");
-    document.getElementById("empty").style.display = list.length ? "none" : "block";
-    document.getElementById("count").textContent = list.length + (list.length===1?" game":" games");
-
-    ul.innerHTML = sortedList().map(g => {
-      const s = stats[g.appid] || {};
-      const a = achVal(s);
-      const main = hrs(s.mainStory), comp = hrs(s.completionist);
+  function renderGames() {
+    const rows = sortedList();
+    $("empty").style.display = list.length ? "none" : "block";
+    $("games").innerHTML = rows.map(g => {
+      const s = stats[g.appid]||{};
+      const a = achOf(g.appid);
+      const m = hrs(s.mainStory), c = hrs(s.completionist);
+      const achTxt = !a ? `<span class="na">— achv</span>`
+        : a.none ? `<span class="na">no achv</span>`
+        : `<span class="a ${a.pct===1?"full":""}">${a.u}/${a.t}</span>`;
+      const pct = a && !a.none ? Math.round(a.pct*100) : 0;
       return `<li class="card">
-        <div class="card-main">
-          ${g.icon?`<img class="cover" src="${g.icon}" alt="" loading="lazy">`:`<div class="cover"></div>`}
-          <div class="name">${esc(g.name)}</div>
-          <button class="del" data-del="${g.appid}" aria-label="Remove">✕</button>
+        <div class="row">
+          <img class="cap" src="${capsule(g)}" loading="lazy" alt=""
+               onerror="this.onerror=null;this.src='${g.icon||""}';if(!this.src)this.style.visibility='hidden'">
+          <div class="info">
+            <div class="gname">${esc(g.name)}</div>
+            <div class="nums">
+              ${achTxt}
+              <span class="${m==null?"na":""}">${m==null?"—":m+"h"} main</span>
+              <span class="${c==null?"na":""}">${c==null?"—":c+"h"} 100%</span>
+            </div>
+          </div>
+          ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
         </div>
-        <div class="stats">
-          <div class="stat ach"><div class="v ${a.done?"done":""} ${a.na?"na":""}">${a.txt}</div><div class="k">🏆 Achv</div></div>
-          <div class="stat main"><div class="v ${main?"":"na"}">${main||"—"}</div><div class="k">Main story</div></div>
-          <div class="stat comp"><div class="v ${comp?"":"na"}">${comp||"—"}</div><div class="k">100%</div></div>
-        </div>
+        <div class="bar ${a&&!a.none&&a.pct===1?"full":""}"><i style="width:${pct}%"></i></div>
       </li>`;
     }).join("");
-
-    ul.querySelectorAll("[data-del]").forEach(b => b.onclick = () => removeGame(+b.dataset.del));
+    if (!sharedMode) {
+      $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => removeGame(+b.dataset.rm));
+    }
+    renderHero();
   }
 
-  function hasGame(appid){ return list.some(g=>g.appid===appid); }
+  // ============ mutations + sync ============
+  let syncTimer = null;
+  function syncUp() {
+    if (sharedMode) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      try {
+        await fetch("/api/list", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ list, stats })
+        });
+      } catch {}
+    }, 600);
+  }
+  async function syncDown() {
+    if (sharedMode) return;
+    try {
+      const r = await fetch("/api/list");
+      const d = await r.json();
+      if (d.error) return;
+      if (Array.isArray(d.list)) {
+        list = d.list; stats = d.stats||{};
+        save(LIST_KEY, list); save(STATS_KEY, stats);
+        renderGames();
+        const missing = list.filter(g=>!stats[g.appid]).map(g=>g.appid);
+        if (missing.length) fetchStats(missing);
+      }
+    } catch {}
+  }
 
+  function hasGame(id){ return list.some(g=>g.appid===id); }
   function addGame(g) {
     if (hasGame(g.appid)) return false;
-    list.push({ appid: g.appid, name: g.name, icon: g.icon || null });
-    save(LIST_KEY, list);
-    syncUp();
-    renderList();
-    fetchStats([g.appid]); // fetch this game's stats in the background
+    list.push({ appid:g.appid, name:g.name, icon:g.icon||null });
+    save(LIST_KEY, list); syncUp(); renderGames();
+    fetchStats([g.appid]);
     return true;
   }
-  function removeGame(appid) {
-    list = list.filter(g => g.appid!==appid);
-    save(LIST_KEY, list);
-    syncUp();
-    renderList();
+  function removeGame(id) {
+    list = list.filter(g=>g.appid!==id);
+    save(LIST_KEY, list); syncUp(); renderGames();
   }
 
-  // ---- stats (achievements + HLTB) ----
   async function fetchStats(appids) {
-    if (!appids.length) return;
+    if (!appids.length || sharedMode) return;
     try {
       const r = await fetch("/api/stats", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ appids })
       });
-      const data = await r.json();
-      if (data.stats) {
-        Object.assign(stats, data.stats);
-        save(STATS_KEY, stats);
-        syncUp();
-        renderList();
+      const d = await r.json();
+      if (d.stats) {
+        Object.assign(stats, d.stats);
+        save(STATS_KEY, stats); syncUp(); renderGames();
       }
-    } catch(e) { /* offline or endpoint down — cards show — */ }
+    } catch {}
   }
   function refreshAll() {
-    if (!list.length) { toast("Add some games first"); return; }
+    if (!list.length) return;
     toast(`Refreshing stats <span class="spin"></span>`);
-    // chunk to stay under the endpoint's per-request cap
-    const ids = list.map(g=>g.appid);
-    const chunks = [];
+    const ids = list.map(g=>g.appid), chunks=[];
     for (let i=0;i<ids.length;i+=50) chunks.push(ids.slice(i,i+50));
     Promise.all(chunks.map(fetchStats)).then(()=>toast("Stats updated"));
   }
 
-  // ---- search modal ----
-  const modal = document.getElementById("modal");
-  const searchInput = document.getElementById("searchInput");
-  const pasteInput = document.getElementById("pasteInput");
-  const pasteGo = document.getElementById("pasteGo");
-  const addTabs = document.getElementById("addTabs");
-  const sresults = document.getElementById("sresults");
-  let searchTimer;
-  let addTab = "search"; // "search" | "paste"
+  // ============ add sheet ============
+  const addModal = $("addModal");
+  let addTab = "search", searchTimer;
 
-  function setAddTab(tab) {
+  function openAdd(mode) {
+    setTab("search");
+    addModal.classList.add("show");
+    if (mode === "import") loadLibrary();
+    else setTimeout(()=>$("searchInput").focus(), 120);
+  }
+  function setTab(tab) {
     addTab = tab;
-    addTabs.querySelectorAll(".addtab").forEach(b => {
-      const on = b.dataset.tab === tab;
-      b.style.background = on ? "var(--rust)" : "var(--panel-2)";
-      b.style.color = on ? "#1a0d06" : "var(--ink)";
-    });
-    const searching = tab === "search";
-    searchInput.style.display = searching ? "block" : "none";
-    pasteInput.style.display = searching ? "none" : "block";
-    pasteGo.style.display = searching ? "none" : "block";
-    document.getElementById("sheetHint").textContent = searching
-      ? "Type a game name — results come from the Steam store."
+    $("addTabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.tab===tab));
+    $("searchInput").style.display = tab==="search" ? "block" : "none";
+    $("pasteInput").style.display = tab==="paste" ? "block" : "none";
+    $("pasteGo").style.display = tab==="paste" ? "block" : "none";
+    $("addHint").textContent = tab==="search"
+      ? "Results come from the Steam store."
       : "Paste or type games, one per line, then match them all at once.";
-    sresults.innerHTML = "";
-    if (searching) setTimeout(()=>searchInput.focus(), 100);
-    else setTimeout(()=>pasteInput.focus(), 100);
+    $("addResults").innerHTML = "";
   }
+  $("addTabs").querySelectorAll("button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  $("addBtn").onclick = () => openAdd("add");
+  $("importBtn").onclick = () => { addModal.classList.add("show"); setTab("search"); loadLibrary(); };
+  $("addClose").onclick = () => addModal.classList.remove("show");
+  addModal.onclick = e => { if (e.target===addModal) addModal.classList.remove("show"); };
 
-  addTabs.querySelectorAll(".addtab").forEach(b => b.onclick = () => setAddTab(b.dataset.tab));
-
-  pasteGo.onclick = () => {
-    const titles = pasteInput.value.split("\n").map(s=>s.trim()).filter(Boolean);
-    if (!titles.length) { toast("Type at least one game"); return; }
-    // de-dupe case-insensitively
-    const seen = new Set();
-    const clean = titles.filter(t => { const k=t.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
-    closeSheet();
-    matchTitles(clean); // reuse the image feature's review flow
-  };
-
-  function openSheet(mode) {
-    importMode = (mode==="import");
-    document.getElementById("sheetTitle").textContent = importMode ? "Import from your library" : "Add a game";
-    addTabs.style.display = importMode ? "none" : "flex";
-    sresults.innerHTML = "";
-    modal.classList.add("show");
-    if (importMode) {
-      searchInput.style.display = "none";
-      pasteInput.style.display = "none";
-      pasteGo.style.display = "none";
-      document.getElementById("sheetHint").textContent = "Your owned Steam games. Tap to add any to your backlog.";
-      loadLibrary();
-    } else {
-      searchInput.value = "";
-      pasteInput.value = "";
-      setAddTab("search");
-    }
+  function resultRow(it, extraSub) {
+    const inList = hasGame(it.appid);
+    return `<div class="res ${inList?"in":""}" data-appid="${it.appid}">
+      ${it.icon?`<img src="${it.icon}" alt="">`:`<div class="ph"></div>`}
+      <div class="n">${esc(it.name)}${extraSub?`<div class="sub">${extraSub}</div>`:""}</div>
+      <button class="addOne">${inList?"✓":"Add"}</button>
+    </div>`;
   }
-  function closeSheet(){ modal.classList.remove("show"); }
-
-  function renderResults(items) {
-    if (!items.length) { sresults.innerHTML = `<div class="hint">No matches.</div>`; return; }
-    sresults.innerHTML = items.map(it => `
-      <div class="sresult ${hasGame(it.appid)?"added":""}" data-appid="${it.appid}">
-        ${it.icon?`<img src="${it.icon}" alt="">`:`<div style="width:54px;height:25px;background:var(--line);border-radius:4px"></div>`}
-        <div class="n">${esc(it.name)}</div>
-        <button class="add">${hasGame(it.appid)?"✓":"Add"}</button>
-      </div>`).join("");
-    sresults.querySelectorAll(".sresult").forEach(row => {
-      row.querySelector(".add").onclick = () => {
-        const appid = +row.dataset.appid;
-        const it = items.find(x=>x.appid===appid);
-        if (addGame(it)) { row.classList.add("added"); row.querySelector(".add").textContent="✓"; }
+  function wireResults(container, items) {
+    container.querySelectorAll(".res").forEach(row => {
+      row.querySelector(".addOne").onclick = () => {
+        const it = items.find(x=>x.appid===+row.dataset.appid);
+        if (it && addGame(it)) { row.classList.add("in"); row.querySelector(".addOne").textContent="✓"; }
       };
     });
   }
 
-  async function doSearch(q) {
-    if (!q.trim()) { sresults.innerHTML=""; return; }
-    sresults.innerHTML = `<div class="hint">Searching <span class="spin"></span></div>`;
-    try {
-      const r = await fetch("/api/search?q="+encodeURIComponent(q));
-      const data = await r.json();
-      if (data.error) throw new Error(data.error);
-      renderResults(data.results||[]);
-    } catch(e) { sresults.innerHTML = `<div class="hint">Search failed: ${esc(e.message)}</div>`; }
-  }
+  $("searchInput").oninput = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+      const q = $("searchInput").value.trim();
+      if (!q) { $("addResults").innerHTML=""; return; }
+      $("addResults").innerHTML = `<div class="hint">Searching <span class="spin"></span></div>`;
+      try {
+        const r = await fetch("/api/search?q="+encodeURIComponent(q));
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        const items = d.results||[];
+        $("addResults").innerHTML = items.length
+          ? items.map(it=>resultRow(it)).join("")
+          : `<div class="hint">No matches.</div>`;
+        wireResults($("addResults"), items);
+      } catch(e){ $("addResults").innerHTML = `<div class="hint">Search failed: ${esc(e.message)}</div>`; }
+    }, 350);
+  };
 
   async function loadLibrary() {
-    sresults.innerHTML = `<div class="hint">Loading your library <span class="spin"></span></div>`;
+    $("addHint").textContent = "Your owned Steam games — tap Add on any.";
+    $("addResults").innerHTML = `<div class="hint">Loading your library <span class="spin"></span></div>`;
     try {
       const r = await fetch("/api/library");
-      const data = await r.json();
-      if (data.error) throw new Error(data.error);
-      if (!data.games || !data.games.length) {
-        sresults.innerHTML = `<div class="hint">${esc(data.note||"No games found.")}</div>`; return;
-      }
-      renderResults(data.games);
-    } catch(e) { sresults.innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      const items = d.games||[];
+      $("addResults").innerHTML = items.length
+        ? items.map(it=>resultRow(it)).join("")
+        : `<div class="hint">${esc(d.note||"No games found.")}</div>`;
+      wireResults($("addResults"), items);
+    } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
 
-  searchInput.oninput = () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(()=>doSearch(searchInput.value), 350);
+  // ============ paste list -> review ============
+  const reviewModal = $("reviewModal");
+  let matches = [];
+
+  $("pasteGo").onclick = () => {
+    const titles = $("pasteInput").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    if (!titles.length) { toast("Type at least one game"); return; }
+    const seen = new Set();
+    const clean = titles.filter(t=>{const k=t.toLowerCase(); if(seen.has(k))return false; seen.add(k); return true;});
+    addModal.classList.remove("show");
+    runMatch(clean);
+  };
+  $("reviewCancel").onclick = () => reviewModal.classList.remove("show");
+  reviewModal.onclick = e => { if (e.target===reviewModal) reviewModal.classList.remove("show"); };
+  $("reviewConfirm").onclick = () => {
+    let n=0;
+    matches.filter(m=>m.include&&m.chosen).forEach(m=>{ if(addGame(m.chosen)) n++; });
+    reviewModal.classList.remove("show");
+    toast(n?`Added ${n} game${n>1?"s":""}`:"Nothing new to add");
   };
 
-  document.getElementById("addBtn").onclick = () => openSheet("add");
-  document.getElementById("importBtn").onclick = () => openSheet("import");
-  document.getElementById("closeSheet").onclick = closeSheet;
-  modal.onclick = (e) => { if (e.target===modal) closeSheet(); };
-
-  // ---- image reading (disabled for shared/multi-user site; review modal
-  //      is still used by the paste-list feature) ----
-  const imgModal = document.getElementById("imgModal");
-  const imgResults = document.getElementById("imgResults");
-  const fileInput = document.getElementById("fileInput");
-  let imgMatches = []; // [{title, chosen, options, include}]
-
-  fileInput.onchange = () => { if (fileInput.files[0]) handleImageFile(fileInput.files[0]); fileInput.value=""; };
-  document.getElementById("imgCancel").onclick = () => imgModal.classList.remove("show");
-  imgModal.onclick = (e) => { if (e.target===imgModal) imgModal.classList.remove("show"); };
-  document.getElementById("imgConfirm").onclick = confirmImageAdds;
-
-  function fileToDataUrl(file) {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => rej(new Error("Could not read the file."));
-      r.readAsDataURL(file);
-    });
-  }
-
-  // Downscale large images in-browser so uploads stay fast and under limits
-  async function shrinkImage(dataUrl, maxDim=1600) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (Math.max(width, height) <= maxDim) return resolve(dataUrl);
-        const scale = maxDim / Math.max(width, height);
-        const c = document.createElement("canvas");
-        c.width = Math.round(width*scale); c.height = Math.round(height*scale);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL("image/jpeg", 0.85));
-      };
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
-    });
-  }
-
-  async function handleImageFile(file) {
-    if (!file.type.startsWith("image/")) { toast("That's not an image"); return; }
-    toast(`Reading image <span class="spin"></span>`);
-    try {
-      let dataUrl = await fileToDataUrl(file);
-      dataUrl = await shrinkImage(dataUrl);
-      const r = await fetch("/api/read-image", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ image: dataUrl })
-      });
-      const data = await r.json();
-      if (data.error) throw new Error(data.error);
-      const titles = data.titles || [];
-      if (!titles.length) { toast("No game titles found in that image"); return; }
-      await matchTitles(titles);
-    } catch(e) { toast("Couldn't read image: " + e.message); }
-  }
-
-  // For each detected title, search Steam and pick the best match
-  async function matchTitles(titles) {
-    document.getElementById("imgTitle").textContent = "Matching games…";
-    document.getElementById("imgHint").innerHTML = `Found ${titles.length} titles. Matching to Steam <span class="spin"></span>`;
-    imgResults.innerHTML = "";
-    imgModal.classList.add("show");
-
-    imgMatches = [];
+  async function runMatch(titles) {
+    $("reviewHint").innerHTML = `Matching ${titles.length} titles to Steam <span class="spin"></span>`;
+    $("reviewResults").innerHTML = "";
+    reviewModal.classList.add("show");
+    matches = [];
     for (const title of titles) {
       let options = [];
       try {
         const r = await fetch("/api/search?q="+encodeURIComponent(title));
-        const d = await r.json();
-        options = d.results || [];
-      } catch { options = []; }
-      const chosen = options[0] || null; // top result is usually right
-      imgMatches.push({ title, options, chosen, include: !!chosen && !hasGame(chosen.appid) });
+        const d = await r.json(); options = d.results||[];
+      } catch {}
+      const chosen = options[0]||null;
+      matches.push({ title, options, chosen, include: !!chosen && !hasGame(chosen.appid) });
     }
-    renderImgReview();
+    renderReview();
   }
-
-  function renderImgReview() {
-    refreshImgHint();
-    document.getElementById("imgTitle").textContent = "Review matches";
-
-    imgResults.innerHTML = imgMatches.map((m, i) => {
-      const c = m.chosen;
-      const already = c && hasGame(c.appid);
-      const label = c ? esc(c.name) : `<span style="color:var(--ink-dim)">No match for "${esc(m.title)}"</span>`;
-      const icon = c && c.icon ? `<img src="${c.icon}" alt="">` : `<div style="width:54px;height:25px;background:var(--line);border-radius:4px"></div>`;
-      const check = c && !already
-        ? `<input type="checkbox" data-i="${i}" ${m.include?"checked":""} style="width:20px;height:20px;accent-color:var(--rust);flex-shrink:0">`
-        : (already ? `<span style="font-size:12px;color:var(--green);flex-shrink:0">in list</span>` : "");
-      return `<div class="sresult" style="align-items:center">
-        ${icon}
-        <div class="n" style="line-height:1.3">
-          ${label}
-          ${c && m.options.length>1 ? `<div style="font-size:11px;color:var(--ink-dim)">read as "${esc(m.title)}" · tap to change</div>` : ""}
-        </div>
-        ${check}
+  function renderReview() {
+    const ready = matches.filter(m=>m.include&&m.chosen).length;
+    $("reviewHint").textContent = `${ready} of ${matches.length} will be added. Untick wrong matches; tap a name to swap it.`;
+    $("reviewResults").innerHTML = matches.map((m,i) => {
+      const c = m.chosen, inList = c && hasGame(c.appid);
+      const label = c ? esc(c.name) : `<span style="color:var(--ink-dim)">No match: "${esc(m.title)}"</span>`;
+      const sub = c && m.options.length>1 ? `read as "${esc(m.title)}" · tap name to swap` : (c?"":"");
+      const right = c && !inList
+        ? `<input type="checkbox" data-i="${i}" ${m.include?"checked":""}>`
+        : (inList ? `<span class="sub" style="color:var(--teal)">in list</span>` : "");
+      return `<div class="res">
+        ${c&&c.icon?`<img src="${c.icon}" alt="">`:`<div class="ph"></div>`}
+        <div class="n" data-swap="${i}">${label}${sub?`<div class="sub">${sub}</div>`:""}</div>
+        ${right}
       </div>`;
     }).join("");
-
-    imgResults.querySelectorAll('input[type=checkbox]').forEach(cb => {
-      cb.onchange = () => { imgMatches[+cb.dataset.i].include = cb.checked; refreshImgHint(); };
-    });
-    imgResults.querySelectorAll(".sresult").forEach((row, i) => {
-      const m = imgMatches[i];
-      if (m && m.options.length > 1) {
-        const n = row.querySelector(".n");
-        n.style.cursor = "pointer";
-        n.onclick = () => {
+    $("reviewResults").querySelectorAll("input[type=checkbox]").forEach(cb =>
+      cb.onchange = () => { matches[+cb.dataset.i].include = cb.checked;
+        const ready = matches.filter(m=>m.include&&m.chosen).length;
+        $("reviewHint").textContent = `${ready} of ${matches.length} will be added. Untick wrong matches; tap a name to swap it.`; });
+    $("reviewResults").querySelectorAll("[data-swap]").forEach(el => {
+      const m = matches[+el.dataset.swap];
+      if (m && m.options.length>1) {
+        el.style.cursor = "pointer";
+        el.onclick = () => {
           const idx = m.options.indexOf(m.chosen);
-          m.chosen = m.options[(idx+1) % m.options.length];
+          m.chosen = m.options[(idx+1)%m.options.length];
           m.include = !hasGame(m.chosen.appid);
-          renderImgReview();
+          renderReview();
         };
       }
     });
   }
-  function refreshImgHint() {
-    const total = imgMatches.length;
-    const ready = imgMatches.filter(m => m.include && m.chosen).length;
-    document.getElementById("imgHint").innerHTML =
-      `${ready} of ${total} will be added. Untick wrong matches; tap a match to change it.`;
+
+  // ============ profile ============
+  function showProfile(show) {
+    $("profileView").style.display = show ? "block" : "none";
+    $("listView").style.display = show ? "none" : "block";
+    $("dock").style.display = show ? "none" : "flex";
+    if (show) renderProfile();
   }
-
-  function confirmImageAdds() {
-    const toAdd = imgMatches.filter(m => m.include && m.chosen).map(m => m.chosen);
-    let added = 0;
-    toAdd.forEach(g => { if (addGame(g)) added++; });
-    imgModal.classList.remove("show");
-    toast(added ? `Added ${added} game${added>1?"s":""}` : "Nothing new to add");
+  function renderProfile() {
+    const t = totals();
+    $("pAvatar").src = me?.avatar || "";
+    $("pName").textContent = me?.name || "Player";
+    $("pSub").textContent = `Backlog since you signed in · ${list.length} games tracked`;
+    const cells = [
+      { v: list.length, k: "games in backlog" },
+      { v: t.done, k: "games 100% completed", cls: "teal" },
+      { v: t.achT ? `${t.achU}<span class="u">/${t.achT}</span>` : "—", k: "achievements unlocked", cls: "gold" },
+      { v: t.achT ? Math.round(t.achPct*100)+`<span class="u">%</span>` : "—", k: "overall completion", cls: "gold" },
+      { v: t.mainLeft+`<span class="u">h</span>`, k: "main-story hours left" },
+      { v: t.compTotal+`<span class="u">h</span>`, k: "hours to 100% everything" },
+    ];
+    $("pGrid").innerHTML = cells.map(c =>
+      `<div class="cell ${c.cls||""}"><div class="v">${c.v}</div><div class="k">${c.k}</div></div>`).join("");
   }
-
-  // ---- drag & drop / paste (disabled with image feature) ----
-  window.addEventListener("dragover", (e) => e.preventDefault());
-  window.addEventListener("drop", (e) => e.preventDefault());
-
-  // long-press the count to refresh all stats
-  document.getElementById("count").onclick = refreshAll;
-
-  // ---- auth + boot ----
-  const loginScreen = document.getElementById("loginScreen");
-  const userAvatar = document.getElementById("userAvatar");
-
-  userAvatar.onclick = async () => {
+  $("avatarBtn").onclick = () => showProfile(true);
+  $("backBtn").onclick = () => showProfile(false);
+  $("logoutBtn").onclick = async () => {
     if (!confirm("Log out?")) return;
-    await fetch("/api/auth/logout", { method: "POST" });
-    // Clear this device's cached copy of the account's data
-    localStorage.removeItem(LIST_KEY);
-    localStorage.removeItem(STATS_KEY);
-    location.reload();
+    await fetch("/api/auth/logout", { method:"POST" });
+    localStorage.removeItem(LIST_KEY); localStorage.removeItem(STATS_KEY);
+    location.href = "/";
+  };
+  $("shareBtn").onclick = async () => {
+    if (!list.length) { toast("Add some games first"); return; }
+    $("shareBtn").disabled = true; $("shareBtn").textContent = "Creating link…";
+    try {
+      const r = await fetch("/api/share", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ list, stats, ownerName: me?.name || null })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      const url = `${location.origin}/?s=${d.id}`;
+      if (navigator.share) {
+        await navigator.share({ title: "My game backlog", url }).catch(()=>{});
+        toast("Share link ready");
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast("Link copied to clipboard");
+      }
+    } catch(e) { toast("Couldn't share: " + e.message); }
+    finally { $("shareBtn").disabled = false; $("shareBtn").textContent = "Share this backlog"; }
   };
 
-  async function boot() {
-    renderSort();
-    let user = null;
+  // ============ shared read-only mode ============
+  async function enterSharedMode(id) {
+    sharedMode = true;
+    $("dock").style.display = "none";
+    $("login").style.display = "none";
     try {
-      const r = await fetch("/api/auth/me");
+      const r = await fetch("/api/share?id="+encodeURIComponent(id));
       const d = await r.json();
-      user = d.user;
-    } catch { /* network issue — treat as logged out */ }
-
-    if (!user) {
-      loginScreen.style.display = "flex";
-      return;
+      if (d.error) throw new Error(d.error);
+      list = d.list||[]; stats = d.stats||{};
+      sharedOwner = d.ownerName;
+      $("sharedBanner").style.display = "block";
+      $("sharedBanner").innerHTML =
+        `You're viewing <b>${esc(sharedOwner||"someone")}'s</b> backlog snapshot. ` +
+        `<a href="/">Make your own →</a>`;
+      renderSorts(); renderGames();
+    } catch(e) {
+      $("sharedBanner").style.display = "block";
+      $("sharedBanner").innerHTML = `${esc(e.message)} <a href="/">Go to Backlog →</a>`;
     }
+  }
 
-    loginScreen.style.display = "none";
-    if (user.avatar) { userAvatar.src = user.avatar; userAvatar.style.display = "block"; }
+  // ============ boot ============
+  $("filter").oninput = e => { filterText = e.target.value; renderGames(); };
+  $("heroLine").onclick = refreshAll;
 
-    renderList();
-    // Pull this user's cloud list (source of truth), then fill missing stats.
-    syncDown().then(() => {
-      const stale = list.filter(g => !stats[g.appid]).map(g=>g.appid);
-      if (stale.length) fetchStats(stale);
-    });
-    // Re-pull when returning to the tab, so changes on another device show up.
+  async function boot() {
+    const shareId = new URLSearchParams(location.search).get("s");
+    if (shareId) return enterSharedMode(shareId);
+
+    renderSorts(); renderGames();
+    let user = null;
+    try { const r = await fetch("/api/auth/me"); user = (await r.json()).user; } catch {}
+    if (!user) { $("login").style.display = "flex"; return; }
+    me = user;
+    $("login").style.display = "none";
+    if (me.avatar) { $("avatarImg").src = me.avatar; $("avatarBtn").style.display = "block"; }
+    await syncDown();
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") syncDown();
+      if (document.visibilityState==="visible") syncDown();
     });
   }
   boot();
