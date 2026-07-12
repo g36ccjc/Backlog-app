@@ -55,10 +55,18 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!raw) return res.status(200).json({ list: [], stats: {}, updatedAt: 0 });
+      if (!raw) return res.status(200).json({ lists: null, list: [], stats: {}, updatedAt: 0 });
       const parsed = JSON.parse(raw);
+      // Serve both shapes: `lists` (new) and a flattened `list` (legacy).
+      const lists = Array.isArray(parsed.lists)
+        ? parsed.lists
+        : (Array.isArray(parsed.list)
+            ? [{ id: "main", name: "Backlog", games: parsed.list }]
+            : [{ id: "main", name: "Backlog", games: [] }]);
+      const flat = lists.flatMap((l) => l.games);
       return res.status(200).json({
-        list: parsed.list || [],
+        lists,
+        list: flat,
         stats: parsed.stats || {},
         updatedAt: parsed.updatedAt || 0,
       });
@@ -67,9 +75,31 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       let body = req.body;
       if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
-      const list = Array.isArray(body?.list) ? body.list.slice(0, 2000) : [];
+
+      // New shape: { lists: [{id, name, games:[...]}], stats }
+      // Legacy shape: { list: [...], stats } — wrapped into a single "main" list.
+      let lists = null;
+      if (Array.isArray(body?.lists)) {
+        let totalGames = 0;
+        lists = body.lists
+          .filter((l) => l && typeof l === "object" && Array.isArray(l.games))
+          .slice(0, 20)
+          .map((l) => {
+            const games = l.games.slice(0, Math.max(0, 2000 - totalGames));
+            totalGames += games.length;
+            return {
+              id: String(l.id || "main").slice(0, 24),
+              name: String(l.name || "Backlog").slice(0, 40),
+              games,
+            };
+          });
+      } else if (Array.isArray(body?.list)) {
+        lists = [{ id: "main", name: "Backlog", games: body.list.slice(0, 2000) }];
+      }
+      if (!lists || !lists.length) lists = [{ id: "main", name: "Backlog", games: [] }];
+
       const stats = body?.stats && typeof body.stats === "object" ? body.stats : {};
-      const record = { list, stats, updatedAt: Date.now() };
+      const record = { lists, stats, updatedAt: Date.now() };
       await redis(["SET", KEY, JSON.stringify(record)]);
       return res.status(200).json({ ok: true, updatedAt: record.updatedAt });
     }

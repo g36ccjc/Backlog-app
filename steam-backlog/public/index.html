@@ -13,23 +13,21 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
-    --bg: #10141c;          /* deep slate navy */
-    --surface: #171c27;     /* card */
-    --surface-2: #1f2634;   /* raised */
-    --line: #29324333;      /* hairline */
+    --bg: #10141c;
+    --surface: #171c27;
+    --surface-2: #1f2634;
     --line-solid: #293243;
-    --ink: #eceae4;         /* warm off-white */
+    --ink: #eceae4;
     --ink-dim: #8f97a8;
-    --gold: #e8b64c;        /* achievement gold — the accent */
-    --teal: #4fc3a1;        /* 100% complete only */
+    --gold: #e8b64c;
+    --teal: #4fc3a1;
     --danger: #d4645c;
     --r: 14px;
     --display: "Chakra Petch", -apple-system, sans-serif;
     --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   body {
     margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body);
     padding: max(14px, env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
@@ -37,178 +35,126 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- top bar ---------- */
-  .top {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
-  }
-  .wordmark {
-    font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: 0.2px;
-    margin-right: auto; user-select: none;
-  }
+  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .wordmark { font-family: var(--display); font-weight: 700; font-size: 21px; margin-right: auto; user-select: none; cursor: pointer; }
   .wordmark b { color: var(--gold); font-weight: 700; }
   .avatarBtn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line-solid); padding: 0; background: var(--surface-2); overflow: hidden; cursor: pointer; }
   .avatarBtn img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  /* ---------- hero strip (signature) ---------- */
-  .hero { margin: 14px 0 6px; }
-  .hero .line {
-    font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim);
+  /* list chips */
+  .listbar { display: flex; gap: 6px; overflow-x: auto; margin: 12px 0 2px; padding-bottom: 4px; scrollbar-width: none; }
+  .listbar::-webkit-scrollbar { display: none; }
+  .listbar button {
+    font-family: var(--display); font-weight: 700; font-size: 12.5px; white-space: nowrap;
+    color: var(--ink-dim); background: var(--surface); border: 1px solid var(--line-solid);
+    border-radius: 10px; padding: 8px 14px; cursor: pointer;
   }
+  .listbar button.on { color: var(--ink); border-color: var(--gold); background: var(--surface-2); }
+  .listbar button.new { color: var(--gold); border-style: dashed; }
+
+  .hero { margin: 12px 0 6px; }
+  .hero .line { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim); cursor: pointer; }
   .hero .line b { color: var(--ink); font-size: 17px; }
   .hero .line .g { color: var(--gold); }
-  .xp {
-    margin-top: 10px; height: 5px; border-radius: 3px; background: var(--surface-2);
-    overflow: hidden; position: relative;
-  }
-  .xp > i {
-    display: block; height: 100%; border-radius: 3px; background: var(--gold);
-    transition: width 0.6s cubic-bezier(.22,1,.36,1);
-  }
+  .xp { margin-top: 10px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .xp > i { display: block; height: 100%; border-radius: 3px; background: var(--gold); transition: width 0.6s cubic-bezier(.22,1,.36,1); }
   .xp.done > i { background: var(--teal); }
 
-  /* ---------- controls ---------- */
   .controls { display: flex; gap: 8px; margin: 16px 0 10px; }
-  .filterBox {
-    flex: 1; display: flex; align-items: center; gap: 8px;
-    background: var(--surface); border: 1px solid var(--line-solid); border-radius: 10px; padding: 0 12px;
-  }
-  .filterBox input {
-    flex: 1; border: none; background: none; color: var(--ink); font-family: var(--body);
-    font-size: 14px; padding: 10px 0; outline: none; min-width: 0;
-  }
+  .filterBox { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 10px; padding: 0 12px; }
+  .filterBox input { flex: 1; border: none; background: none; color: var(--ink); font-family: var(--body); font-size: 14px; padding: 10px 0; outline: none; min-width: 0; }
   .filterBox svg { flex-shrink: 0; opacity: 0.5; }
   .sorts { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
   .sorts::-webkit-scrollbar { display: none; }
-  .sorts button {
-    font-family: var(--display); font-weight: 600; font-size: 12.5px; white-space: nowrap;
-    color: var(--ink-dim); background: none; border: 1px solid var(--line-solid);
-    border-radius: 999px; padding: 7px 13px; cursor: pointer;
-  }
+  .sorts button { font-family: var(--display); font-weight: 600; font-size: 12.5px; white-space: nowrap; color: var(--ink-dim); background: none; border: 1px solid var(--line-solid); border-radius: 999px; padding: 7px 13px; cursor: pointer; }
   .sorts button.on { color: #16130a; background: var(--gold); border-color: var(--gold); }
 
-  /* ---------- game cards ---------- */
   .games { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-  .card {
-    background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r);
-    overflow: hidden; position: relative;
-  }
+  .card { background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); overflow: hidden; position: relative; }
   .row { display: flex; align-items: center; gap: 12px; padding: 10px 12px 12px 10px; }
-  .cap {
-    width: 92px; height: 43px; border-radius: 7px; object-fit: cover; flex-shrink: 0;
-    background: var(--surface-2);
-  }
+  .cap { width: 92px; height: 43px; border-radius: 7px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
   .info { flex: 1; min-width: 0; }
-  .gname {
-    font-weight: 650; font-size: 14.5px; line-height: 1.25;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .nums {
-    display: flex; gap: 12px; margin-top: 5px;
-    font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink-dim);
-  }
+  .gname { font-weight: 650; font-size: 14.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .nums { display: flex; gap: 12px; margin-top: 5px; font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink-dim); }
   .nums .a { color: var(--gold); }
   .nums .a.full { color: var(--teal); }
   .nums .na { opacity: 0.45; }
-  .rm {
-    background: none; border: none; color: var(--ink-dim); opacity: 0.55;
-    font-size: 16px; padding: 6px; cursor: pointer; flex-shrink: 0; align-self: flex-start;
-  }
-  .rm:hover { color: var(--danger); opacity: 1; }
-  /* per-game XP bar along the card's bottom edge */
+  .cardBtns { display: flex; flex-direction: column; gap: 2px; align-self: flex-start; flex-shrink: 0; }
+  .cardBtns button { background: none; border: none; color: var(--ink-dim); opacity: 0.55; font-size: 15px; padding: 5px 6px; cursor: pointer; }
+  .cardBtns .rm:hover { color: var(--danger); opacity: 1; }
+  .cardBtns .mv:hover { color: var(--gold); opacity: 1; }
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-2); }
   .bar > i { display: block; height: 100%; background: var(--gold); }
   .bar.full > i { background: var(--teal); }
 
+  /* achievement dropdown inside a card */
+  .achPanel { border-top: 1px solid var(--line-solid); padding: 6px 10px 12px; }
+  .achRow { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-radius: 8px; cursor: pointer; }
+  .achRow:hover { background: var(--surface-2); }
+  .achRow img { width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0; }
+  .achRow.locked img { filter: grayscale(1); opacity: 0.55; }
+  .achRow .an { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .achRow.locked .an { color: var(--ink-dim); }
+  .achRow .ad { font-size: 11.5px; color: var(--ink-dim); font-weight: 400; margin-top: 1px; }
+  .achRow .pctTag { font-family: var(--display); font-weight: 700; font-size: 11px; color: var(--ink-dim); flex-shrink: 0; }
+  .achRow .pctTag.rare { color: var(--gold); }
+  .achRow .tick { color: var(--teal); font-size: 14px; flex-shrink: 0; }
+  .achDetail { margin: 2px 4px 8px 48px; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
+  .achDetail .when { color: var(--teal); margin-bottom: 6px; }
+  .achLinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+  .achLinks a { font-family: var(--display); font-weight: 700; font-size: 11.5px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line-solid); border-radius: 999px; padding: 6px 12px; }
+  .achLinks a:hover { border-color: var(--gold); color: var(--gold); }
+  .achPanel .loadRow { padding: 12px 4px; font-size: 12.5px; color: var(--ink-dim); }
+
   .empty { text-align: center; color: var(--ink-dim); padding: 56px 20px; line-height: 1.6; }
   .empty b { color: var(--ink); font-family: var(--display); font-size: 16px; display: block; margin-bottom: 4px; }
 
-  /* ---------- bottom actions ---------- */
   .dock {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
     padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
     background: linear-gradient(transparent, var(--bg) 30%);
     display: flex; gap: 8px; max-width: 680px; margin-inline: auto;
   }
-  .dock button {
-    flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px;
-    padding: 13px; border-radius: 12px; cursor: pointer;
-    background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid);
-  }
+  .dock button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid); }
   .dock .primary { background: var(--gold); color: #16130a; border-color: var(--gold); }
   .dock button:active { transform: scale(0.98); }
 
-  /* ---------- profile ---------- */
   .profile { display: none; }
   .pHead { display: flex; align-items: center; gap: 14px; margin: 18px 0 20px; }
   .pHead img { width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--line-solid); }
   .pHead .n { font-family: var(--display); font-weight: 700; font-size: 20px; }
   .pHead .s { color: var(--ink-dim); font-size: 12.5px; margin-top: 2px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .cell {
-    background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r);
-    padding: 15px 14px;
-  }
+  .cell { background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 15px 14px; }
   .cell .v { font-family: var(--display); font-weight: 700; font-size: 22px; }
   .cell .v .u { font-size: 13px; color: var(--ink-dim); font-weight: 600; }
-  .cell .k { color: var(--ink-dim); font-size: 11.5px; margin-top: 3px; letter-spacing: 0.2px; }
+  .cell .k { color: var(--ink-dim); font-size: 11.5px; margin-top: 3px; }
   .cell.gold .v { color: var(--gold); }
   .cell.teal .v { color: var(--teal); }
   .pActions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
-  .pActions button {
-    font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px;
-    border-radius: 12px; cursor: pointer; border: 1px solid var(--line-solid);
-    background: var(--surface-2); color: var(--ink);
-  }
+  .pActions button { font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
   .pActions .share { background: var(--gold); color: #16130a; border-color: var(--gold); }
   .pActions .out { color: var(--danger); }
 
-  /* ---------- shared (read-only) banner ---------- */
-  .sharedBanner {
-    display: none; background: var(--surface); border: 1px solid var(--line-solid);
-    border-radius: var(--r); padding: 12px 14px; margin: 12px 0 4px;
-    font-size: 13px; color: var(--ink-dim); line-height: 1.5;
-  }
+  .sharedBanner { display: none; background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 12px 14px; margin: 12px 0 4px; font-size: 13px; color: var(--ink-dim); line-height: 1.5; }
   .sharedBanner b { color: var(--ink); }
   .sharedBanner a { color: var(--gold); text-decoration: none; font-weight: 700; }
 
-  /* ---------- login ---------- */
-  .login {
-    display: none; position: fixed; inset: 0; background: var(--bg); z-index: 50;
-    flex-direction: column; align-items: center; justify-content: center; gap: 20px;
-    padding: 28px; text-align: center;
-  }
+  .login { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 50; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 28px; text-align: center; }
   .login .mark { font-family: var(--display); font-weight: 700; font-size: 34px; }
   .login .mark b { color: var(--gold); }
   .login p { color: var(--ink-dim); max-width: 300px; line-height: 1.6; margin: 0; font-size: 14.5px; }
-  .steamBtn {
-    display: inline-block; background: var(--gold); color: #16130a; text-decoration: none;
-    font-family: var(--display); font-weight: 700; font-size: 15.5px;
-    padding: 14px 28px; border-radius: 12px;
-  }
+  .steamBtn { display: inline-block; background: var(--gold); color: #16130a; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 15.5px; padding: 14px 28px; border-radius: 12px; }
   .login .fine { font-size: 12px; color: var(--ink-dim); max-width: 300px; line-height: 1.55; }
 
-  /* ---------- sheets & modals (add / review) ---------- */
   .modal { position: fixed; inset: 0; background: rgba(6,8,12,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
   .modal.show { display: flex; }
-  .sheet {
-    background: var(--surface); width: 100%; max-width: 680px; border-radius: 20px 20px 0 0;
-    padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
-    max-height: 84vh; display: flex; flex-direction: column;
-    border: 1px solid var(--line-solid); border-bottom: none;
-  }
+  .sheet { background: var(--surface); width: 100%; max-width: 680px; border-radius: 20px 20px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 84vh; display: flex; flex-direction: column; border: 1px solid var(--line-solid); border-bottom: none; }
   .sheet h2 { margin: 0 0 12px; font-family: var(--display); font-size: 16.5px; font-weight: 700; }
   .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-  .tabs button {
-    flex: 1; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px;
-    border-radius: 9px; border: 1px solid var(--line-solid); cursor: pointer;
-    background: var(--surface-2); color: var(--ink);
-  }
+  .tabs button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px; border-radius: 9px; border: 1px solid var(--line-solid); cursor: pointer; background: var(--surface-2); color: var(--ink); }
   .tabs button.on { background: var(--gold); color: #16130a; border-color: var(--gold); }
-  .sheet input[type=search], .sheet textarea {
-    width: 100%; font-family: var(--body); font-size: 15px; color: var(--ink);
-    background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 12px;
-    outline: none;
-  }
+  .sheet input[type=search], .sheet textarea { width: 100%; font-family: var(--body); font-size: 15px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 12px; outline: none; }
   .sheet textarea { min-height: 130px; resize: vertical; }
   .hint { font-size: 12px; color: var(--ink-dim); margin: 8px 2px 0; line-height: 1.5; }
   .results { overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -217,27 +163,18 @@
   .res .ph { width: 62px; height: 29px; background: var(--line-solid); border-radius: 5px; flex-shrink: 0; }
   .res .n { flex: 1; font-size: 13.5px; min-width: 0; line-height: 1.3; }
   .res .sub { font-size: 11px; color: var(--ink-dim); }
-  .res button.addOne {
-    background: var(--gold); color: #16130a; border: none; border-radius: 8px;
-    padding: 7px 13px; font-family: var(--display); font-weight: 700; font-size: 12.5px; cursor: pointer;
-  }
+  .res button.addOne { background: var(--gold); color: #16130a; border: none; border-radius: 8px; padding: 7px 13px; font-family: var(--display); font-weight: 700; font-size: 12.5px; cursor: pointer; }
   .res.in button.addOne { background: var(--teal); }
   .res input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--gold); flex-shrink: 0; }
   .sheet .footRow { display: flex; gap: 8px; margin-top: 12px; }
-  .sheet .footRow button {
-    flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 12px;
-    border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid);
-    background: var(--surface-2); color: var(--ink);
-  }
+  .sheet .footRow button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
   .sheet .footRow .go { background: var(--gold); color: #16130a; border-color: var(--gold); }
+  /* move sheet options */
+  .moveOpts { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .moveOpts button { text-align: left; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
+  .moveOpts button:hover { border-color: var(--gold); }
 
-  .toast {
-    position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom));
-    transform: translateX(-50%); z-index: 30;
-    background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink);
-    padding: 10px 16px; border-radius: 999px; font-size: 13px;
-    opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap;
-  }
+  .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; }
   .spin { display:inline-block; width:12px; height:12px; border:2px solid var(--ink-dim); border-top-color: var(--gold); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
   @keyframes sp { to { transform: rotate(360deg); } }
@@ -246,7 +183,6 @@
 </head>
 <body>
 
-  <!-- login -->
   <div class="login" id="login">
     <div class="mark">Back<b>log</b></div>
     <p>Your game queue, with Steam achievements and HowLongToBeat times, synced everywhere you sign in.</p>
@@ -254,17 +190,16 @@
     <div class="fine">Uses Steam's official sign-in — your password never touches this site. Set your Steam profile's <b>Game details</b> to Public so achievements can show.</div>
   </div>
 
-  <!-- top bar -->
   <div class="top">
     <div class="wordmark">Back<b>log</b></div>
     <button class="avatarBtn" id="avatarBtn" style="display:none" aria-label="Profile"><img id="avatarImg" src="" alt=""></button>
   </div>
 
-  <!-- shared read-only banner -->
   <div class="sharedBanner" id="sharedBanner"></div>
 
-  <!-- main list view -->
   <div id="listView">
+    <div class="listbar" id="listbar"></div>
+
     <div class="hero">
       <div class="line" id="heroLine"></div>
       <div class="xp" id="heroXp"><i style="width:0%"></i></div>
@@ -273,7 +208,7 @@
     <div class="controls">
       <div class="filterBox">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="filter" type="search" placeholder="Filter your list" autocomplete="off">
+        <input id="filter" type="search" placeholder="Filter this list" autocomplete="off">
       </div>
     </div>
     <div class="sorts" id="sorts"></div>
@@ -285,7 +220,6 @@
     </div>
   </div>
 
-  <!-- profile view -->
   <div class="profile" id="profileView">
     <div class="pHead">
       <img id="pAvatar" src="" alt="">
@@ -296,13 +230,13 @@
     </div>
     <div class="grid" id="pGrid"></div>
     <div class="pActions">
-      <button class="share" id="shareBtn">Share this backlog</button>
+      <button class="share" id="shareBtn">Share current list</button>
+      <button id="importCompletedBtn">Import my 100% completed games</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
   </div>
 
-  <!-- bottom dock -->
   <div class="dock" id="dock">
     <button id="importBtn">Import library</button>
     <button class="primary" id="addBtn">Add games</button>
@@ -311,7 +245,7 @@
   <!-- add sheet -->
   <div class="modal" id="addModal">
     <div class="sheet">
-      <h2>Add games</h2>
+      <h2 id="addTitle">Add games</h2>
       <div class="tabs" id="addTabs">
         <button class="on" data-tab="search">Search</button>
         <button data-tab="paste">Paste list</button>
@@ -327,7 +261,7 @@
     </div>
   </div>
 
-  <!-- review sheet (paste matching) -->
+  <!-- review sheet -->
   <div class="modal" id="reviewModal">
     <div class="sheet">
       <h2>Review matches</h2>
@@ -340,13 +274,22 @@
     </div>
   </div>
 
+  <!-- move sheet -->
+  <div class="modal" id="moveModal">
+    <div class="sheet">
+      <h2 id="moveTitle">Move game</h2>
+      <div class="moveOpts" id="moveOpts"></div>
+      <div class="footRow"><button id="moveCancel">Cancel</button></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
 <script>
   // ============ state ============
-  const LIST_KEY = "backlog.list.v3";
-  const STATS_KEY = "backlog.stats.v3";
-  const SORT_KEY = "backlog.sort.v3";
+  const DATA_KEY = "backlog.data.v4";   // { lists:[{id,name,games:[]}], activeId }
+  const STATS_KEY = "backlog.stats.v4";
+  const SORT_KEY = "backlog.sort.v4";
 
   const SORTS = [
     { id: "name", label: "A–Z" },
@@ -355,16 +298,29 @@
     { id: "comp", label: "100% time" },
   ];
 
-  let list = load(LIST_KEY, []);
+  function freshData(){ return { lists: [{ id:"main", name:"Backlog", games: [] }], activeId: "main" }; }
+
+  let data = load(DATA_KEY, null);
   let stats = load(STATS_KEY, {});
   let sort = load(SORT_KEY, { id: "name", asc: true });
   let filterText = "";
-  let me = null;            // { steamId, name, avatar }
-  let sharedMode = false;   // viewing someone else's snapshot
-  let sharedOwner = null;
+  let me = null;
+  let sharedMode = false;
+
+  // migrate any older local cache (v3 single list) into the new shape
+  if (!data) {
+    const oldList = load("backlog.list.v3", null) || load("backlog.list.v2", null);
+    const oldStats = load("backlog.stats.v3", null) || load("backlog.stats.v2", null);
+    data = freshData();
+    if (Array.isArray(oldList) && oldList.length) data.lists[0].games = oldList;
+    if (oldStats && !Object.keys(stats).length) stats = oldStats;
+  }
+  if (!data.lists?.length) data = freshData();
+  if (!data.lists.find(l=>l.id===data.activeId)) data.activeId = data.lists[0].id;
 
   function load(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
   function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+  function persist(){ save(DATA_KEY, data); save(STATS_KEY, stats); }
   function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
   function toast(msg) {
     const t = document.getElementById("toast");
@@ -373,57 +329,100 @@
   }
   const $ = id => document.getElementById(id);
 
-  // capsule art from Steam's CDN; falls back to stored icon, then blank
-  function capsule(g) {
-    return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_231x87.jpg`;
+  function activeList(){ return data.lists.find(l=>l.id===data.activeId) || data.lists[0]; }
+  function allGames(){ // deduped union across lists (for profile + stats fetch)
+    const seen = new Set(); const out = [];
+    for (const l of data.lists) for (const g of l.games)
+      if (!seen.has(g.appid)) { seen.add(g.appid); out.push(g); }
+    return out;
   }
+  function capsule(g){ return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_231x87.jpg`; }
 
-  // ============ derived numbers ============
+  // ============ derived ============
   function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
   function achOf(appid){
     const s = stats[appid];
-    if (!s || s.achTotal==null) return null;         // unknown / not owned
+    if (!s || s.achTotal==null) return null;
     if (s.achTotal===0) return { none:true };
     return { u:s.achUnlocked, t:s.achTotal, pct:s.achUnlocked/s.achTotal };
   }
-  function totals() {
-    let mainLeft=0, compTotal=0, achU=0, achT=0, done=0, withHours=0;
-    for (const g of list) {
+  function totals(games) {
+    let mainLeft=0, compTotal=0, achU=0, achT=0, done=0;
+    for (const g of games) {
       const s = stats[g.appid]||{};
       const a = achOf(g.appid);
       const finished = a && !a.none && a.pct===1;
       if (finished) done++;
-      if (s.mainStory!=null) { withHours++; if (!finished) mainLeft += s.mainStory; }
+      if (s.mainStory!=null && !finished) mainLeft += s.mainStory;
       if (s.completionist!=null) compTotal += s.completionist;
       if (a && !a.none) { achU += a.u; achT += a.t; }
     }
     return { mainLeft: Math.round(mainLeft), compTotal: Math.round(compTotal),
-             achU, achT, done, withHours,
-             achPct: achT ? achU/achT : 0 };
+             achU, achT, done, achPct: achT ? achU/achT : 0 };
   }
 
-  // ============ hero ============
+  // ============ list bar ============
+  function renderListbar() {
+    if (sharedMode) { $("listbar").style.display="none"; return; }
+    $("listbar").innerHTML = data.lists.map(l =>
+      `<button class="${l.id===data.activeId?"on":""}" data-l="${l.id}">${esc(l.name)} · ${l.games.length}</button>`
+    ).join("") + `<button class="new" data-new="1">+ New list</button>`;
+    $("listbar").querySelectorAll("button").forEach(b => b.onclick = () => {
+      if (b.dataset.new) return createList();
+      if (b.dataset.l === data.activeId) return manageActiveList();
+      data.activeId = b.dataset.l;
+      persist(); renderAll();
+    });
+  }
+  function createList() {
+    const name = (prompt("Name for the new list:") || "").trim();
+    if (!name) return;
+    const id = "l" + Date.now().toString(36);
+    data.lists.push({ id, name: name.slice(0,40), games: [] });
+    data.activeId = id;
+    persist(); syncUp(); renderAll();
+    toast(`Created "${esc(name)}"`);
+  }
+  function manageActiveList() {
+    const l = activeList();
+    if (l.id === "main") {
+      const name = (prompt("Rename this list:", l.name) || "").trim();
+      if (name) { l.name = name.slice(0,40); persist(); syncUp(); renderAll(); }
+      return;
+    }
+    const action = prompt(`"${l.name}": type a new name to rename, or type DELETE to remove it (its games move to ${data.lists[0].name}).`, l.name);
+    if (action == null) return;
+    if (action.trim().toUpperCase() === "DELETE") {
+      const main = data.lists[0];
+      const have = new Set(main.games.map(g=>g.appid));
+      l.games.forEach(g => { if (!have.has(g.appid)) main.games.push(g); });
+      data.lists = data.lists.filter(x=>x.id!==l.id);
+      data.activeId = main.id;
+      persist(); syncUp(); renderAll();
+      toast("List deleted — games moved to " + esc(main.name));
+    } else if (action.trim()) {
+      l.name = action.trim().slice(0,40);
+      persist(); syncUp(); renderAll();
+    }
+  }
+
+  // ============ hero + games ============
   function renderHero() {
-    const t = totals();
-    const n = list.length;
-    let line;
-    if (!n) line = `Your queue is empty`;
-    else line = `<b>${n}</b> game${n===1?"":"s"} · <b class="g">${t.mainLeft}h</b> of stories left`
-      + (t.achT ? ` · ${t.achU}/${t.achT} achievements` : "");
-    $("heroLine").innerHTML = line;
+    const games = activeList().games;
+    const t = totals(games);
+    const n = games.length;
+    $("heroLine").innerHTML = !n ? "This list is empty"
+      : `<b>${n}</b> game${n===1?"":"s"} · <b class="g">${t.mainLeft}h</b> of stories left`
+        + (t.achT ? ` · ${t.achU}/${t.achT} achievements` : "");
     const xp = $("heroXp");
     xp.querySelector("i").style.width = Math.round(t.achPct*100) + "%";
     xp.classList.toggle("done", t.achPct===1 && t.achT>0);
   }
 
-  // ============ list ============
-  function cmpNum(a,b){
-    const an=(a==null||a<0), bn=(b==null||b<0);
-    if(an&&bn) return 0; if(an) return 1; if(bn) return -1; return a-b;
-  }
-  function sortedList() {
+  function cmpNum(a,b){ const an=(a==null||a<0), bn=(b==null||b<0); if(an&&bn)return 0; if(an)return 1; if(bn)return -1; return a-b; }
+  function sortedGames() {
     const q = filterText.trim().toLowerCase();
-    let arr = list.filter(g => !q || g.name.toLowerCase().includes(q));
+    let arr = activeList().games.filter(g => !q || g.name.toLowerCase().includes(q));
     const dir = sort.asc ? 1 : -1;
     arr.sort((a,b) => {
       const sa=stats[a.appid]||{}, sb=stats[b.appid]||{};
@@ -452,8 +451,9 @@
   }
 
   function renderGames() {
-    const rows = sortedList();
-    $("empty").style.display = list.length ? "none" : "block";
+    const rows = sortedGames();
+    const games = activeList().games;
+    $("empty").style.display = games.length ? "none" : "block";
     $("games").innerHTML = rows.map(g => {
       const s = stats[g.appid]||{};
       const a = achOf(g.appid);
@@ -462,11 +462,17 @@
         : a.none ? `<span class="na">no achv</span>`
         : `<span class="a ${a.pct===1?"full":""}">${a.u}/${a.t}</span>`;
       const pct = a && !a.none ? Math.round(a.pct*100) : 0;
+      const btns = sharedMode ? "" :
+        `<div class="cardBtns">
+           <button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>
+           ${data.lists.length>1 ? `<button class="mv" data-mv="${g.appid}" aria-label="Move ${esc(g.name)}">⇄</button>` : ""}
+         </div>`;
+      const open = !sharedMode && openGame === g.appid;
       return `<li class="card">
         <div class="row">
           <img class="cap" src="${capsule(g)}" loading="lazy" alt=""
                onerror="this.onerror=null;this.src='${g.icon||""}';if(!this.src)this.style.visibility='hidden'">
-          <div class="info">
+          <div class="info" ${sharedMode?"":`data-open="${g.appid}" style="cursor:pointer"`}>
             <div class="gname">${esc(g.name)}</div>
             <div class="nums">
               ${achTxt}
@@ -474,15 +480,118 @@
               <span class="${c==null?"na":""}">${c==null?"—":c+"h"} 100%</span>
             </div>
           </div>
-          ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
+          ${btns}
         </div>
+        ${open ? achPanelHtml(g) : ""}
         <div class="bar ${a&&!a.none&&a.pct===1?"full":""}"><i style="width:${pct}%"></i></div>
       </li>`;
     }).join("");
     if (!sharedMode) {
       $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => removeGame(+b.dataset.rm));
+      $("games").querySelectorAll("[data-mv]").forEach(b => b.onclick = () => openMove(+b.dataset.mv));
+      $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => toggleGame(+el.dataset.open));
+      $("games").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
+        openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
+        renderGames();
+      });
     }
-    renderHero();
+    renderHero(); renderListbar();
+  }
+  function renderAll(){ renderSorts(); renderGames(); }
+
+  // ============ achievement dropdown ============
+  let openGame = null;   // appid of the expanded card
+  let openAch = null;    // id of the expanded achievement
+  const achCache = {};   // appid -> { loading, error, list }
+
+  function toggleGame(appid) {
+    openGame = openGame === appid ? null : appid;
+    openAch = null;
+    if (openGame && !achCache[appid]) loadAchievements(appid);
+    renderGames();
+  }
+  async function loadAchievements(appid) {
+    achCache[appid] = { loading: true };
+    try {
+      const r = await fetch("/api/achievements?appid=" + appid);
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      achCache[appid] = { list: d.achievements || [], note: d.note };
+    } catch (e) {
+      achCache[appid] = { error: e.message };
+    }
+    if (openGame === appid) renderGames();
+  }
+
+  function guideLinks(g, a) {
+    const q = `${g.name} ${a.name} achievement`;
+    return `<div class="achLinks">
+      <a href="https://steamcommunity.com/app/${g.appid}/guides/?searchText=${encodeURIComponent(a.name)}" target="_blank" rel="noopener">Steam Guides</a>
+      <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://www.google.com/search?q=${encodeURIComponent("how to get " + q)}" target="_blank" rel="noopener">Google</a>
+    </div>`;
+  }
+
+  function achPanelHtml(g) {
+    const c = achCache[g.appid];
+    if (!c || c.loading) return `<div class="achPanel"><div class="loadRow">Loading achievements <span class="spin"></span></div></div>`;
+    if (c.error) return `<div class="achPanel"><div class="loadRow">Couldn't load achievements: ${esc(c.error)}</div></div>`;
+    if (!c.list.length) return `<div class="achPanel"><div class="loadRow">${esc(c.note || "This game has no achievements.")}</div></div>`;
+
+    // unlocked last, rarest first among locked — the ones you're hunting float up
+    const rows = [...c.list].sort((a,b) =>
+      (a.unlocked - b.unlocked) || ((a.globalPercent ?? 101) - (b.globalPercent ?? 101)));
+
+    return `<div class="achPanel">` + rows.map(a => {
+      const locked = !a.unlocked;
+      const icon = locked ? (a.iconLocked || a.icon) : a.icon;
+      const rare = a.globalPercent != null && a.globalPercent < 10;
+      const desc = a.description || (a.hidden ? "Hidden achievement — description revealed when unlocked" : "");
+      const opened = openAch === a.id;
+      let detail = "";
+      if (opened) {
+        const when = a.unlockTime ? `<div class="when">Unlocked ${new Date(a.unlockTime*1000).toLocaleDateString()}</div>` : "";
+        const rarity = a.globalPercent != null ? `${a.globalPercent}% of players have this.` : "";
+        detail = `<div class="achDetail">${when}${esc(desc)}${desc&&rarity?" · ":""}${rarity}
+          <div style="margin-top:7px">Find out how to get it:</div>${guideLinks(g, a)}</div>`;
+      }
+      return `<div class="achRow ${locked?"locked":""}" data-ach="${esc(a.id)}">
+          ${icon?`<img src="${icon}" alt="" loading="lazy">`:""}
+          <div class="an">${esc(a.name)}${desc?`<div class="ad">${esc(desc)}</div>`:""}</div>
+          ${a.globalPercent!=null?`<span class="pctTag ${rare?"rare":""}">${a.globalPercent}%</span>`:""}
+          ${a.unlocked?`<span class="tick">✔</span>`:""}
+        </div>${detail}`;
+    }).join("") + `</div>`;
+  }
+
+  // ============ move between lists ============
+  const moveModal = $("moveModal");
+  $("moveCancel").onclick = () => moveModal.classList.remove("show");
+  moveModal.onclick = e => { if (e.target===moveModal) moveModal.classList.remove("show"); };
+
+  function openMove(appid) {
+    const g = activeList().games.find(x=>x.appid===appid);
+    if (!g) return;
+    $("moveTitle").textContent = `Move "${g.name}" to…`;
+    $("moveOpts").innerHTML = data.lists
+      .filter(l=>l.id!==data.activeId)
+      .map(l=>`<button data-to="${l.id}">${esc(l.name)} · ${l.games.length} games</button>`).join("");
+    $("moveOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
+      moveGame(appid, b.dataset.to);
+      moveModal.classList.remove("show");
+    });
+    moveModal.classList.add("show");
+  }
+  function moveGame(appid, toId) {
+    const from = activeList();
+    const to = data.lists.find(l=>l.id===toId);
+    if (!to) return;
+    const i = from.games.findIndex(g=>g.appid===appid);
+    if (i<0) return;
+    const [g] = from.games.splice(i,1);
+    if (!to.games.some(x=>x.appid===appid)) to.games.push(g);
+    persist(); syncUp(); renderGames();
+    toast(`Moved to ${esc(to.name)}`);
   }
 
   // ============ mutations + sync ============
@@ -494,7 +603,7 @@
       try {
         await fetch("/api/list", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ list, stats })
+          body: JSON.stringify({ lists: data.lists, stats })
         });
       } catch {}
     }, 600);
@@ -505,63 +614,69 @@
       const r = await fetch("/api/list");
       const d = await r.json();
       if (d.error) { toast("Couldn't load your synced list: " + esc(d.error)); return; }
-      if (Array.isArray(d.list)) {
-        list = d.list; stats = d.stats||{};
-        save(LIST_KEY, list); save(STATS_KEY, stats);
-        renderGames();
-        const missing = list.filter(g=>!stats[g.appid]).map(g=>g.appid);
-        if (missing.length) fetchStats(missing);
-      }
+      if (Array.isArray(d.lists)) {
+        data.lists = d.lists;
+      } else if (Array.isArray(d.list)) {
+        data.lists = [{ id:"main", name:"Backlog", games: d.list }];
+      } else return;
+      if (!data.lists.length) data = freshData();
+      if (!data.lists.find(l=>l.id===data.activeId)) data.activeId = data.lists[0].id;
+      stats = d.stats || {};
+      persist(); renderAll();
+      const missing = allGames().filter(g=>!stats[g.appid]);
+      if (missing.length) fetchStats(missing);
     } catch { toast("Couldn't reach sync — showing this device's copy"); }
   }
 
-  function hasGame(id){ return list.some(g=>g.appid===id); }
+  function hasGame(id){ return activeList().games.some(g=>g.appid===id); }
   function addGame(g) {
     if (hasGame(g.appid)) return false;
-    list.push({ appid:g.appid, name:g.name, icon:g.icon||null });
-    save(LIST_KEY, list); syncUp(); renderGames();
-    fetchStats([g.appid]);
+    activeList().games.push({ appid:g.appid, name:g.name, icon:g.icon||null });
+    persist(); syncUp(); renderGames();
+    if (!stats[g.appid]) fetchStats([g]);
     return true;
   }
   function removeGame(id) {
-    list = list.filter(g=>g.appid!==id);
-    save(LIST_KEY, list); syncUp(); renderGames();
+    const l = activeList();
+    l.games = l.games.filter(g=>g.appid!==id);
+    persist(); syncUp(); renderGames();
   }
 
-  async function fetchStats(appids) {
-    if (!appids.length || sharedMode) return;
+  // items: [{appid, name}] — names enable HLTB fallback matching
+  async function fetchStats(items) {
+    if (!items.length || sharedMode) return;
     try {
       const r = await fetch("/api/stats", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ appids })
+        body: JSON.stringify({ items: items.map(g=>({appid:g.appid, name:g.name})) })
       });
       const d = await r.json();
       if (d.stats) {
         Object.assign(stats, d.stats);
-        save(STATS_KEY, stats); syncUp(); renderGames();
+        persist(); syncUp(); renderGames();
       }
     } catch {}
   }
   function refreshAll() {
-    if (!list.length) return;
+    const games = allGames();
+    if (!games.length) return;
     toast(`Refreshing stats <span class="spin"></span>`);
-    const ids = list.map(g=>g.appid), chunks=[];
-    for (let i=0;i<ids.length;i+=50) chunks.push(ids.slice(i,i+50));
+    const chunks=[];
+    for (let i=0;i<games.length;i+=50) chunks.push(games.slice(i,i+50));
     Promise.all(chunks.map(fetchStats)).then(()=>toast("Stats updated"));
   }
 
   // ============ add sheet ============
   const addModal = $("addModal");
-  let addTab = "search", searchTimer;
+  let searchTimer;
 
-  function openAdd(mode) {
+  function openAdd() {
+    $("addTitle").textContent = `Add games to ${activeList().name}`;
     setTab("search");
     addModal.classList.add("show");
-    if (mode === "import") loadLibrary();
-    else setTimeout(()=>$("searchInput").focus(), 120);
+    setTimeout(()=>$("searchInput").focus(), 120);
   }
   function setTab(tab) {
-    addTab = tab;
     $("addTabs").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.tab===tab));
     $("searchInput").style.display = tab==="search" ? "block" : "none";
     $("pasteInput").style.display = tab==="paste" ? "block" : "none";
@@ -572,16 +687,16 @@
     $("addResults").innerHTML = "";
   }
   $("addTabs").querySelectorAll("button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
-  $("addBtn").onclick = () => openAdd("add");
-  $("importBtn").onclick = () => { addModal.classList.add("show"); setTab("search"); loadLibrary(); };
+  $("addBtn").onclick = openAdd;
+  $("importBtn").onclick = () => { $("addTitle").textContent = `Add games to ${activeList().name}`; addModal.classList.add("show"); setTab("search"); loadLibrary(); };
   $("addClose").onclick = () => addModal.classList.remove("show");
   addModal.onclick = e => { if (e.target===addModal) addModal.classList.remove("show"); };
 
-  function resultRow(it, extraSub) {
+  function resultRow(it) {
     const inList = hasGame(it.appid);
     return `<div class="res ${inList?"in":""}" data-appid="${it.appid}">
       ${it.icon?`<img src="${it.icon}" alt="">`:`<div class="ph"></div>`}
-      <div class="n">${esc(it.name)}${extraSub?`<div class="sub">${extraSub}</div>`:""}</div>
+      <div class="n">${esc(it.name)}</div>
       <button class="addOne">${inList?"✓":"Add"}</button>
     </div>`;
   }
@@ -606,7 +721,7 @@
         if (d.error) throw new Error(d.error);
         const items = d.results||[];
         $("addResults").innerHTML = items.length
-          ? items.map(it=>resultRow(it)).join("")
+          ? items.map(resultRow).join("")
           : `<div class="hint">No matches.</div>`;
         wireResults($("addResults"), items);
       } catch(e){ $("addResults").innerHTML = `<div class="hint">Search failed: ${esc(e.message)}</div>`; }
@@ -622,13 +737,57 @@
       if (d.error) throw new Error(d.error);
       const items = d.games||[];
       $("addResults").innerHTML = items.length
-        ? items.map(it=>resultRow(it)).join("")
+        ? items.map(resultRow).join("")
         : `<div class="hint">${esc(d.note||"No games found.")}</div>`;
       wireResults($("addResults"), items);
     } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
 
-  // ============ paste list -> review ============
+  // ---- match scoring: prefer the base game the person actually meant ----
+  // Words that usually indicate an add-on/extra rather than the game itself.
+  // Only penalized when the pasted title didn't mention them.
+  const EXTRA_WORDS = ["dlc","soundtrack","ost","demo","beta","playtest","trailer",
+    "bundle","pack","season pass","expansion","artbook","art book","art of",
+    "upgrade","dedicated server","server","wallpaper","costume","skin pack"];
+  const norm = s => String(s).toLowerCase()
+    .replace(/&/g," and ").replace(/[™®©:'’\-–—]/g," ")
+    .replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+
+  function scoreMatch(query, candidate) {
+    const q = norm(query), c = norm(candidate);
+    if (!q || !c) return 0;
+    let score = 0;
+    if (c === q) score += 100;                       // exact
+    else if (c.startsWith(q + " ")) score += 55;     // base title + suffix (e.g. edition)
+    else if (q.startsWith(c + " ")) score += 45;     // pasted title longer than candidate
+    // token overlap
+    const tq = new Set(q.split(" ")), tc = new Set(c.split(" "));
+    let hit = 0; for (const t of tq) if (tc.has(t)) hit++;
+    score += 40 * (hit / Math.max(tq.size, tc.size));
+    // candidate contains every word of the query → likely the right game,
+    // even if it has a longer official title ("Skyrim" → "TES V: Skyrim Special Edition")
+    if (hit === tq.size) score += 30;
+    // shorter candidates that cover the query are usually the base game
+    score -= Math.min(15, Math.max(0, (c.length - q.length)) * 0.15);
+    // penalize add-on words the user didn't ask for (word-boundary match,
+    // so "Wolfpack" isn't punished for containing "pack")
+    const cPad = ` ${c} `, qPad = ` ${q} `;
+    for (const w of EXTRA_WORDS) {
+      const wPad = ` ${norm(w)} `;
+      if (cPad.includes(wPad) && !qPad.includes(wPad)) score -= 70;
+    }
+    // soft penalty: VR editions are rarely what a pasted plain title means
+    if (cPad.includes(" vr ") && !qPad.includes(" vr ")) score -= 25;
+    return score;
+  }
+  function rankOptions(query, options) {
+    return options
+      .map(o => ({ o, s: scoreMatch(query, o.name) }))
+      .sort((a,b) => b.s - a.s)
+      .map(x => x.o);
+  }
+
+  // ============ paste -> review ============
   const reviewModal = $("reviewModal");
   let matches = [];
 
@@ -646,7 +805,7 @@
     let n=0;
     matches.filter(m=>m.include&&m.chosen).forEach(m=>{ if(addGame(m.chosen)) n++; });
     reviewModal.classList.remove("show");
-    toast(n?`Added ${n} game${n>1?"s":""}`:"Nothing new to add");
+    toast(n?`Added ${n} game${n>1?"s":""} to ${esc(activeList().name)}`:"Nothing new to add");
   };
 
   async function runMatch(titles) {
@@ -660,6 +819,7 @@
         const r = await fetch("/api/search?q="+encodeURIComponent(title));
         const d = await r.json(); options = d.results||[];
       } catch {}
+      options = rankOptions(title, options);   // best match first, extras/DLC pushed down
       const chosen = options[0]||null;
       matches.push({ title, options, chosen, include: !!chosen && !hasGame(chosen.appid) });
     }
@@ -667,11 +827,11 @@
   }
   function renderReview() {
     const ready = matches.filter(m=>m.include&&m.chosen).length;
-    $("reviewHint").textContent = `${ready} of ${matches.length} will be added. Untick wrong matches; tap a name to swap it.`;
+    $("reviewHint").textContent = `${ready} of ${matches.length} will be added to ${activeList().name}. Untick wrong matches; tap a name to swap it.`;
     $("reviewResults").innerHTML = matches.map((m,i) => {
       const c = m.chosen, inList = c && hasGame(c.appid);
       const label = c ? esc(c.name) : `<span style="color:var(--ink-dim)">No match: "${esc(m.title)}"</span>`;
-      const sub = c && m.options.length>1 ? `read as "${esc(m.title)}" · tap name to swap` : (c?"":"");
+      const sub = c && m.options.length>1 ? `read as "${esc(m.title)}" · tap name to swap` : "";
       const right = c && !inList
         ? `<input type="checkbox" data-i="${i}" ${m.include?"checked":""}>`
         : (inList ? `<span class="sub" style="color:var(--teal)">in list</span>` : "");
@@ -684,7 +844,7 @@
     $("reviewResults").querySelectorAll("input[type=checkbox]").forEach(cb =>
       cb.onchange = () => { matches[+cb.dataset.i].include = cb.checked;
         const ready = matches.filter(m=>m.include&&m.chosen).length;
-        $("reviewHint").textContent = `${ready} of ${matches.length} will be added. Untick wrong matches; tap a name to swap it.`; });
+        $("reviewHint").textContent = `${ready} of ${matches.length} will be added to ${activeList().name}. Untick wrong matches; tap a name to swap it.`; });
     $("reviewResults").querySelectorAll("[data-swap]").forEach(el => {
       const m = matches[+el.dataset.swap];
       if (m && m.options.length>1) {
@@ -707,12 +867,13 @@
     if (show) renderProfile();
   }
   function renderProfile() {
-    const t = totals();
+    const games = allGames();
+    const t = totals(games);
     $("pAvatar").src = me?.avatar || "";
     $("pName").textContent = me?.name || "Player";
-    $("pSub").textContent = `Backlog since you signed in · ${list.length} games tracked`;
+    $("pSub").textContent = `${games.length} games across ${data.lists.length} list${data.lists.length===1?"":"s"}`;
     const cells = [
-      { v: list.length, k: "games in backlog" },
+      { v: games.length, k: "games tracked" },
       { v: t.done, k: "games 100% completed", cls: "teal" },
       { v: t.achT ? `${t.achU}<span class="u">/${t.achT}</span>` : "—", k: "achievements unlocked", cls: "gold" },
       { v: t.achT ? Math.round(t.achPct*100)+`<span class="u">%</span>` : "—", k: "overall completion", cls: "gold" },
@@ -724,19 +885,81 @@
   }
   $("avatarBtn").onclick = () => showProfile(true);
   $("backBtn").onclick = () => showProfile(false);
+
+  // ---- import fully-completed games into a "Completed" list ----
+  function completedList() {
+    let l = data.lists.find(x => x.id === "completed");
+    if (!l) { l = { id: "completed", name: "Completed", games: [] }; data.lists.push(l); }
+    return l;
+  }
+  $("importCompletedBtn").onclick = async () => {
+    const btn = $("importCompletedBtn");
+    btn.disabled = true; btn.textContent = "Scanning your library…";
+    try {
+      const r = await fetch("/api/library");
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      const owned = d.games || [];
+      if (!owned.length) throw new Error(d.note || "No games returned from Steam.");
+
+      // Skip games already tracked anywhere (backlog games that hit 100%
+      // already count toward your profile; we don't move them).
+      const tracked = new Set(allGames().map(g => g.appid));
+      const candidates = owned.filter(g => !tracked.has(g.appid));
+
+      // Check achievements for candidates we don't have stats for yet
+      const unknown = candidates.filter(g => !stats[g.appid]);
+      for (let i = 0; i < unknown.length; i += 50) {
+        btn.textContent = `Checking achievements… ${Math.min(i+50, unknown.length)}/${unknown.length}`;
+        const chunk = unknown.slice(i, i+50);
+        try {
+          const sr = await fetch("/api/stats", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: chunk.map(g => ({ appid: g.appid, name: g.name })) })
+          });
+          const sd = await sr.json();
+          if (sd.stats) Object.assign(stats, sd.stats);
+        } catch { /* keep going; missed games just won't qualify this run */ }
+      }
+
+      const finished = candidates.filter(g => {
+        const s = stats[g.appid];
+        return s && s.achTotal > 0 && s.achUnlocked === s.achTotal;
+      });
+
+      if (!finished.length) {
+        toast("No new 100% completed games found");
+      } else {
+        const l = completedList();
+        const have = new Set(l.games.map(g => g.appid));
+        let added = 0;
+        finished.forEach(g => {
+          if (!have.has(g.appid)) { l.games.push({ appid: g.appid, name: g.name, icon: g.icon || null }); added++; }
+        });
+        persist(); syncUp(); renderProfile(); renderListbar();
+        toast(`Added ${added} game${added===1?"":"s"} to Completed`);
+      }
+    } catch (e) {
+      toast("Couldn't scan: " + esc(e.message));
+    } finally {
+      btn.disabled = false; btn.textContent = "Import my 100% completed games";
+    }
+  };
+
   $("logoutBtn").onclick = async () => {
     if (!confirm("Log out?")) return;
     await fetch("/api/auth/logout", { method:"POST" });
-    localStorage.removeItem(LIST_KEY); localStorage.removeItem(STATS_KEY);
+    localStorage.removeItem(DATA_KEY); localStorage.removeItem(STATS_KEY);
     location.href = "/";
   };
   $("shareBtn").onclick = async () => {
-    if (!list.length) { toast("Add some games first"); return; }
+    const l = activeList();
+    if (!l.games.length) { toast("This list is empty"); return; }
     $("shareBtn").disabled = true; $("shareBtn").textContent = "Creating link…";
     try {
       const r = await fetch("/api/share", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ list, stats, ownerName: me?.name || null })
+        body: JSON.stringify({ list: l.games, stats, ownerName: (me?.name ? `${me.name} — ${l.name}` : l.name) })
       });
       const d = await r.json();
       if (d.error) throw new Error(d.error);
@@ -749,25 +972,25 @@
         toast("Link copied to clipboard");
       }
     } catch(e) { toast("Couldn't share: " + e.message); }
-    finally { $("shareBtn").disabled = false; $("shareBtn").textContent = "Share this backlog"; }
+    finally { $("shareBtn").disabled = false; $("shareBtn").textContent = "Share current list"; }
   };
 
-  // ============ shared read-only mode ============
+  // ============ shared read-only ============
   async function enterSharedMode(id) {
     sharedMode = true;
     $("dock").style.display = "none";
     $("login").style.display = "none";
+    $("listbar").style.display = "none";
     try {
       const r = await fetch("/api/share?id="+encodeURIComponent(id));
       const d = await r.json();
       if (d.error) throw new Error(d.error);
-      list = d.list||[]; stats = d.stats||{};
-      sharedOwner = d.ownerName;
+      data = { lists: [{ id:"main", name:"Shared", games: d.list||[] }], activeId: "main" };
+      stats = d.stats||{};
       $("sharedBanner").style.display = "block";
       $("sharedBanner").innerHTML =
-        `You're viewing <b>${esc(sharedOwner||"someone")}'s</b> backlog snapshot. ` +
-        `<a href="/">Make your own →</a>`;
-      renderSorts(); renderGames();
+        `You're viewing <b>${esc(d.ownerName||"someone's list")}</b> — a snapshot. <a href="/">Make your own →</a>`;
+      renderAll();
     } catch(e) {
       $("sharedBanner").style.display = "block";
       $("sharedBanner").innerHTML = `${esc(e.message)} <a href="/">Go to Backlog →</a>`;
@@ -777,12 +1000,17 @@
   // ============ boot ============
   $("filter").oninput = e => { filterText = e.target.value; renderGames(); };
   $("heroLine").onclick = refreshAll;
+  document.querySelector(".wordmark").onclick = () => {
+    if (sharedMode) { location.href = "/"; return; }  // leave a shared snapshot
+    showProfile(false);                               // close profile if open
+    window.scrollTo({ top: 0 });
+  };
 
   async function boot() {
     const shareId = new URLSearchParams(location.search).get("s");
     if (shareId) return enterSharedMode(shareId);
 
-    renderSorts(); renderGames();
+    renderAll();
     let user = null;
     try { const r = await fetch("/api/auth/me"); user = (await r.json()).user; } catch {}
     if (!user) { $("login").style.display = "flex"; return; }
