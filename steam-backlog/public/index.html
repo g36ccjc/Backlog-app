@@ -133,7 +133,13 @@
   <div class="modal" id="modal">
     <div class="sheet">
       <h2 id="sheetTitle">Add a game</h2>
+      <div id="addTabs" style="display:flex; gap:6px; margin-bottom:10px">
+        <button class="addtab on" data-tab="search" style="flex:1; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--rust); color:#1a0d06; font-weight:700; font-family:var(--sans); font-size:13px">Search one</button>
+        <button class="addtab" data-tab="paste" style="flex:1; padding:9px; border-radius:9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink); font-weight:700; font-family:var(--sans); font-size:13px">Paste list</button>
+      </div>
       <input id="searchInput" type="search" placeholder="Search Steam for a game…" autocomplete="off" />
+      <textarea id="pasteInput" placeholder="One game per line, e.g.&#10;Hollow Knight&#10;Hades&#10;Elden Ring" style="display:none; width:100%; min-height:130px; resize:vertical; font-family:var(--sans); font-size:15px; color:var(--ink); background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px"></textarea>
+      <button id="pasteGo" class="close" style="display:none; margin-top:10px; background:var(--rust); color:#1a0d06; border:none; font-weight:700">Match these games</button>
       <div class="hint" id="sheetHint">Type a game name — results come from the Steam store.</div>
       <div class="sresults" id="sresults"></div>
       <button class="close" id="closeSheet">Done</button>
@@ -303,20 +309,61 @@
   // ---- search modal ----
   const modal = document.getElementById("modal");
   const searchInput = document.getElementById("searchInput");
+  const pasteInput = document.getElementById("pasteInput");
+  const pasteGo = document.getElementById("pasteGo");
+  const addTabs = document.getElementById("addTabs");
   const sresults = document.getElementById("sresults");
   let searchTimer;
+  let addTab = "search"; // "search" | "paste"
+
+  function setAddTab(tab) {
+    addTab = tab;
+    addTabs.querySelectorAll(".addtab").forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.style.background = on ? "var(--rust)" : "var(--panel-2)";
+      b.style.color = on ? "#1a0d06" : "var(--ink)";
+    });
+    const searching = tab === "search";
+    searchInput.style.display = searching ? "block" : "none";
+    pasteInput.style.display = searching ? "none" : "block";
+    pasteGo.style.display = searching ? "none" : "block";
+    document.getElementById("sheetHint").textContent = searching
+      ? "Type a game name — results come from the Steam store."
+      : "Paste or type games, one per line, then match them all at once.";
+    sresults.innerHTML = "";
+    if (searching) setTimeout(()=>searchInput.focus(), 100);
+    else setTimeout(()=>pasteInput.focus(), 100);
+  }
+
+  addTabs.querySelectorAll(".addtab").forEach(b => b.onclick = () => setAddTab(b.dataset.tab));
+
+  pasteGo.onclick = () => {
+    const titles = pasteInput.value.split("\n").map(s=>s.trim()).filter(Boolean);
+    if (!titles.length) { toast("Type at least one game"); return; }
+    // de-dupe case-insensitively
+    const seen = new Set();
+    const clean = titles.filter(t => { const k=t.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+    closeSheet();
+    matchTitles(clean); // reuse the image feature's review flow
+  };
 
   function openSheet(mode) {
     importMode = (mode==="import");
     document.getElementById("sheetTitle").textContent = importMode ? "Import from your library" : "Add a game";
-    document.getElementById("sheetHint").textContent = importMode
-      ? "Your owned Steam games. Tap to add any to your backlog."
-      : "Type a game name — results come from the Steam store.";
-    searchInput.style.display = importMode ? "none" : "block";
+    addTabs.style.display = importMode ? "none" : "flex";
     sresults.innerHTML = "";
     modal.classList.add("show");
-    if (importMode) loadLibrary();
-    else { searchInput.value=""; setTimeout(()=>searchInput.focus(), 100); }
+    if (importMode) {
+      searchInput.style.display = "none";
+      pasteInput.style.display = "none";
+      pasteGo.style.display = "none";
+      document.getElementById("sheetHint").textContent = "Your owned Steam games. Tap to add any to your backlog.";
+      loadLibrary();
+    } else {
+      searchInput.value = "";
+      pasteInput.value = "";
+      setAddTab("search");
+    }
   }
   function closeSheet(){ modal.classList.remove("show"); }
 
@@ -451,7 +498,7 @@
 
   function renderImgReview() {
     refreshImgHint();
-    document.getElementById("imgTitle").textContent = "Review games from image";
+    document.getElementById("imgTitle").textContent = "Review matches";
 
     imgResults.innerHTML = imgMatches.map((m, i) => {
       const c = m.chosen;
