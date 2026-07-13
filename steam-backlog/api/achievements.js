@@ -27,6 +27,7 @@ export default async function handler(req, res) {
 
   const key = process.env.STEAM_API_KEY;
   if (!key) return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
+  if (!session.steamId) return res.status(400).json({ error: "Link your Steam account to see achievement progress." });
 
   const appid = parseInt(req.query?.appid, 10);
   if (!Number.isFinite(appid)) return res.status(400).json({ error: "Missing appid." });
