@@ -1,17 +1,26 @@
 // GET /api/auth/me
-// Returns the logged-in user's SteamID, display name, and avatar,
-// or { user: null } if not logged in.
+// Returns the signed-in user: uid, linked steamId (if any), display name,
+// avatar, and username (for local accounts).
 
 import { getSession } from "../_session.js";
+import { redis, storageReady } from "../_accounts.js";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const session = getSession(req);
   if (!session) return res.status(200).json({ user: null });
 
+  let username = null;
+  if (session.uid.startsWith("u_") && storageReady()) {
+    try {
+      const prof = JSON.parse(await redis(["GET", `backlog:profile:${session.uid}`]) || "{}");
+      username = prof.username || null;
+    } catch {}
+  }
+
+  let name = username, avatar = null;
   const key = process.env.STEAM_API_KEY;
-  let name = null, avatar = null;
-  if (key) {
+  if (key && session.steamId) {
     try {
       const r = await fetch(
         `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/` +
@@ -19,11 +28,11 @@ export default async function handler(req, res) {
       );
       const d = await r.json();
       const p = d?.response?.players?.[0];
-      if (p) { name = p.personaname || null; avatar = p.avatarmedium || p.avatar || null; }
-    } catch { /* profile lookup is cosmetic; ignore failures */ }
+      if (p) { name = p.personaname || name; avatar = p.avatarmedium || p.avatar || null; }
+    } catch {}
   }
 
   return res.status(200).json({
-    user: { steamId: session.steamId, name, avatar },
+    user: { uid: session.uid, steamId: session.steamId, name, avatar, username },
   });
 }

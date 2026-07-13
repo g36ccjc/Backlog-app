@@ -13,6 +13,9 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: "Not logged in." });
   const key = process.env.STEAM_API_KEY;
   const steamId = session.steamId;
+  if (!steamId) {
+    return res.status(400).json({ error: "Link your Steam account (Profile → Link Steam) to import your library." });
+  }
   if (!key) {
     return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
   }

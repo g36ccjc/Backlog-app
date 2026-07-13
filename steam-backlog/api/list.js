@@ -36,25 +36,11 @@ export default async function handler(req, res) {
     });
   }
 
-  const KEY = `backlog:user:${session.steamId}`;
+  const KEY = `backlog:user:${session.uid}`;
 
   try {
     if (req.method === "GET") {
-      let raw = await redis(["GET", KEY]);
-
-      // One-time migration: the original single-user version stored the list
-      // under "backlog:shared". If this account has no list yet but that old
-      // record exists, adopt it into this account and remove the old record.
-      // (First empty account to log in claims it — in practice, the owner.)
-      if (!raw) {
-        const legacy = await redis(["GET", "backlog:shared"]);
-        if (legacy) {
-          await redis(["SET", KEY, legacy]);
-          await redis(["DEL", "backlog:shared"]);
-          raw = legacy;
-        }
-      }
-
+      const raw = await redis(["GET", KEY]);
       if (!raw) return res.status(200).json({ lists: null, list: [], stats: {}, updatedAt: 0 });
       const parsed = JSON.parse(raw);
       // Serve both shapes: `lists` (new) and a flattened `list` (legacy).
@@ -68,6 +54,9 @@ export default async function handler(req, res) {
         lists,
         list: flat,
         stats: parsed.stats || {},
+        history: parsed.history || [],
+        notes: parsed.notes || {},
+        showcase: parsed.showcase || [],
         updatedAt: parsed.updatedAt || 0,
       });
     }
@@ -99,8 +88,15 @@ export default async function handler(req, res) {
       if (!lists || !lists.length) lists = [{ id: "main", name: "Backlog", games: [] }];
 
       const stats = body?.stats && typeof body.stats === "object" ? body.stats : {};
-      const record = { lists, stats, updatedAt: Date.now() };
-      await redis(["SET", KEY, JSON.stringify(record)]);
+      const history = Array.isArray(body?.history) ? body.history.slice(-400) : [];
+      const notes = body?.notes && typeof body.notes === "object" ? body.notes : {};
+      const showcase = Array.isArray(body?.showcase) ? body.showcase.slice(0, 10) : [];
+      const record = { lists, stats, history, notes, showcase, updatedAt: Date.now() };
+      const serialized = JSON.stringify(record);
+      if (serialized.length > 2_000_000) {
+        return res.status(413).json({ error: "List data too large." });
+      }
+      await redis(["SET", KEY, serialized]);
       return res.status(200).json({ ok: true, updatedAt: record.updatedAt });
     }
 

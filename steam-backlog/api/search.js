@@ -1,10 +1,13 @@
 // GET /api/search?q=hollow+knight
 // Searches the Steam store storefront for games matching a name.
-// Returns lightweight results (appid, name, icon) to add to the backlog.
-// No API key needed — this is the public storefront suggest endpoint.
+// Login required — prevents the deployment being used as an anonymous relay.
+
+import { getSession } from "./_session.js";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=3600");
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: "Not logged in." });
   const q = (req.query.q || "").toString().trim();
   if (!q) return res.status(400).json({ error: "Missing search term." });
 

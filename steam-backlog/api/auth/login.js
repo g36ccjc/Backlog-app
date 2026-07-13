@@ -6,7 +6,8 @@ export default function handler(req, res) {
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   const proto = req.headers["x-forwarded-proto"] || "https";
   const base = `${proto}://${host}`;
-  const returnTo = `${base}/api/auth/callback`;
+  const isLink = req.query?.link === "1";
+  const returnTo = `${base}/api/auth/callback${isLink ? "?link=1" : ""}`;
 
   const params = new URLSearchParams({
     "openid.ns": "http://specs.openid.net/auth/2.0",

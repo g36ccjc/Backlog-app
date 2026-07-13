@@ -61,7 +61,11 @@ export default async function handler(req, res) {
 
       const id = crypto.randomBytes(6).toString("base64url"); // 8 chars
       const snapshot = { list, stats, ownerName, createdAt: Date.now() };
-      await redis(["SET", `backlog:share:${id}`, JSON.stringify(snapshot), "EX", String(TTL_SECONDS)]);
+      const serialized = JSON.stringify(snapshot);
+      if (serialized.length > 2_000_000) {
+        return res.status(413).json({ error: "List too large to share." });
+      }
+      await redis(["SET", `backlog:share:${id}`, serialized, "EX", String(TTL_SECONDS)]);
       return res.status(200).json({ id });
     }
 
