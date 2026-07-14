@@ -85,19 +85,54 @@ function readTimes(entry) {
 }
 function hasTimes(t) { return t.mainStory != null || t.completionist != null; }
 
-// Follow-up lookup by HLTB id — the service stores entries under a numeric
-// hltbId; the exact route isn't documented, so try the likely paths.
-async function hltbById(hltbId) {
-  const base = HLTB_BASE.replace(/\/steam$/, "");
-  for (const path of [`/hltb/${hltbId}`, `/hltbid/${hltbId}`, `/id/${hltbId}`]) {
-    try {
-      const d = await getJson(base + path);
-      const entry = Array.isArray(d) ? d[0] : d;
-      const t = readTimes(entry);
+// Resolve times straight from HowLongToBeat's own game page. HLTB is a
+// Next.js site: each game page embeds its stats as JSON (comp_main /
+// comp_100, in seconds). This is the same source community scrapers use,
+// and far more reliable than undocumented middleman routes.
+async function hltbPage(hltbId) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(`https://howlongtobeat.com/game/${hltbId}`, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+        "Referer": "https://howlongtobeat.com/",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+    });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const html = await r.text();
+
+    // Preferred: structured __NEXT_DATA__ parse
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) {
+      try {
+        const nd = JSON.parse(m[1]);
+        const g = nd?.props?.pageProps?.game?.data?.game?.[0];
+        if (g) {
+          const t = secsToTimes(g.comp_main, g.comp_100);
+          if (hasTimes(t)) return t;
+        }
+      } catch { /* fall through to regex */ }
+    }
+    // Fallback: first comp_main / comp_100 values anywhere in the embedded JSON
+    const mm = html.match(/"comp_main":(\d+)/);
+    const mc = html.match(/"comp_100":(\d+)/);
+    if (mm || mc) {
+      const t = secsToTimes(mm ? +mm[1] : 0, mc ? +mc[1] : 0);
       if (hasTimes(t)) return t;
-    } catch { /* try next path */ }
+    }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
+}
+function secsToTimes(mainSecs, compSecs) {
+  const h = (s) => (typeof s === "number" && s > 0 ? Math.round(s / 360) / 10 : null);
+  return { mainStory: h(mainSecs), completionist: h(compSecs) };
 }
 
 async function hltbTimes(appid, name) {
@@ -108,21 +143,25 @@ async function hltbTimes(appid, name) {
     if (single) {
       const t = readTimes(single);
       if (hasTimes(t)) return t;
+      // stored entry but zeroed times: try the source page directly
+      if (single.hltbId != null) {
+        const t2 = await hltbPage(single.hltbId);
+        if (t2) return t2;
+      }
     }
-    // Multiple candidates: these are bare search results and usually carry
-    // no times. Rank by name similarity, then resolve the best ones by hltbId.
+    // Multiple candidates: bare search results without times. Rank by name
+    // similarity, then read the best matches straight from HLTB's pages.
     if (Array.isArray(d) && d.length > 1 && name) {
       const scored = d
         .map((e) => ({ e, s: similarity(name, e.title || e.name || "") }))
         .sort((x, y) => y.s - x.s)
         .filter(({ s }) => s >= 0.4)
-        .slice(0, 2); // at most two follow-ups per game
+        .slice(0, 2); // at most two page fetches per game
       for (const { e } of scored) {
-        // candidate might already be populated
         const direct = readTimes(e);
         if (hasTimes(direct)) return direct;
         if (e.hltbId != null) {
-          const t = await hltbById(e.hltbId);
+          const t = await hltbPage(e.hltbId);
           if (t) return t;
         }
       }

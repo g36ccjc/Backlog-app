@@ -46,9 +46,12 @@ function aggregate(record) {
       if (s.achUnlocked === s.achTotal) done++;
     }
   }
-  // XP: 10 per achievement + 250 per 100%'d game. Level = sqrt(xp/100).
-  // (Keep in sync with the same formula in public/index.html.)
-  const xp = achU * 10 + done * 250;
+  // XP: 10 per achievement + 250 per 100%'d game + flat trophy bonuses.
+  // (Keep in sync with the same formulas in public/index.html.)
+  const TROPHY_XP = [[1,100],[10,500],[25,1500],[50,4000],[100,10000],[250,30000],[1000,150000]];
+  let bonus = 0;
+  for (const [min, b] of TROPHY_XP) if (done >= min) bonus += b;
+  const xp = achU * 10 + done * 250 + bonus;
   const level = Math.floor(Math.sqrt(xp / 100));
   return { games, done, achPct: achT ? Math.round((achU / achT) * 100) : null, level };
 }

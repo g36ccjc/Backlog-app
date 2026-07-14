@@ -70,10 +70,23 @@
 
   .hero { margin: 12px 0 6px; }
   .hero .line { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim); cursor: pointer; }
+  .hero .line { transition: opacity 0.38s ease, transform 0.38s ease; min-height: 1.45em; }
+  .hero .line.swap { opacity: 0; transform: translateY(-3px); }
+  @media (prefers-reduced-motion: reduce) { .hero .line { transition: none; } }
   .hero .line b { color: var(--ink); font-size: 18px; }
   .hero .line .g { color: var(--gold); }
   .xp { margin-top: 10px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
-  .xp > i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); transition: width 0.6s cubic-bezier(.22,1,.36,1); }
+  .xp > i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); transition: width 0.6s cubic-bezier(.22,1,.36,1); position: relative; overflow: hidden; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero .xp > i::after, .lvlBarWrap .xp > i::after, .loginXp i::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 32%, rgba(255,255,255,0.4) 50%, transparent 68%);
+      transform: translateX(-130%);
+      animation: sweep 3.6s ease-in-out infinite;
+    }
+    @keyframes sweep { 0%, 55% { transform: translateX(-130%); } 85%, 100% { transform: translateX(130%); } }
+  }
+  .loginXp i { position: relative; overflow: hidden; }
   .xp.done > i { background: var(--teal); }
 
   /* Since-last-visit feed */
@@ -88,10 +101,7 @@
   .featWrap { margin: 14px 0 2px; }
   .featHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .featTitle { font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-  .hourChips { display: flex; gap: 4px; margin-left: auto; }
-  .hourChips button { font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--ink-dim); background: var(--surface); border: 1px solid var(--line-solid); border-radius: 999px; padding: 4px 9px; cursor: pointer; }
-  .hourChips button.on { background: var(--gold); color: #16130a; border-color: var(--gold); }
-  .dice { background: none; border: none; font-size: 17px; cursor: pointer; padding: 0 2px; }
+  .dice { background: none; border: none; font-size: 17px; cursor: pointer; padding: 0 2px; margin-left: auto; }
   .feat { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
   .feat::-webkit-scrollbar { display: none; }
   .fcard { flex: 0 0 128px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; overflow: hidden; cursor: pointer; }
@@ -114,20 +124,29 @@
   .sorts::-webkit-scrollbar { display: none; }
   .sorts button { font-family: var(--display); font-weight: 600; font-size: 12.5px; white-space: nowrap; color: var(--ink-dim); background: none; border: 1px solid var(--line-solid); border-radius: 999px; padding: 7px 13px; cursor: pointer; }
   .sorts button.on { color: #16130a; background: var(--gold); border-color: var(--gold); }
-  @media (hover:hover) { .sorts button:not(.on):hover, .listbar button:not(.on):hover, .hourChips button:not(.on):hover { border-color: var(--line-strong); color: var(--ink); } }
+  @media (hover:hover) { .sorts button:not(.on):hover, .listbar button:not(.on):hover { border-color: var(--line-strong); color: var(--ink); } }
 
   .games { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
   /* tile / grid view */
   .games.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
   .tile { background: var(--card-grad), var(--surface); border: 1px solid var(--line-solid); border-radius: 12px; overflow: hidden; cursor: pointer; position: relative; transition: transform 0.16s ease, border-color 0.16s ease; }
-  @media (hover:hover) { .tile:hover { transform: translateY(-2px); border-color: var(--line-strong); } }
+  @media (hover:hover) {
+    .tile:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+    .tile { --sheen: 0; }
+    .tile::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.09) 50%, transparent 65%);
+      transform: translateX(-110%); transition: transform 0.55s ease; }
+    .tile:hover::after { transform: translateX(110%); }
+  }
   .tile:active { transform: scale(0.97); }
   .tile .cover { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: var(--surface-2); }
   .tile .tbar { position: absolute; left: 0; right: 0; top: calc(100% * 2 / 3 * 1); height: 0; }
   .tile .tmeta { padding: 7px 8px 9px; }
   .tile .tname { font-size: 11.5px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
-  .tile .tstats { font-family: var(--display); font-weight: 600; font-size: 10.5px; color: var(--ink-dim); margin-top: 3px; }
+  .tile .tstats { font-family: var(--display); font-weight: 600; font-size: 10.5px; color: var(--ink); margin-top: 3px; display: flex; gap: 8px; font-variant-numeric: tabular-nums; }
   .tile .tstats .a { color: var(--gold); } .tile .tstats .a.full { color: var(--teal); }
+  .tile .tstats .tna { color: var(--ink-dim); opacity: 0.6; }
+  .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
   .tile .barWrap { height: 3px; background: var(--surface-2); }
   .tile .barWrap > i { display: block; height: 100%; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); }
   .tile .barWrap.full > i { background: var(--teal); }
@@ -150,11 +169,11 @@
   .enter { animation: cardIn 0.32s cubic-bezier(.22,1,.36,1) both; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
   .card.swiping { transition: none; }
-  .row { display: flex; align-items: center; gap: 12px; padding: 10px 12px 12px 10px; }
-  .cap { width: 92px; height: 43px; border-radius: 7px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+  .row { display: flex; align-items: center; gap: 13px; padding: 13px 13px 15px 12px; }
+  .cap { width: 106px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
   .info { flex: 1; min-width: 0; }
-  .gname { font-weight: 650; font-size: 14.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .nums { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .gname { font-weight: 650; font-size: 15.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .nums { display: flex; flex-wrap: wrap; gap: 4px 13px; margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
   .nums .played { color: var(--ink); }
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
   .nums .meta.hi { background: #7fd05f; }
@@ -191,6 +210,17 @@
   .achLinks a:hover { border-color: var(--gold); color: var(--gold); }
   .achPanel .loadRow { padding: 12px 4px; font-size: 12.5px; color: var(--ink-dim); }
 
+  /* compact list view */
+  .games.compact { gap: 7px; }
+  .card.thinrow { border-radius: 11px; }
+  .trow { display: flex; align-items: center; gap: 10px; padding: 8px 6px 9px 8px; cursor: pointer; }
+  .tcap { width: 56px; height: 26px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
+  .tname1 { flex: 1; min-width: 0; font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tmini { display: flex; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tmini .a { color: var(--gold); } .tmini .a.full { color: var(--teal); }
+  .tmini .tna { opacity: 0.5; }
+  .card.thinrow .rm { padding: 4px 6px; font-size: 13px; }
+  .card.thinrow .bar { height: 2px; }
   .empty { text-align: center; color: var(--ink-dim); padding: 40px 20px; line-height: 1.6; }
   .obBtns { display: flex; flex-direction: column; gap: 9px; max-width: 300px; margin: 0 auto; }
   .obBtns button { font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; background: var(--surface); border: 1px solid var(--line-solid); color: var(--ink); text-align: left; }
@@ -217,11 +247,14 @@
   .pHead .n { font-family: var(--display); font-weight: 700; font-size: 20px; }
   .pHead .s { color: var(--ink-dim); font-size: 12.5px; margin-top: 2px; }
   .pLevel { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 12px 14px; margin: -8px 0 14px; }
-  .lvlChip { font-family: var(--display); font-weight: 700; font-size: 15px; color: #16130a; background: linear-gradient(180deg, #f0c25e, var(--gold)); border-radius: 9px; padding: 7px 11px; flex-shrink: 0; letter-spacing: 0.3px; box-shadow: 0 2px 14px rgba(232,182,76,0.3); }
+  .insignia { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: radial-gradient(circle at 50% 42%, rgba(232,182,76,0.13), transparent 72%), var(--surface-2); border: 1px solid var(--line-solid); }
+  .rankName { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.2px; }
+  .rankName .lvlTag { color: var(--ink-dim); font-size: 12px; font-weight: 600; margin-left: 6px; }
   .lvlBarWrap { flex: 1; min-width: 0; }
   .lvlBarWrap .xp { margin-top: 6px; }
   .lvlNums { font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink-dim); }
-  .friendRow .lv { font-family: var(--display); font-weight: 700; font-size: 10.5px; color: #16130a; background: var(--gold); border-radius: 6px; padding: 2px 6px; flex-shrink: 0; }
+  .friendRow .lv { font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .friendRow .lv svg { display: block; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .cell { background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 15px 14px; }
   .cell .v { font-family: var(--display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
@@ -230,15 +263,22 @@
   .cell.gold .v { color: var(--gold); }
   .cell.teal .v { color: var(--teal); }
   .chartBox { background: var(--card-grad), var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 13px 14px; }
-  .chartBox .ct { font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .chartBox .ct { font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+  .chartBox .ct::before { content: ""; width: 3px; height: 11px; border-radius: 2px; background: linear-gradient(180deg, var(--gold), #c9962f); box-shadow: var(--glow); flex-shrink: 0; }
   .chartBox svg { width: 100%; height: 76px; display: block; }
-  .badgeGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
-  .badge { background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; padding: 10px 8px; text-align: center; }
-  .badge .bi { font-size: 20px; }
-  .badge .bn { font-family: var(--display); font-weight: 700; font-size: 10px; margin-top: 4px; line-height: 1.25; }
-  .badge .bk { font-size: 9px; color: var(--ink-dim); margin-top: 2px; }
-  .badge.locked { opacity: 0.38; filter: grayscale(0.8); }
-  .badge.earned { border-color: var(--gold); }
+  .tHero { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .tArt { flex-shrink: 0; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35)) drop-shadow(0 0 16px rgba(232,182,76,0.16)); }
+  .tEmpty { width: 62px; height: 62px; border-radius: 14px; border: 1.5px dashed var(--line-strong); }
+  .tTitle { font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .tSub { font-size: 12px; color: var(--ink); margin-top: 2px; }
+  .tSub.dim { color: var(--ink-dim); }
+  .tRoad { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 7px; }
+  .tMini { background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 8px 4px 7px; text-align: center; }
+  .tMini svg { display: block; margin: 0 auto; }
+  .tMini:not(.got) { opacity: 0.32; filter: grayscale(0.85); }
+  .tMini.got { border-color: var(--line-strong); }
+  .tmn { font-family: var(--display); font-weight: 700; font-size: 9.5px; margin-top: 3px; }
+  .tmk { font-size: 8.5px; color: var(--ink-dim); margin-top: 1px; font-variant-numeric: tabular-nums; }
   .trophyRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line-solid); }
   .trophyRow:first-of-type { border-top: none; }
   .trophyRow img { width: 36px; height: 36px; border-radius: 7px; }
@@ -290,6 +330,7 @@
   @keyframes sheetUp { from { transform: translateY(26px); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
   .sheet { background: var(--card-grad), var(--surface); width: 100%; max-width: 680px; border-radius: 22px 22px 0 0; padding: 24px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 84vh; display: flex; flex-direction: column; border: 1px solid var(--line-strong); border-bottom: none; position: relative; }
   .sheet::before { content: ""; position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 38px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+  .sheet::after { content: ""; position: absolute; top: 0; left: 24px; right: 24px; height: 1.5px; border-radius: 1px; background: linear-gradient(90deg, transparent, rgba(232,182,76,0.45), transparent); }
   .sheet h2 { margin: 0 0 12px; font-family: var(--display); font-size: 16.5px; font-weight: 700; }
   .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
   .tabs button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px; border-radius: 9px; border: 1px solid var(--line-solid); cursor: pointer; background: var(--surface-2); color: var(--ink); }
@@ -303,6 +344,8 @@
   .res .ph { width: 62px; height: 29px; background: var(--line-solid); border-radius: 5px; flex-shrink: 0; }
   .res .n { flex: 1; font-size: 13.5px; min-width: 0; line-height: 1.3; }
   .res .sub { font-size: 11px; color: var(--ink-dim); }
+  .addAll { width: 100%; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 11px; border-radius: 10px; cursor: pointer; background: var(--gold); color: #16130a; border: none; margin-bottom: 4px; box-shadow: 0 2px 14px rgba(232,182,76,0.25); }
+  .addAll:disabled { opacity: 0.7; }
   .res button.addOne { background: var(--gold); color: #16130a; border: none; border-radius: 8px; padding: 7px 13px; font-family: var(--display); font-weight: 700; font-size: 12.5px; cursor: pointer; }
   .res.in button.addOne { background: var(--teal); }
   .res input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--gold); flex-shrink: 0; }
@@ -321,11 +364,30 @@
   .wheelName { font-family: var(--display); font-weight: 700; font-size: 16px; min-height: 1.4em; margin-bottom: 6px; }
   .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; }
+  .toast { box-shadow: 0 6px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(232,182,76,0.12); }
   .toast.act { pointer-events: auto; }
   .toast .tbtn { background: none; border: none; color: var(--gold); font-family: var(--display); font-weight: 700; font-size: 13px; cursor: pointer; margin-left: 10px; padding: 0; }
   .spin { display:inline-block; width:12px; height:12px; border:2px solid var(--ink-dim); border-top-color: var(--gold); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
   @keyframes sp { to { transform: rotate(360deg); } }
   button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  /* ambient drift: two layers of faint gold sparks rising slowly */
+  @media (prefers-reduced-motion: no-preference) {
+    body::before, body::after {
+      content: ""; position: fixed; left: 0; right: 0; top: -260px; bottom: 0;
+      pointer-events: none; z-index: -1;
+    }
+    body::before {
+      background-image: radial-gradient(circle, rgba(232,182,76,0.22) 0 1px, transparent 1.6px);
+      background-size: 210px 240px;
+      animation: drift 90s linear infinite;
+    }
+    body::after {
+      background-image: radial-gradient(circle, rgba(232,182,76,0.12) 0 1.4px, transparent 2px);
+      background-size: 320px 380px;
+      animation: drift 150s linear infinite;
+    }
+    @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-240px); } }
+  }
   ::selection { background: rgba(232,182,76,0.3); }
   * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -349,7 +411,9 @@
   }
   /* gold elements: gradient + soft glow */
   .dock .primary, .steamBtn, .lvlChip, .sorts button.on, .tabs button.on,
-  .hourChips button.on, .res button.addOne, .sheet .footRow .go, .pActions .share {
+  .addAll { width: 100%; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 11px; border-radius: 10px; cursor: pointer; background: var(--gold); color: #16130a; border: none; margin-bottom: 4px; box-shadow: 0 2px 14px rgba(232,182,76,0.25); }
+  .addAll:disabled { opacity: 0.7; }
+  .res button.addOne, .sheet .footRow .go, .pActions .share {
     background: linear-gradient(180deg, #f0c25c 0%, #dfa93c 100%);
     box-shadow: 0 3px 14px -6px rgba(232,182,76,0.55);
     border-color: transparent;
@@ -382,7 +446,7 @@
   <div class="login" id="login">
     <div class="mark">Back<b>log</b></div>
     <div class="loginXp"><i></i></div>
-    <p>Your game queue, with Steam achievements and HowLongToBeat times, synced everywhere you sign in.</p>
+    <p>Track your backlog with Steam achievements, playtime, and HowLongToBeat estimates. Synced across devices.</p>
     <a class="steamBtn" href="/api/auth/login">Sign in through Steam</a>
     <div class="fine">Uses Steam's official sign-in — your password never touches this site. Set your Steam profile's <b>Game details</b> to Public so achievements can show.</div>
     <div class="orLine">or use a site account</div>
@@ -393,7 +457,7 @@
         <button id="luSignIn">Sign in</button>
         <button id="luCreate" class="ghost">Create account</button>
       </div>
-      <div class="fine" id="luMsg">No Steam needed — you can link Steam later from your profile. Note: there's no password reset yet, so don't forget it.</div>
+      <div class="fine" id="luMsg">Steam can be linked later from your profile. There is no password reset.</div>
     </div>
   </div>
 
@@ -417,13 +481,12 @@
     <div class="featWrap" id="featWrap" style="display:none">
       <div class="featHead">
         <span class="featTitle">Up next</span>
-        <div class="hourChips" id="hourChips"></div>
-        <button class="dice" id="diceBtn" aria-label="Random pick">🎲</button>
+        <button class="dice" id="diceBtn" aria-label="Random pick"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.6" cy="8.6" r="1.35" fill="currentColor" stroke="none"/><circle cx="15.4" cy="8.6" r="1.35" fill="currentColor" stroke="none"/><circle cx="8.6" cy="15.4" r="1.35" fill="currentColor" stroke="none"/><circle cx="15.4" cy="15.4" r="1.35" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none"/></svg></button>
       </div>
       <div class="feat" id="feat"></div>
     </div>
 
-    <button class="decideBtn" id="decideBtn" style="display:none">🤔 Can't decide what to play?</button>
+    <button class="decideBtn" id="decideBtn" style="display:none">Can't decide what to play?</button>
 
     <div class="controls">
       <div class="filterBox">
@@ -431,7 +494,8 @@
         <input id="filter" type="search" placeholder="Filter this list" autocomplete="off">
       </div>
       <div class="viewToggle">
-        <button id="viewList" aria-label="List view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <button id="viewList" aria-label="List view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 5.5h16M4 12h16M4 18.5h16"/></svg></button>
+        <button id="viewCompact" aria-label="Compact view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4.5h16M4 9.5h16M4 14.5h16M4 19.5h16"/></svg></button>
         <button id="viewGrid" aria-label="Grid view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button>
       </div>
     </div>
@@ -442,9 +506,9 @@
       <b>Welcome to your backlog</b>
       <div style="margin-bottom:16px">Three ways to get started:</div>
       <div class="obBtns">
-        <button id="obImport">📚 Import my Steam library</button>
-        <button id="obAdd">🔍 Search &amp; add games</button>
-        <button id="obScan">🏆 Scan my 100% completed games</button>
+        <button id="obImport">Import my Steam library</button>
+        <button id="obAdd">Search &amp; add games</button>
+        <button id="obScan">Scan my 100% completed games</button>
       </div>
     </div>
   </div>
@@ -466,7 +530,7 @@
     <div id="pFriends" style="margin-top:14px"></div>
     <div class="pActions">
       <button class="share" id="shareBtn">Share current list</button>
-      <button id="linkSteamBtn" style="display:none">🔗 Link my Steam account</button>
+      <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
       <button id="importCompletedBtn">Import my 100% completed games</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
@@ -548,7 +612,7 @@
   <!-- spin the wheel -->
   <div class="modal" id="wheelModal">
     <div class="sheet" style="align-items:center; text-align:center">
-      <h2>What should you play?</h2>
+      <h2>Random pick</h2>
       <img class="wheelCover" id="wheelCover" src="" alt="">
       <div class="wheelName" id="wheelName"></div>
       <div class="footRow" style="width:100%">
@@ -584,7 +648,6 @@
   let notes = load("backlog.notes.v4", {});     // appid -> {rating, note}
   let history = load("backlog.history.v4", []); // [{d, pct, done, achU}]
   let showcase = load("backlog.showcase.v4", []); // rarest unlocked achievements
-  let hourCap = null; // Up Next time filter (remaining main-story hours)
   let view = load(VIEW_KEY, "list");   // "list" | "grid"
   let filterText = "";
   let me = null;
@@ -702,18 +765,85 @@
   }
 
   // ============ hero + games ============
+  // ---- hero: rotating time facts about this backlog ----
+  let heroFacts = [], heroIdx = 0;
+
+  function buildHeroFacts() {
+    const games = activeList().games;
+    const n = games.length;
+    if (!n) return [];
+    let mainLeft = 0, compLeft = 0, playedTotal = 0, achU = 0, achT = 0, done = 0;
+    let longest = null, quickest = null;
+    for (const g of games) {
+      const st = stats[g.appid] || {};
+      const a = achOf(g.appid);
+      const playedH = (st.playtimeMinutes || 0) / 60;
+      playedTotal += playedH;
+      const finished = a && !a.none && a.pct === 1;
+      if (finished) done++;
+      if (a && !a.none) { achU += a.u; achT += a.t; }
+      if (st.mainStory != null && !finished) {
+        mainLeft += Math.max(0, st.mainStory - playedH);
+        if (!longest || st.mainStory > stats[longest.appid].mainStory) longest = g;
+        if (playedH < st.mainStory * 0.5 && (!quickest || st.mainStory < stats[quickest.appid].mainStory)) quickest = g;
+      }
+      if (st.completionist != null && !finished) {
+        const pct = a && !a.none ? a.pct : 0;
+        compLeft += Math.max(0, st.completionist * (1 - pct));
+      }
+    }
+    const gold = (v) => `<b class="g">${v}</b>`;
+    const facts = [];
+    facts.push(`${gold(n)} game${n===1?"":"s"} · ${gold(Math.round(mainLeft) + "h")} of story time remaining`);
+    if (mainLeft >= 24)
+      facts.push(`Remaining story time: ${gold((mainLeft/24).toFixed(1) + " days")} of continuous play`);
+    if (compLeft >= 24)
+      facts.push(`Time to 100% this list: ${gold((compLeft/24).toFixed(1) + " days")} of continuous play`);
+    if (mainLeft >= 40)
+      facts.push(`Equivalent to ${gold((mainLeft/40).toFixed(1))} forty-hour weeks`);
+    if (achT - achU > 0)
+      facts.push(`${gold((achT - achU).toLocaleString())} achievements remaining in this list`);
+    if (playedTotal >= 5)
+      facts.push(`Total playtime in this list: ${gold(Math.round(playedTotal) + "h")}`);
+    if (mainLeft >= 10) {
+      const eta = new Date(Date.now() + (mainLeft / 2) * 86400000);
+      facts.push(`At 2h per day, remaining stories finish around ${gold(eta.toLocaleDateString(undefined, { month: "short", year: "numeric" }))}`);
+    }
+    if (longest)
+      facts.push(`Longest main story: <b>${esc(longest.name)}</b> (${gold(hrs(stats[longest.appid].mainStory) + "h")})`);
+    if (quickest && quickest !== longest)
+      facts.push(`Shortest main story: <b>${esc(quickest.name)}</b> (${gold(hrs(stats[quickest.appid].mainStory) + "h")})`);
+    if (done > 0)
+      facts.push(`${gold(done)} completed · ${gold(n - done)} remaining`);
+    // keep the classic first, shuffle the rest for session variety
+    return [facts[0], ...facts.slice(1).sort(() => Math.random() - 0.5)];
+  }
+
   function renderHero() {
     const games = activeList().games;
     const t = totals(games);
-    const n = games.length;
-    $("heroLine").innerHTML = !n ? "This list is empty"
-      : `<b>${n}</b> game${n===1?"":"s"} · <b class="g">${t.mainLeft}h</b> of stories left`
-        + (t.achT ? ` · ${t.achU}/${t.achT} achievements` : "");
+    heroFacts = buildHeroFacts();
+    if (heroIdx >= heroFacts.length) heroIdx = 0;
+    $("heroLine").innerHTML = heroFacts.length ? heroFacts[heroIdx] : "This list is empty";
     const xp = $("heroXp");
     xp.querySelector("i").style.width = Math.round(t.achPct*100) + "%";
     xp.classList.toggle("done", t.achPct===1 && t.achT>0);
     renderFeatured();
   }
+
+  // subtle phase between facts
+  setInterval(() => {
+    if (heroFacts.length < 2) return;
+    if (document.visibilityState !== "visible") return;
+    if ($("listView").style.display === "none") return;
+    const el = $("heroLine");
+    el.classList.add("swap");
+    setTimeout(() => {
+      heroIdx = (heroIdx + 1) % heroFacts.length;
+      el.innerHTML = heroFacts[heroIdx];
+      el.classList.remove("swap");
+    }, 380);
+  }, 7000);
 
   // ---- Up Next: reason-based picks from the active list ----
   const wildcardPick = {}; // listId -> appid, stable per session
@@ -726,23 +856,6 @@
       return !(a && !a.none && a.pct === 1);
     });
     if (pool.length < 3) { wrap.style.display = "none"; return; }
-    // hour filter: remaining main-story time must fit the window
-    if (hourCap != null) {
-      const fits = pool.filter(g => {
-        const s = stats[g.appid] || {};
-        if (s.mainStory == null) return false;
-        const remaining = Math.max(0, s.mainStory - (s.playtimeMinutes||0)/60);
-        return remaining <= hourCap;
-      });
-      if (fits.length) pool = fits;
-    }
-    // hour chips
-    $("hourChips").innerHTML = [[null,"Any"],[5,"<5h"],[15,"<15h"],[40,"<40h"]].map(([v,l]) =>
-      `<button class="${hourCap===v?"on":""}" data-h="${v??""}">${l}</button>`).join("");
-    $("hourChips").querySelectorAll("button").forEach(b => b.onclick = () => {
-      hourCap = b.dataset.h === "" ? null : +b.dataset.h;
-      renderFeatured();
-    });
 
     const S = id => stats[id] || {};
     const picks = [];
@@ -766,29 +879,29 @@
     take(pool
       .filter(g => { const s = S(g.appid); return s.mainStory != null && (s.playtimeMinutes||0) < s.mainStory * 30; })
       .sort((x,y) => S(x.appid).mainStory - S(y.appid).mainStory)[0],
-      "Quick win",
-      (g => `${hrs(S(g).mainStory)}h story`));
+      "Short story",
+      (g => `${hrs(S(g).mainStory)}h main`));
 
     // Top rated — best Metacritic you haven't touched
     take(pool
       .filter(g => { const s = S(g.appid); return typeof s.metaScore === "number" && s.metaScore >= 75 && (s.playtimeMinutes||0) === 0; })
       .sort((x,y) => S(y.appid).metaScore - S(x.appid).metaScore)[0],
-      "Top rated",
+      "Highly rated",
       (g => `${S(g).metaScore} Metacritic`));
 
     // Pick it back up — most hours invested but under half done
     take(pool
       .filter(g => { const s = S(g.appid), a = achOf(g.appid); return (s.playtimeMinutes||0) >= 60 && (!a || a.none || a.pct < 0.5); })
       .sort((x,y) => (S(y.appid).playtimeMinutes||0) - (S(x.appid).playtimeMinutes||0))[0],
-      "Pick it back up",
-      (g => { const pm = S(g).playtimeMinutes; return `${pm/60 >= 10 ? Math.round(pm/60) : Math.round(pm/6)/10}h in already`; }));
+      "In progress",
+      (g => { const pm = S(g).playtimeMinutes; return `${pm/60 >= 10 ? Math.round(pm/60) : Math.round(pm/6)/10}h played`; }));
 
     // Wildcard — random, but stable for the session so it doesn't jump around
     const rest = pool.filter(g => !used.has(g.appid));
     if (rest.length) {
       let w = rest.find(g => g.appid === wildcardPick[data.activeId]);
       if (!w) { w = rest[Math.floor(Math.random()*rest.length)]; wildcardPick[data.activeId] = w.appid; }
-      take(w, "Wildcard", () => "Roll with it");
+      take(w, "Random", () => "Random pick");
     }
 
     if (picks.length < 2) { wrap.style.display = "none"; return; }
@@ -846,7 +959,9 @@
     const games = activeList().games;
     $("empty").style.display = games.length ? "none" : "block";
     $("games").classList.toggle("grid", view === "grid");
+    $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
+    $("viewCompact").classList.toggle("on", view === "compact");
     $("viewGrid").classList.toggle("on", view === "grid");
 
     if (view === "grid") {
@@ -854,16 +969,17 @@
         const a = achOf(g.appid);
         const pct = a && !a.none ? Math.round(a.pct*100) : 0;
         const full = a && !a.none && a.pct===1;
-        const achTxt = !a ? "" : a.none ? "" : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
+        const achTxt = !a ? `<span class="tna">— achv</span>` : a.none ? `<span class="tna">no achv</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         const s = stats[g.appid]||{};
-        const m = hrs(s.mainStory);
+        const m = hrs(s.mainStory), c100 = hrs(s.completionist);
         return `<li class="tile${animateNext?" enter":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
                onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}">
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
           <div class="tmeta">
             <div class="tname">${esc(g.name)}</div>
-            <div class="tstats">${achTxt}${achTxt&&m!=null?" · ":""}${m!=null?m+"h":""}</div>
+            <div class="tstats">${achTxt}</div>
+            <div class="tstats"><span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
           </div>
         </li>`;
       }).join("");
@@ -871,6 +987,35 @@
         el.onclick = () => { if (!sharedMode) openGameSheet(+el.dataset.tile); });
       animateNext = false;
       renderHero(); renderListbar();
+      return;
+    }
+
+    if (view === "compact") {
+      $("games").innerHTML = rows.map((g, gi) => {
+        const a = achOf(g.appid);
+        const s = stats[g.appid]||{};
+        const m = hrs(s.mainStory);
+        const pct = a && !a.none ? Math.round(a.pct*100) : 0;
+        const full = a && !a.none && a.pct===1;
+        const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
+        return `<li class="card thinrow${animateNext?" enter":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+          <div class="trow" data-open="${g.appid}">
+            <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+            <div class="tname1">${esc(g.name)}</div>
+            <div class="tmini">${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}</span></div>
+            ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
+          </div>
+          <div class="bar ${full?"full":""}"><i style="width:${pct}%"></i></div>
+        </li>`;
+      }).join("");
+      if (!sharedMode) {
+        $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); removeGame(+b.dataset.rm); });
+        $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => openGameSheet(+el.dataset.open));
+        wireSwipes();
+      }
+      animateNext = false;
+      renderHero(); renderListbar();
+      $("decideBtn").style.display = (!sharedMode && activeList().games.length >= 3) ? "block" : "none";
       return;
     }
 
@@ -1085,7 +1230,7 @@
     const reviewHtml = sharedMode ? "" :
       `<div class="gsSection">Your review</div>
        <div class="stars" id="gsStars">${starsHtml}</div>
-       <textarea class="noteBox" id="gsNote" placeholder="Notes to self — worth it? what's left? tips…">${esc(myNote.note||"")}</textarea>
+       <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
     $("gsBody").innerHTML = detailHtml + gridHtml + reviewHtml
@@ -1133,17 +1278,17 @@
   let dcGoal = null;
 
   const DC_GOALS = [
-    { id: "hundo", label: "🏆 100% a game" },
-    { id: "story", label: "📖 Just finish a story" },
-    { id: "fun",   label: "🎲 Whatever's fun" },
+    { id: "hundo", label: "100% a game" },
+    { id: "story", label: "Just finish a story" },
+    { id: "fun",   label: "Whatever's fun" },
   ];
   const DC_STYLES = [
-    { id: "short",  label: "⚡ Short & focused (under ~10h)" },
-    { id: "rpg",    label: "🗺️ Big RPG / open world" },
-    { id: "action", label: "🔫 Action & shooters" },
-    { id: "strat",  label: "🧠 Strategy & sims" },
-    { id: "indie",  label: "💎 Indie gems" },
-    { id: "any",    label: "🤷 Surprise me" },
+    { id: "short",  label: "Short & focused (under ~10h)" },
+    { id: "rpg",    label: "Big RPG / open world" },
+    { id: "action", label: "Action & shooters" },
+    { id: "strat",  label: "Strategy & sims" },
+    { id: "indie",  label: "Indie gems" },
+    { id: "any",    label: "Surprise me" },
   ];
   // Curated acclaimed picks per style, suggested only if not already tracked
   const DC_POOL = {
@@ -1167,23 +1312,64 @@
       default:       return true;
     }
   }
-  function goalScore(g, goal) {
+
+  // Taste profile: which genres you actually play and finish, learned from
+  // your whole collection — hours carry weight, completions carry more.
+  function tasteProfile() {
+    const w = {};
+    let total = 0;
+    for (const g of allGames()) {
+      const s = stats[g.appid] || {};
+      const a = achOf(g.appid);
+      const hours = (s.playtimeMinutes || 0) / 60;
+      const signal = Math.min(hours, 60) + (a && !a.none ? a.pct * 25 : 0) + (a && !a.none && a.pct === 1 ? 25 : 0);
+      if (signal <= 0) continue;
+      for (const gen of s.genres || []) { w[gen] = (w[gen] || 0) + signal; total += signal; }
+    }
+    if (total > 0) for (const k in w) w[k] = w[k] / total; // normalize 0..1
+    return w;
+  }
+
+  function goalScore(g, goal, taste) {
     const s = stats[g.appid] || {};
     const a = achOf(g.appid);
-    const meta = typeof s.metaScore === "number" ? s.metaScore : 60;
+    const playedH = (s.playtimeMinutes || 0) / 60;
+    let sc = 0;
+
+    // taste: how strongly this game's genres match what you demonstrably play
+    let tasteHit = 0;
+    for (const gen of s.genres || []) tasteHit += taste[gen] || 0;
+    sc += Math.min(25, tasteHit * 60);
+
+    // your own verdicts outrank any critic
+    const r = notes[g.appid]?.rating;
+    if (r >= 4) sc += 18;
+    else if (r === 3) sc += 4;
+    else if (r != null && r <= 2) sc -= 30;
+
+    // critics as a mild tiebreaker only
+    if (typeof s.metaScore === "number") sc += (s.metaScore - 70) * 0.25;
+
     if (goal === "hundo") {
-      if (!a || a.none || a.pct === 1) return -1; // needs achievable, unfinished
-      let sc = 40 * a.pct + meta * 0.3;
-      if (s.completionist != null) sc += Math.max(0, 25 - s.completionist * 0.25); // shorter 100%s float up
+      if (!a || a.none || a.pct === 1) return -1;
+      sc += 40 * a.pct; // momentum: closer = better
+      if (s.completionist != null) {
+        const remaining100 = Math.max(0, s.completionist * (1 - a.pct));
+        sc += Math.max(0, 22 - remaining100 * 0.22); // achievable 100%s float up
+      }
       return sc;
     }
     if (goal === "story") {
-      if (s.mainStory == null) return meta * 0.2; // still eligible, just weaker
-      const playedH = (s.playtimeMinutes || 0) / 60;
-      if (playedH > s.mainStory * 0.8) return -1; // probably already beaten
-      return meta * 0.5 + 15 + (playedH > 0 ? 8 : 0); // in-progress stories get a nudge
+      if (s.mainStory != null && playedH > s.mainStory * 0.85) return -1; // likely beaten
+      if (playedH >= 1) sc += 12; // already started: momentum
+      if (s.mainStory != null) {
+        const remaining = Math.max(0, s.mainStory - playedH);
+        sc += Math.max(0, 18 - remaining * 0.12); // finishable stories rank up
+      } else sc -= 8; // unknown length is a worse story bet
+      return sc;
     }
-    return meta * 0.5 + Math.random() * 20; // fun: quality + chaos
+    // fun: taste + a dash of chaos
+    return sc + Math.random() * 14;
   }
 
   function openDecider() {
@@ -1201,7 +1387,7 @@
     $("dcOpts").style.display = "flex";
     $("dcBack").style.display = dcGoal ? "block" : "none";
     const opts = dcGoal ? DC_STYLES : DC_GOALS;
-    $("dcTitle").textContent = dcGoal ? "What are you in the mood for?" : "What's the goal?";
+    $("dcTitle").textContent = dcGoal ? "What type of game?" : "What's the goal?";
     $("dcOpts").innerHTML = opts.map(o => `<button data-dc="${o.id}">${o.label}</button>`).join("");
     $("dcOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (!dcGoal) { dcGoal = b.dataset.dc; renderDcStep(); }
@@ -1210,7 +1396,7 @@
   }
 
   async function showDcResults(goal, style) {
-    $("dcTitle").textContent = "Here's what fits";
+    $("dcTitle").textContent = "Results";
     $("dcOpts").style.display = "none";
     $("dcBack").style.display = "block";
     const out = $("dcResults");
@@ -1224,8 +1410,10 @@
     let matched = pool.filter(g => styleMatch(g, style));
     let relaxed = false;
     if (matched.length < 1) { matched = pool; relaxed = true; }
+    const taste = tasteProfile();
+    const topTaste = Object.entries(taste).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
     const ranked = matched
-      .map(g => ({ g, sc: goalScore(g, goal) }))
+      .map(g => ({ g, sc: goalScore(g, goal, taste) }))
       .filter(x => x.sc >= 0)
       .sort((x,y) => y.sc - x.sc)
       .slice(0, 3)
@@ -1234,12 +1422,12 @@
     const mine = ranked.length
       ? ranked.map(g => `<div class="res" data-dcopen="${g.appid}" style="cursor:pointer">
           <img src="${capsule(g)}" alt="" onerror="this.style.visibility='hidden'">
-          <div class="n">${esc(g.name)}<div class="sub">${dcWhy(g, goal)}</div></div>
+          <div class="n">${esc(g.name)}<div class="sub">${dcWhy(g, goal, topTaste)}</div></div>
         </div>`).join("")
-      : `<div class="hint">Nothing in this list fits that combo — try another mood.</div>`;
+      : `<div class="hint">No matches in this list.</div>`;
 
     out.innerHTML = `<div class="dcSection">From your backlog${relaxed ? " (closest matches)" : ""}</div>` + mine
-      + `<div class="dcSection">Worth adding — community favorites</div><div class="hint" id="dcExtra">Finding picks <span class="spin"></span></div>`;
+      + `<div class="dcSection">Not in your lists — commonly recommended</div><div class="hint" id="dcExtra">Searching <span class="spin"></span></div>`;
 
     out.querySelectorAll("[data-dcopen]").forEach(el => el.onclick = () => {
       decideModal.classList.remove("show");
@@ -1261,7 +1449,7 @@
     }
     const extraEl = document.getElementById("dcExtra");
     if (!extraEl) return;
-    if (!extras.length) { extraEl.textContent = "You already own our picks for this — impressive."; return; }
+    if (!extras.length) { extraEl.textContent = "No suggestions — matches are already in your lists."; return; }
     extraEl.outerHTML = extras.map(it => `<div class="res" data-dcadd="${it.appid}">
         ${safeUrl(it.icon)?`<img src="${safeUrl(it.icon)}" alt="">`:`<div class="ph"></div>`}
         <div class="n">${esc(it.name)}</div>
@@ -1274,13 +1462,20 @@
       };
     });
   }
-  function dcWhy(g, goal) {
+  function dcWhy(g, goal, topTaste) {
     const s = stats[g.appid] || {}, a = achOf(g.appid);
+    const playedH = (s.playtimeMinutes || 0) / 60;
     const bits = [];
+    const r = notes[g.appid]?.rating;
+    if (r >= 4) bits.push(`you rated it ★${r}`);
     if (goal === "hundo" && a && !a.none) bits.push(`${a.t - a.u} achv to go`);
-    if (s.mainStory != null) bits.push(`${hrs(s.mainStory)}h story`);
-    if (typeof s.metaScore === "number") bits.push(`${s.metaScore} Metacritic`);
-    return bits.join(" · ");
+    if (goal === "story" && playedH >= 1 && s.mainStory != null)
+      bits.push(`${Math.max(0, Math.round((s.mainStory - playedH)*10)/10)}h left`);
+    else if (s.mainStory != null) bits.push(`${hrs(s.mainStory)}h story`);
+    const hit = (s.genres || []).find(gen => topTaste.includes(gen));
+    if (hit) bits.push(`matches your ${hit} playtime`);
+    else if (typeof s.metaScore === "number" && s.metaScore >= 80) bits.push(`${s.metaScore} Metacritic`);
+    return bits.slice(0, 3).join(" · ");
   }
 
   // ---- spin the wheel ----
@@ -1336,6 +1531,7 @@
 
   // ---- view toggle ----
   $("viewList").onclick = () => { view = "list"; save(VIEW_KEY, view); animateNext = true; renderGames(); };
+  $("viewCompact").onclick = () => { view = "compact"; save(VIEW_KEY, view); animateNext = true; renderGames(); };
   $("viewGrid").onclick = () => { view = "grid"; save(VIEW_KEY, view); animateNext = true; renderGames(); };
 
   function guideLinks(g, a) {
@@ -1454,6 +1650,16 @@
     if (!stats[g.appid]) fetchStats([g]);
     return true;
   }
+  // Bulk add: single state update, stats fetched in batches of 50
+  function addGamesBulk(items) {
+    const fresh = items.filter(g => g && !hasGame(g.appid));
+    if (!fresh.length) return 0;
+    for (const g of fresh) activeList().games.push({ appid:g.appid, name:g.name, icon:safeUrl(g.icon) });
+    persist(); syncUp(); renderGames();
+    const need = fresh.filter(g => !stats[g.appid]);
+    for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
+    return fresh.length;
+  }
   function removeGame(id) {
     const l = activeList();
     const idx = l.games.findIndex(g=>g.appid===id);
@@ -1570,10 +1776,27 @@
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const items = d.games||[];
+      const addable = items.filter(g => !hasGame(g.appid));
+      const allBtn = addable.length > 1
+        ? `<button class="addAll" id="libAddAll">Add all ${addable.length} games to ${esc(activeList().name)}</button>` : "";
       $("addResults").innerHTML = items.length
-        ? items.map(resultRow).join("")
+        ? allBtn + items.map(resultRow).join("")
         : `<div class="hint">${esc(d.note||"No games found.")}</div>`;
       wireResults($("addResults"), items);
+      const ab = document.getElementById("libAddAll");
+      if (ab) ab.onclick = () => {
+        if (ab.dataset.armed !== "1") {
+          ab.dataset.armed = "1";
+          ab.textContent = `Tap again to add all ${addable.length}`;
+          setTimeout(() => { if (ab.isConnected) { ab.dataset.armed = ""; ab.textContent = `Add all ${addable.length} games to ${activeList().name}`; } }, 3500);
+          return;
+        }
+        const n = addGamesBulk(addable);
+        ab.textContent = `Added ${n} ✓`;
+        ab.disabled = true;
+        $("addResults").querySelectorAll(".res").forEach(r => { r.classList.add("in"); const b = r.querySelector(".addOne"); if (b) b.textContent = "✓"; });
+        toast(`Added ${n} game${n>1?"s":""} to ${esc(activeList().name)}`);
+      };
     } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
 
@@ -1636,8 +1859,7 @@
   $("reviewCancel").onclick = () => reviewModal.classList.remove("show");
   reviewModal.onclick = e => { if (e.target===reviewModal) reviewModal.classList.remove("show"); };
   $("reviewConfirm").onclick = () => {
-    let n=0;
-    matches.filter(m=>m.include&&m.chosen).forEach(m=>{ if(addGame(m.chosen)) n++; });
+    const n = addGamesBulk(matches.filter(m=>m.include&&m.chosen).map(m=>m.chosen));
     reviewModal.classList.remove("show");
     toast(n?`Added ${n} game${n>1?"s":""} to ${esc(activeList().name)}`:"Nothing new to add");
   };
@@ -1662,7 +1884,13 @@
   function renderReview() {
     const ready = matches.filter(m=>m.include&&m.chosen).length;
     $("reviewHint").textContent = `${ready} of ${matches.length} will be added to ${activeList().name}. Untick wrong matches; tap a name to swap it.`;
-    $("reviewResults").innerHTML = matches.map((m,i) => {
+    const addableCount = matches.filter(m => m.chosen && !hasGame(m.chosen.appid)).length;
+    const master = addableCount > 1
+      ? `<div class="res" style="background:none;border-style:dashed">
+           <div class="n"><b>Select all matched games</b><div class="sub">${addableCount} can be added</div></div>
+           <input type="checkbox" id="reviewAll" ${matches.every(m=>!m.chosen||hasGame(m.chosen.appid)||m.include)?"checked":""}>
+         </div>` : "";
+    $("reviewResults").innerHTML = master + matches.map((m,i) => {
       const c = m.chosen, inList = c && hasGame(c.appid);
       const label = c ? esc(c.name) : `<span style="color:var(--ink-dim)">No match: "${esc(m.title)}"</span>`;
       const sub = c && m.options.length>1 ? `read as "${esc(m.title)}" · tap name to swap` : "";
@@ -1675,7 +1903,12 @@
         ${right}
       </div>`;
     }).join("");
-    $("reviewResults").querySelectorAll("input[type=checkbox]").forEach(cb =>
+    const masterCb = document.getElementById("reviewAll");
+    if (masterCb) masterCb.onchange = () => {
+      matches.forEach(m => { if (m.chosen && !hasGame(m.chosen.appid)) m.include = masterCb.checked; });
+      renderReview();
+    };
+    $("reviewResults").querySelectorAll("input[type=checkbox][data-i]").forEach(cb =>
       cb.onchange = () => { matches[+cb.dataset.i].include = cb.checked;
         const ready = matches.filter(m=>m.include&&m.chosen).length;
         $("reviewHint").textContent = `${ready} of ${matches.length} will be added to ${activeList().name}. Untick wrong matches; tap a name to swap it.`; });
@@ -1702,8 +1935,97 @@
   }
   // XP: 10 per achievement + 250 per 100%'d game. Level = sqrt(xp/100).
   // (Keep in sync with the same formula in api/friends.js.)
-  function xpOf(t){ return t.achU * 10 + t.done * 250; }
+  // Completion trophies: milestone tiers for games 100%'d. Each earned
+  // trophy grants a flat XP boost, and they stack.
+  // (Keep trophyBonus in sync with the same values in api/friends.js.)
+  const TROPHIES = [
+    { min: 1,    name: "Wood",     xp: 100,    c1: "#9a6b3f", c2: "#6b4423" },
+    { min: 10,   name: "Bronze",   xp: 500,    c1: "#c8824a", c2: "#8c5427" },
+    { min: 25,   name: "Silver",   xp: 1500,   c1: "#d7dfe9", c2: "#96a1b1" },
+    { min: 50,   name: "Gold",     xp: 4000,   c1: "#f0c25e", c2: "#c9962f" },
+    { min: 100,  name: "Platinum", xp: 10000,  c1: "#eef4fb", c2: "#aebfd2" },
+    { min: 250,  name: "Diamond",  xp: 30000,  c1: "#9fe8d8", c2: "#3fa98d" },
+    { min: 1000, name: "Heavenly", xp: 150000, c1: "#faf6ea", c2: "#e3d9bd" },
+  ];
+  function trophyBonus(done) {
+    let b = 0;
+    for (const t of TROPHIES) if (done >= t.min) b += t.xp;
+    return b;
+  }
+  // Hand-drawn trophy: one cup silhouette, per-tier materials. Heavenly gets
+  // gold trim and light rays.
+  function trophySvg(tier, size) {
+    const t = TROPHIES[tier];
+    const id = "tg" + tier;
+    const heavenly = t.name === "Heavenly";
+    const diamond = t.name === "Diamond";
+    const trim = heavenly ? "#e8b64c" : "none";
+    return `<svg width="${size}" height="${size}" viewBox="0 0 48 48" fill="none">
+      <defs>
+        <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${t.c1}"/><stop offset="1" stop-color="${t.c2}"/>
+        </linearGradient>
+      </defs>
+      ${heavenly ? `<g stroke="#e8b64c" stroke-width="1.4" opacity="0.55" stroke-linecap="round">
+        <path d="M24 1.5v4M10.5 5.5l2.4 3.2M37.5 5.5l-2.4 3.2M4.5 14l3.6 1.6M43.5 14l-3.6 1.6"/>
+      </g>` : ""}
+      <path d="M14 9h20v9.5a10 10 0 0 1-20 0V9z" fill="url(#${id})" ${heavenly ? `stroke="${trim}" stroke-width="1.6"` : ""}/>
+      <path d="M14 11H9.5a1 1 0 0 0-1 1.1c.4 4.4 3 7.2 6.4 8" stroke="${heavenly ? trim : t.c2}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M34 11h4.5a1 1 0 0 1 1 1.1c-.4 4.4-3 7.2-6.4 8" stroke="${heavenly ? trim : t.c2}" stroke-width="2.4" stroke-linecap="round"/>
+      ${diamond ? `<path d="M18 12l4 5 4-6 4 6" stroke="#e9fff8" stroke-width="1.2" opacity="0.8"/>` : ""}
+      ${!diamond && !heavenly ? `<path d="M18.5 12.5c1 3 1 6 .2 8.5" stroke="#ffffff" stroke-width="1.6" opacity="0.28" stroke-linecap="round"/>` : ""}
+      <path d="M22.5 28.5h3l1 6h-5z" fill="url(#${id})"/>
+      <rect x="17" y="34.5" width="14" height="3.4" rx="1.2" fill="url(#${id})" ${heavenly ? `stroke="${trim}" stroke-width="1.2"` : ""}/>
+      <rect x="14" y="38.8" width="20" height="4.4" rx="1.5" fill="${t.c2}" ${heavenly ? `stroke="${trim}" stroke-width="1.2"` : ""}/>
+      ${heavenly ? `<path d="M24 13.5l1.3 2.6 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z" fill="#e8b64c"/>` : ""}
+    </svg>`;
+  }
+  function xpOf(t){ return t.achU * 10 + t.done * 250 + trophyBonus(t.done); }
   function levelOf(xp){ return Math.floor(Math.sqrt(xp / 100)); }
+
+  // Rank ladder: named tiers over the level curve, with grades inside each
+  // tier (Recruit II, Veteran IV...). Insignia chevrons build as you climb.
+  const RANKS = [
+    { min: 0,  name: "Newcomer" },
+    { min: 2,  name: "Recruit" },
+    { min: 5,  name: "Adventurer" },
+    { min: 9,  name: "Veteran" },
+    { min: 14, name: "Elite" },
+    { min: 20, name: "Master" },
+    { min: 27, name: "Legend" },
+    { min: 35, name: "Mythic" },
+    { min: 45, name: "Eternal" },
+  ];
+  const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
+  function rankOf(level) {
+    let idx = 0;
+    for (let i = 0; i < RANKS.length; i++) if (level >= RANKS[i].min) idx = i;
+    const r = RANKS[idx];
+    const next = RANKS[idx + 1] || null;
+    const grade = level - r.min;
+    return {
+      name: r.name,
+      grade: idx === 0 ? "" : ROMAN[Math.min(grade, ROMAN.length - 1)],
+      tier: idx,
+      nextName: next ? next.name : null,
+      nextAt: next ? next.min : null,
+    };
+  }
+  // Insignia: 1-4 stacked chevrons (repeating), a diamond appears from tier 5,
+  // colors climb steel -> gold -> teal.
+  function insigniaSvg(tier, size) {
+    if (tier <= 0) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#8b96a8" stroke-width="2"><circle cx="12" cy="12" r="4.5"/></svg>`;
+    const color = tier >= 7 ? "var(--teal)" : tier >= 5 ? "var(--gold)" : tier >= 3 ? "#c6cede" : "#8b96a8";
+    const chevrons = ((tier - 1) % 4) + 1;
+    let paths = "";
+    const gap = 4.6, startY = 19 - (chevrons - 1) * gap;
+    for (let i = 0; i < chevrons; i++) {
+      const y = startY + i * gap;
+      paths += `<path d="M5 ${y}l7-4.6 7 4.6"/>`;
+    }
+    if (tier >= 5) paths += `<path d="M12 2.6l2 2.6-2 2.6-2-2.6z" fill="${color}" stroke="none"/>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round">${paths}</svg>`;
+  }
 
   function renderProfile() {
     const games = allGames();
@@ -1718,12 +2040,14 @@
     // level + XP progress
     const xp = xpOf(t);
     const lvl = levelOf(xp);
+    const rank = rankOf(lvl);
     const floor = 100 * lvl * lvl, next = 100 * (lvl+1) * (lvl+1);
     const prog = Math.max(0, Math.min(1, (xp - floor) / (next - floor)));
     $("pLevel").innerHTML = `
-      <span class="lvlChip">LV ${lvl}</span>
+      <div class="insignia">${insigniaSvg(rank.tier, 40)}</div>
       <div class="lvlBarWrap">
-        <div class="lvlNums">${xp.toLocaleString()} XP · ${(next - xp).toLocaleString()} to LV ${lvl+1}</div>
+        <div class="rankName">${rank.name}${rank.grade ? " " + rank.grade : ""} <span class="lvlTag">LV ${lvl}</span></div>
+        <div class="lvlNums">${xp.toLocaleString()} XP · ${(next - xp).toLocaleString()} to LV ${lvl+1}${rank.nextAt != null ? ` · ${esc(rank.nextName)} at LV ${rank.nextAt}` : ""}</div>
         <div class="xp"><i style="width:${Math.round(prog*100)}%"></i></div>
       </div>`;
     $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
@@ -1739,37 +2063,39 @@
     $("pGrid").innerHTML = cells.map(c =>
       `<div class="cell ${c.cls||""}"><div class="v">${c.v}</div><div class="k">${c.k}</div></div>`).join("");
     renderChart();
-    renderBadges(t);
+    renderTrophies(t);
     renderWrapup();
     renderShowcase();
     renderFriends();
   }
 
-  // ---- badges ----
-  function renderBadges(t) {
-    const games = allGames();
-    const totalPlayed = games.reduce((sum,g) => sum + (stats[g.appid]?.playtimeMinutes||0), 0) / 60;
-    const rarest = showcase.length ? Math.min(...showcase.map(x=>x.pct)) : null;
-    const lvl = levelOf(xpOf(t));
-    const defs = [
-      { i:"🏆", n:"First Blood", k:"100% a game", ok: t.done >= 1 },
-      { i:"🖐️", n:"High Five", k:"5 completions", ok: t.done >= 5 },
-      { i:"🔟", n:"Perfect Ten", k:"10 completions", ok: t.done >= 10 },
-      { i:"👑", n:"Completionist", k:"25 completions", ok: t.done >= 25 },
-      { i:"💯", n:"Century", k:"100 achievements", ok: t.achU >= 100 },
-      { i:"⚡", n:"Overachiever", k:"500 achievements", ok: t.achU >= 500 },
-      { i:"🌌", n:"Millennium", k:"1,000 achievements", ok: t.achU >= 1000 },
-      { i:"📚", n:"Curator", k:"25 games tracked", ok: games.length >= 25 },
-      { i:"⏳", n:"Devoted", k:"100h played", ok: totalPlayed >= 100 },
-      { i:"🎖️", n:"Rare Hunter", k:"own a <5% achievement", ok: rarest != null && rarest < 5 },
-      { i:"💎", n:"Untouchable", k:"own a <1% achievement", ok: rarest != null && rarest < 1 },
-      { i:"🚀", n:"Level 10", k:"reach level 10", ok: lvl >= 10 },
-    ];
-    const earned = defs.filter(d=>d.ok).length;
-    $("pBadges").innerHTML = `<div class="chartBox"><div class="ct">Badges — ${earned}/${defs.length}</div>
-      <div class="badgeGrid">` + defs.map(d =>
-        `<div class="badge ${d.ok?"earned":"locked"}"><div class="bi">${d.i}</div><div class="bn">${d.n}</div><div class="bk">${d.k}</div></div>`
-      ).join("") + `</div></div>`;
+  // ---- completion trophies ----
+  function renderTrophies(t) {
+    const done = t.done;
+    let curIdx = -1;
+    for (let i = 0; i < TROPHIES.length; i++) if (done >= TROPHIES[i].min) curIdx = i;
+    const cur = curIdx >= 0 ? TROPHIES[curIdx] : null;
+    const nxt = TROPHIES[curIdx + 1] || null;
+    const prog = nxt ? Math.min(1, (done - (cur ? cur.min : 0)) / (nxt.min - (cur ? cur.min : 0))) : 1;
+    const road = TROPHIES.map((tr, i) => `
+      <div class="tMini ${done >= tr.min ? "got" : ""}">
+        ${trophySvg(i, 30)}
+        <div class="tmn">${tr.name}</div>
+        <div class="tmk">${tr.min} · +${tr.xp >= 1000 ? (tr.xp/1000)+"k" : tr.xp} XP</div>
+      </div>`).join("");
+    $("pBadges").innerHTML = `<div class="chartBox">
+      <div class="ct">Completion trophies</div>
+      <div class="tHero">
+        <div class="tArt">${cur ? trophySvg(curIdx, 62) : `<div class="tEmpty"></div>`}</div>
+        <div class="tInfo">
+          <div class="tTitle">${cur ? cur.name + " Trophy" : "No trophy yet"}</div>
+          <div class="tSub">${done} game${done===1?"":"s"} 100%'d${cur ? ` · +${trophyBonus(done).toLocaleString()} XP from trophies` : ""}</div>
+          ${nxt ? `<div class="tSub dim">${nxt.min - done} more to ${nxt.name}</div>
+          <div class="xp" style="margin-top:6px"><i style="width:${Math.round(prog*100)}%"></i></div>` : `<div class="tSub dim">All tiers earned.</div>`}
+        </div>
+      </div>
+      <div class="tRoad">${road}</div>
+    </div>`;
   }
 
   // ---- year wrap-up ----
@@ -1786,7 +2112,7 @@
       <div class="grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="cell teal"><div class="v" style="font-size:18px">${doneGain}</div><div class="k">games 100%'d</div></div>
         <div class="cell gold"><div class="v" style="font-size:18px">${achGain!=null?achGain:"—"}</div><div class="k">achievements earned</div></div>
-        <div class="cell"><div class="v" style="font-size:18px">${pctMove!=null?(pctMove>=0?"+":"")+pctMove+"%":"—"}</div><div class="k">completion moved</div></div>
+        <div class="cell"><div class="v" style="font-size:18px">${pctMove!=null?(pctMove>=0?"+":"")+pctMove+"%":"—"}</div><div class="k">completion change</div></div>
       </div>
       <div class="hint" style="margin-top:8px">Tracking since ${esc(first.d)}</div></div>`;
   }
@@ -1800,9 +2126,9 @@
         <div class="tn">${esc(x.name)}<div class="tg">${esc(x.game)}</div></div>
         <div class="tp">${x.pct}%</div>
       </div>`).join("");
-    el.innerHTML = `<div class="chartBox"><div class="ct">Trophy shelf — your rarest</div>
-      ${rows || `<div class="hint" style="margin:0">${canScan ? "Scan your games to find your rarest unlocked achievements." : "Link your Steam account to build a trophy shelf."}</div>`}
-      ${canScan ? `<button class="scanBtn" id="scanTrophies">${showcase.length ? "Rescan" : "Scan my trophies"}</button>` : ""}
+    el.innerHTML = `<div class="chartBox"><div class="ct">Rarest achievements</div>
+      ${rows || `<div class="hint" style="margin:0">${canScan ? "Scan your games to list your rarest unlocked achievements." : "Link your Steam account to build a trophy shelf."}</div>`}
+      ${canScan ? `<button class="scanBtn" id="scanTrophies">${showcase.length ? "Rescan" : "Scan achievements"}</button>` : ""}
     </div>`;
     const btn = $("scanTrophies") || document.getElementById("scanTrophies");
     if (btn) btn.onclick = scanTrophies;
@@ -1820,7 +2146,7 @@
     const best = [];
     for (let i = 0; i < candidates.length; i++) {
       const g = candidates[i];
-      toast(`Scanning trophies… ${i+1}/${candidates.length} <span class="spin"></span>`);
+      toast(`Scanning… ${i+1}/${candidates.length} <span class="spin"></span>`);
       try {
         const r = await fetch("/api/achievements?appid=" + g.appid);
         const d = await r.json();
@@ -1835,8 +2161,8 @@
     best.sort((a,b) => a.pct - b.pct);
     showcase = best.slice(0, 5);
     persist(); syncUp();
-    renderShowcase(); renderBadges(totals(allGames()));
-    toast(`Trophy shelf updated — rarest: ${showcase[0].pct}%`);
+    renderShowcase();
+    toast(`Scan complete. Rarest: ${showcase[0].pct}%`);
   }
 
   function renderChart() {
@@ -1865,14 +2191,14 @@
     const myT = totals(allGames());
     const render = (friends, note) => {
       if (!friends.length) {
-        el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">${esc(note || "None of your Steam friends use this app yet — share your link!")}</div></div>`;
+        el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">${esc(note || "No Steam friends with accounts here yet.")}</div></div>`;
         return;
       }
       el.innerHTML = `<div class="chartBox"><div class="ct">Friends on Backlog</div>`
-        + `<div class="friendRow"><img src="${safeUrl(me?.avatar)||""}" alt=""><span class="lv">LV ${levelOf(xpOf(myT))}</span><div class="fn">You</div><div class="fs">${myT.achT?Math.round(myT.achPct*100)+"%":"—"} <span class="dim">· ${myT.done} done</span></div></div>`
+        + `<div class="friendRow"><img src="${safeUrl(me?.avatar)||""}" alt=""><span class="lv">${insigniaSvg(rankOf(levelOf(xpOf(myT))).tier, 15)} LV ${levelOf(xpOf(myT))}</span><div class="fn">You</div><div class="fs">${myT.achT?Math.round(myT.achPct*100)+"%":"—"} <span class="dim">· ${myT.done} done</span></div></div>`
         + friends.map(f => `<div class="friendRow">
             ${safeUrl(f.avatar)?`<img src="${safeUrl(f.avatar)}" alt="">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--surface-2)"></div>`}
-            ${f.level!=null?`<span class="lv">LV ${f.level}</span>`:""}
+            ${f.level!=null?`<span class="lv">${insigniaSvg(rankOf(f.level).tier, 15)} LV ${f.level}</span>`:""}
             <div class="fn">${esc(f.name||"Player")}</div>
             <div class="fs">${f.achPct!=null?f.achPct+"%":"—"} <span class="dim">· ${f.done} done · ${f.games} games</span></div>
           </div>`).join("")
@@ -2044,7 +2370,7 @@
       const dU = (now.achUnlocked ?? 0) - (old.u ?? 0);
       const dPm = (now.playtimeMinutes ?? 0) - (old.pm ?? 0);
       const hit100 = now.achTotal > 0 && now.achUnlocked === now.achTotal && old.t > 0 && old.u < old.t;
-      if (hit100) items.push({ pri: 0, html: `<b>${esc(nameOf[appid])}</b> <span class="up">hit 100%! 🏆</span>` });
+      if (hit100) items.push({ pri: 0, html: `<b>${esc(nameOf[appid])}</b> <span class="up">hit 100%</span>` });
       else if (dU > 0) items.push({ pri: 1, html: `<span class="up">+${dU}</span> achievement${dU>1?"s":""} in <b>${esc(nameOf[appid])}</b>` });
       else if (dPm >= 30) items.push({ pri: 2, html: `<span class="up">+${dPm/60>=10?Math.round(dPm/60):Math.round(dPm/6)/10}h</span> in <b>${esc(nameOf[appid])}</b>` });
     }
