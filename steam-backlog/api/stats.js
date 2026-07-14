@@ -51,20 +51,72 @@ async function playtimeMap(key, steamId) {
   }
 }
 
-// Metacritic score + genres via Steam's store data, in one call.
-async function storeMeta(appid) {
+// Metacritic score, fetched from metacritic.com directly (Steam's stored
+// scores are stale for many games). Slug is derived from the game name;
+// misses fall back to Steam's stored score below.
+function mcSlug(name) {
+  return name
+    .replace(/[\u2122\u00ae\u00a9]/g, "")
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+async function mcScore(name) {
+  if (!name) return null;
   try {
-    const d = await getJson(
-      `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=metacritic,genres&l=english`
-    );
-    const entry = d?.[appid];
-    if (!entry?.success) return { metaScore: null, genres: [] };
-    const s = entry?.data?.metacritic?.score;
-    const genres = (entry?.data?.genres || []).map((g) => g.description).slice(0, 6);
-    return { metaScore: typeof s === "number" ? s : null, genres };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(`https://www.metacritic.com/game/${mcSlug(name)}/`, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+    });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const html = await r.text();
+    // structured data first, then a scoped regex fallback
+    const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (ld) {
+      try {
+        const j = JSON.parse(ld[1]);
+        const v = parseInt(j?.aggregateRating?.ratingValue, 10);
+        if (v >= 0 && v <= 100) return v;
+      } catch { /* fall through */ }
+    }
+    const m = html.match(/"ratingValue":\s*"?(\d{1,3})"?/);
+    if (m) { const v = +m[1]; if (v >= 0 && v <= 100) return v; }
+    return null;
   } catch {
-    return { metaScore: null, genres: [] };
+    return null;
   }
+}
+
+// Genres (and fallback score) via Steam's store data.
+async function storeMeta(appid, name) {
+  const steamP = (async () => {
+    try {
+      const d = await getJson(
+        `https://store.steampowered.com/api/appdetails?appids=${appid}&filters=metacritic,genres&l=english`
+      );
+      const entry = d?.[appid];
+      if (!entry?.success) return { score: null, genres: [] };
+      const sc = entry?.data?.metacritic?.score;
+      return {
+        score: typeof sc === "number" ? sc : null,
+        genres: (entry?.data?.genres || []).map((g) => g.description).slice(0, 6),
+      };
+    } catch {
+      return { score: null, genres: [] };
+    }
+  })();
+  const [mc, steam] = await Promise.all([mcScore(name), steamP]);
+  return { metaScore: mc ?? steam.score, genres: steam.genres };
 }
 
 // Very small name similarity: normalized token overlap. Enough to pick the
@@ -194,7 +246,7 @@ export default async function handler(req, res) {
       .map((it) => ({
         appid: +it.appid,
         name: typeof it.name === "string" ? it.name : "",
-        hasMeta: ("metaScore" in it) && ("genres" in it),
+        hasMeta: ("metaScore" in it) && ("genres" in it) && it.metaV === 2,
         metaScore: "metaScore" in it
           ? (typeof it.metaScore === "number" ? it.metaScore : null)
           : undefined,
@@ -214,11 +266,11 @@ export default async function handler(req, res) {
         (key && steamId) ? steamAchievements(appid, key, steamId)
             : Promise.resolve({ achTotal: null, achUnlocked: null }),
         hltbTimes(appid, name),
-        hasMeta ? Promise.resolve({ metaScore: knownMeta, genres: knownGenres || [] }) : storeMeta(appid),
+        hasMeta ? Promise.resolve({ metaScore: knownMeta, genres: knownGenres || [] }) : storeMeta(appid, name),
       ]);
       // null = not owned; a number (possibly 0) = owned
       const playtimeMinutes = playtimes.has(appid) ? playtimes.get(appid) : null;
-      results[appid] = { ...ach, ...hltb, playtimeMinutes, metaScore: store.metaScore, genres: store.genres };
+      results[appid] = { ...ach, ...hltb, playtimeMinutes, metaScore: store.metaScore, genres: store.genres, metaV: 2 };
     })
   );
 

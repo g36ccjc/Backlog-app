@@ -9,7 +9,7 @@
 <title>Backlog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
@@ -26,8 +26,8 @@
     --teal: #47c69f;
     --danger: #d96a61;
     --r: 18px;
-    --display: "Space Grotesk", -apple-system, sans-serif;
-    --body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --display: "Chakra Petch", -apple-system, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -78,7 +78,7 @@
   .xp { margin-top: 10px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
   .xp > i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); transition: width 0.6s cubic-bezier(.22,1,.36,1); position: relative; overflow: hidden; }
   @media (prefers-reduced-motion: no-preference) {
-    .hero .xp > i::after, .lvlBarWrap .xp > i::after, .loginXp i::after {
+    .hero .xp > i::after {
       content: ""; position: absolute; inset: 0;
       background: linear-gradient(105deg, transparent 32%, rgba(255,255,255,0.4) 50%, transparent 68%);
       transform: translateX(-130%);
@@ -219,7 +219,8 @@
   .tmini { display: flex; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; }
   .tmini .a { color: var(--gold); } .tmini .a.full { color: var(--teal); }
   .tmini .tna { opacity: 0.5; }
-  .card.thinrow .rm { padding: 4px 6px; font-size: 13px; }
+  .card.thinrow .rm { padding: 4px 8px; font-size: 13px; background: none; border: none; color: var(--ink-dim); opacity: 0.55; cursor: pointer; }
+  .card.thinrow .rm:hover { color: var(--danger); opacity: 1; }
   .card.thinrow .bar { height: 2px; }
   .empty { text-align: center; color: var(--ink-dim); padding: 40px 20px; line-height: 1.6; }
   .obBtns { display: flex; flex-direction: column; gap: 9px; max-width: 300px; margin: 0 auto; }
@@ -370,24 +371,6 @@
   .spin { display:inline-block; width:12px; height:12px; border:2px solid var(--ink-dim); border-top-color: var(--gold); border-radius:50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }
   @keyframes sp { to { transform: rotate(360deg); } }
   button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-  /* ambient drift: two layers of faint gold sparks rising slowly */
-  @media (prefers-reduced-motion: no-preference) {
-    body::before, body::after {
-      content: ""; position: fixed; left: 0; right: 0; top: -260px; bottom: 0;
-      pointer-events: none; z-index: -1;
-    }
-    body::before {
-      background-image: radial-gradient(circle, rgba(232,182,76,0.22) 0 1px, transparent 1.6px);
-      background-size: 210px 240px;
-      animation: drift 90s linear infinite;
-    }
-    body::after {
-      background-image: radial-gradient(circle, rgba(232,182,76,0.12) 0 1.4px, transparent 2px);
-      background-size: 320px 380px;
-      animation: drift 150s linear infinite;
-    }
-    @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-240px); } }
-  }
   ::selection { background: rgba(232,182,76,0.3); }
   * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -447,10 +430,6 @@
       radial-gradient(640px 320px at 50% -110px, rgba(228,184,92,0.055), transparent 70%),
       var(--bg);
     font-size: 14.5px; letter-spacing: 0.005em;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    body::before { background-image: radial-gradient(circle, rgba(228,184,92,0.16) 0 1px, transparent 1.6px); }
-    body::after  { background-image: radial-gradient(circle, rgba(228,184,92,0.09) 0 1.4px, transparent 2px); }
   }
 
   /* topbar: deep glass */
@@ -554,6 +533,78 @@
 
   /* uppercase labels: unified tracking */
   .featTitle, .chartBox .ct, .gsSection, .dcSection, .visitFeed .vfTitle { letter-spacing: 0.08em; font-size: 11.5px; }
+
+  /* ================= high-contrast pass ================= */
+  /* real layer separation: darker canvas, lighter raised surfaces */
+  html { background: #090b0f; }
+  body {
+    background:
+      radial-gradient(680px 340px at 50% -120px, rgba(228,184,92,0.07), transparent 70%),
+      linear-gradient(180deg, #0d1017 0%, #090b0f 100%);
+    background-attachment: fixed;
+  }
+  .card, .tile, .chartBox, .pLevel, .fcard, .sheet { background: #171d2a; }
+  .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
+
+  /* topbar: borderless fade */
+  .top { border-bottom: none; background: linear-gradient(180deg, rgba(9,11,15,0.92) 55%, rgba(9,11,15,0)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* hero: command panel */
+  .hero {
+    margin: 18px 0 12px; padding: 18px 17px 17px;
+    background: linear-gradient(180deg, rgba(228,184,92,0.05), rgba(228,184,92,0) 45%), #171d2a;
+    border: 1px solid var(--line-solid); border-radius: 22px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+    position: relative; overflow: hidden;
+  }
+  .hero::before { content: ""; position: absolute; top: 0; left: 20px; right: 20px; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(228,184,92,0.5), transparent); }
+  .hero .line { font-size: 21px; min-height: 2.7em; }
+  .hero .line b, .hero .line .g { font-size: 30px; letter-spacing: -0.03em; }
+  .hero .xp { height: 9px; border-radius: 5px; }
+
+  /* game cards: cover-forward media rows */
+  .row { padding: 0 12px 0 0; gap: 14px; min-height: 74px; }
+  .cap { width: 122px; height: 74px; border-radius: 0; align-self: stretch; box-shadow: none; }
+  .card { border-radius: 19px; }
+  .card .info { padding: 11px 0; }
+  .gname { font-size: 15.5px; }
+  .card .bar { height: 3.5px; }
+
+  /* compact rows keep their slim geometry */
+  .card.thinrow .trow { padding: 8px 8px 9px 10px; min-height: 0; }
+  .card.thinrow { border-radius: 12px; }
+  .tcap { border-radius: 6px; }
+
+  /* chips: ghost until chosen */
+  .listbar button, .sorts button { border-color: transparent; color: var(--ink-dim); }
+  .listbar button.on { border-color: var(--line-strong); color: var(--ink); background: #1d2433; }
+  .listbar button.new { border: 1px dashed var(--line-strong); }
+  .sorts button.on { background: var(--gold); border-color: var(--gold); color: #171204; }
+  @media (hover:hover) { .sorts button:not(.on):hover, .listbar button:not(.on):hover { border-color: transparent; color: var(--ink); background: #161c28; } }
+
+  /* floating dock */
+  .dock {
+    left: 14px; right: 14px; bottom: calc(12px + env(safe-area-inset-bottom));
+    margin: 0 auto; max-width: 560px;
+    border: 1px solid var(--line-strong); border-radius: 20px;
+    background: rgba(20,25,36,0.82);
+    backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+    padding: 10px;
+  }
+  .dock button { border-radius: 13px; padding: 13px; }
+  main, .wrap { padding-bottom: 110px; }
+
+  /* grid tiles: deeper, art-led */
+  .tile { border-radius: 18px; }
+  .tile .cover { transition: transform 0.35s ease; }
+  @media (hover:hover) { .tile:hover .cover { transform: scale(1.045); } }
+
+  /* skeletons match the new row height */
+  .skel { height: 76px; border-radius: 19px; }
+
+  /* sheet handle + spacing */
+  .sheet { background: #171d2a; }
 </style>
 </head>
 <body>
@@ -863,6 +914,7 @@
       if (name) { l.name = name.slice(0,40); persist(); syncUp(); renderAll(); }
       return;
     }
+    if (isHundo(l)) { toast("The 100% list can't be deleted or renamed"); return; }
     const action = prompt(`"${l.name}": type a new name to rename, or type DELETE to remove it (its games move to ${data.lists[0].name}).`, l.name);
     if (action == null) return;
     if (action.trim().toUpperCase() === "DELETE") {
@@ -883,10 +935,45 @@
   // ---- hero: rotating time facts about this backlog ----
   let heroFacts = [], heroIdx = 0;
 
+  // completion-oriented facts for the 100% list
+  function buildHundoFacts(games) {
+    const gold = (v) => `<b class="g">${v}</b>`;
+    let playedTotal = 0, achU = 0;
+    let biggest = null, fastest = null;
+    for (const g of games) {
+      const st = stats[g.appid] || {};
+      const a = achOf(g.appid);
+      const playedH = (st.playtimeMinutes || 0) / 60;
+      playedTotal += playedH;
+      if (a && !a.none) achU += a.u;
+      if (playedH > 0) {
+        if (!biggest || playedH > (stats[biggest.appid].playtimeMinutes||0)/60) biggest = g;
+        if (!fastest || playedH < (stats[fastest.appid].playtimeMinutes||0)/60) fastest = g;
+      }
+    }
+    const n = games.length;
+    const facts = [];
+    facts.push(`${gold(n)} game${n===1?"":"s"} at ${gold("100%")}`);
+    if (playedTotal >= 1)
+      facts.push(`Total playtime across completions: ${gold(Math.round(playedTotal) + "h")}`);
+    if (playedTotal >= 24)
+      facts.push(`Equivalent to ${gold((playedTotal/24).toFixed(1) + " days")} of continuous play`);
+    if (achU > 0)
+      facts.push(`${gold(achU.toLocaleString())} achievements earned in this list`);
+    if (n >= 2 && playedTotal >= 1)
+      facts.push(`Average time per completion: ${gold(Math.round(playedTotal / n) + "h")}`);
+    if (biggest)
+      facts.push(`Longest completion: <b>${esc(biggest.name)}</b> (${gold(Math.round((stats[biggest.appid].playtimeMinutes||0)/60) + "h")})`);
+    if (fastest && fastest !== biggest)
+      facts.push(`Fastest completion: <b>${esc(fastest.name)}</b> (${gold(Math.round((stats[fastest.appid].playtimeMinutes||0)/60) + "h")})`);
+    return [facts[0], ...facts.slice(1).sort(() => Math.random() - 0.5)];
+  }
+
   function buildHeroFacts() {
     const games = activeList().games;
     const n = games.length;
     if (!n) return [];
+    if (isHundo(activeList())) return buildHundoFacts(games);
     let mainLeft = 0, compLeft = 0, playedTotal = 0, achU = 0, achT = 0, done = 0;
     let longest = null, quickest = null;
     for (const g of games) {
@@ -1130,7 +1217,7 @@
       }
       animateNext = false;
       renderHero(); renderListbar();
-      $("decideBtn").style.display = (!sharedMode && activeList().games.length >= 3) ? "block" : "none";
+      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
       return;
     }
 
@@ -1190,7 +1277,7 @@
     }
     animateNext = false;
     renderHero(); renderListbar();
-    $("decideBtn").style.display = (!sharedMode && activeList().games.length >= 3) ? "block" : "none";
+    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
@@ -1800,7 +1887,7 @@
         body: JSON.stringify({ items: items.map(g=>{
           const it = { appid: g.appid, name: g.name };
           const known = stats[g.appid];
-          if (known && "metaScore" in known) it.metaScore = known.metaScore; // cached — echo, don't refetch
+          if (known && "metaScore" in known && known.metaV === 2) { it.metaScore = known.metaScore; it.metaV = 2; } // cached from Metacritic — echo
           if (known && "genres" in known) it.genres = known.genres;
           return it;
         }) })
@@ -2340,10 +2427,23 @@
   $("backBtn").onclick = () => showProfile(false);
 
   // ---- import fully-completed games into a "Completed" list ----
+  function isHundo(l) { return l && (l.id === "hundo" || l.id === "completed" || l.name === "100%"); }
   function completedList() {
-    let l = data.lists.find(x => x.id === "completed");
-    if (!l) { l = { id: "completed", name: "Completed", games: [] }; data.lists.push(l); }
+    let l = data.lists.find(isHundo);
+    if (!l) {
+      l = { id: "hundo", name: "100%", games: [] };
+      data.lists.splice(1, 0, l); // sits right after Backlog
+    }
+    if (l.name !== "100%") l.name = "100%"; // migrate old "Completed" list
     return l;
+  }
+  function ensureHundo() {
+    const before = JSON.stringify(data.lists.map(x=>x.id));
+    completedList();
+    // keep it in slot 1
+    const idx = data.lists.findIndex(isHundo);
+    if (idx > 1) { const [l] = data.lists.splice(idx, 1); data.lists.splice(1, 0, l); }
+    if (JSON.stringify(data.lists.map(x=>x.id)) !== before) { persist(); syncUp(); }
   }
   async function scanCompleted(progress) {
     try {
@@ -2388,7 +2488,7 @@
           if (!have.has(g.appid)) { l.games.push({ appid: g.appid, name: g.name, icon: safeUrl(g.icon) }); added++; }
         });
         persist(); syncUp(); renderProfile(); renderListbar();
-        toast(`Added ${added} game${added===1?"":"s"} to Completed`);
+        toast(`Added ${added} game${added===1?"":"s"} to 100%`);
       }
     } catch (e) {
       toast("Couldn't scan: " + esc(e.message));
@@ -2574,6 +2674,7 @@
     }
     animateNext = true;
     await syncDown();
+    ensureHundo();
     renderAll();
     silentRefresh();
     document.addEventListener("visibilitychange", () => {
