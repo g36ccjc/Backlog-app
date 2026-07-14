@@ -216,12 +216,22 @@
   .trow { display: flex; align-items: center; gap: 10px; padding: 8px 6px 9px 8px; cursor: pointer; }
   .tcap { width: 56px; height: 26px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
   .tname1 { flex: 1; min-width: 0; font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tmini { display: flex; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tmini { display: flex; gap: 9px; font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tmini i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
   .tmini .a { color: var(--gold); } .tmini .a.full { color: var(--teal); }
   .tmini .tna { opacity: 0.5; }
   .card.thinrow .rm { padding: 4px 8px; font-size: 13px; background: none; border: none; color: var(--ink-dim); opacity: 0.55; cursor: pointer; }
   .card.thinrow .rm:hover { color: var(--danger); opacity: 1; }
   .card.thinrow .bar { height: 2px; }
+  /* edit lists sheet */
+  .listRow { display: flex; align-items: center; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line-solid); }
+  .listRow:last-child { border-bottom: none; }
+  .listRow .lname { flex: 1; min-width: 0; font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .listRow .lname .cnt { color: var(--ink-dim); font-weight: 500; font-size: 12px; }
+  .listRow button { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 9px; padding: 7px 10px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+  .listRow button:disabled { opacity: 0.25; cursor: default; }
+  .listRow .ldel { color: var(--danger); }
+  .listRow .ldel.arm { background: var(--danger); color: var(--ink); border-color: var(--danger); }
   .empty { text-align: center; color: var(--ink-dim); padding: 40px 20px; line-height: 1.6; }
   .obBtns { display: flex; flex-direction: column; gap: 9px; max-width: 300px; margin: 0 auto; }
   .obBtns button { font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; background: var(--surface); border: 1px solid var(--line-solid); color: var(--ink); text-align: left; }
@@ -562,13 +572,14 @@
   .hero .line b, .hero .line .g { font-size: 30px; letter-spacing: -0.03em; }
   .hero .xp { height: 9px; border-radius: 5px; }
 
-  /* game cards: cover-forward media rows */
-  .row { padding: 0 12px 0 0; gap: 14px; min-height: 74px; }
-  .cap { width: 122px; height: 74px; border-radius: 0; align-self: stretch; box-shadow: none; }
-  .card { border-radius: 19px; }
-  .card .info { padding: 11px 0; }
-  .gname { font-size: 15.5px; }
-  .card .bar { height: 3.5px; }
+  /* game cards: balanced media rows, art at its native ratio */
+  .row { padding: 12px 12px 14px 12px; gap: 13px; min-height: 0; align-items: center; }
+  .cap { width: 118px; height: 45px; border-radius: 9px; align-self: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+  .card { border-radius: 17px; }
+  .card .info { padding: 0; }
+  .gname { font-size: 15px; }
+  .card .bar { height: 3px; }
+  .cardBtns { align-self: center; }
 
   /* compact rows keep their slim geometry */
   .card.thinrow .trow { padding: 8px 8px 9px 10px; min-height: 0; }
@@ -740,6 +751,18 @@
     </div>
   </div>
 
+  <!-- edit lists sheet -->
+  <div class="modal" id="listModal">
+    <div class="sheet">
+      <h2>Edit lists</h2>
+      <div class="gsBody" id="listRows"></div>
+      <div class="footRow">
+        <button id="listNew">+ New list</button>
+        <button class="go" id="listDone">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- move sheet -->
   <div class="modal" id="moveModal">
     <div class="sheet">
@@ -892,7 +915,7 @@
     ).join("") + `<button class="new" data-new="1">+ New list</button>`;
     $("listbar").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (b.dataset.new) return createList();
-      if (b.dataset.l === data.activeId) return manageActiveList();
+      if (b.dataset.l === data.activeId) return openListEditor();
       data.activeId = b.dataset.l;
       animateNext = true;
       persist(); renderAll();
@@ -907,28 +930,56 @@
     persist(); syncUp(); renderAll();
     toast(`Created "${esc(name)}"`);
   }
-  function manageActiveList() {
-    const l = activeList();
-    if (l.id === "main") {
+  // ---- edit lists sheet: rename, reorder, add, delete ----
+  const listModal = $("listModal");
+  function openListEditor() { renderListEditor(); listModal.classList.add("show"); }
+  $("listDone").onclick = () => listModal.classList.remove("show");
+  listModal.onclick = e => { if (e.target === listModal) listModal.classList.remove("show"); };
+  $("listNew").onclick = () => { createList(); renderListEditor(); };
+
+  function renderListEditor() {
+    $("listRows").innerHTML = data.lists.map((l, i) => {
+      const locked = l.id === "main" || isHundo(l);
+      return `<div class="listRow">
+        <button data-lup="${i}" aria-label="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
+        <button data-ldown="${i}" aria-label="Move down" ${i === data.lists.length - 1 ? "disabled" : ""}>↓</button>
+        <div class="lname">${esc(l.name)} <span class="cnt">· ${l.games.length}</span></div>
+        <button data-lren="${i}" ${isHundo(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
+        <button class="ldel" data-ldel="${i}" ${locked ? "disabled" : ""} aria-label="Delete">✕</button>
+      </div>`;
+    }).join("");
+
+    const commit = () => { persist(); syncUp(); renderListbar(); renderListEditor(); };
+    $("listRows").querySelectorAll("[data-lup]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.lup;
+      [data.lists[i-1], data.lists[i]] = [data.lists[i], data.lists[i-1]];
+      commit();
+    });
+    $("listRows").querySelectorAll("[data-ldown]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.ldown;
+      [data.lists[i], data.lists[i+1]] = [data.lists[i+1], data.lists[i]];
+      commit();
+    });
+    $("listRows").querySelectorAll("[data-lren]").forEach(b => b.onclick = () => {
+      const l = data.lists[+b.dataset.lren];
       const name = (prompt("Rename this list:", l.name) || "").trim();
-      if (name) { l.name = name.slice(0,40); persist(); syncUp(); renderAll(); }
-      return;
-    }
-    if (isHundo(l)) { toast("The 100% list can't be deleted or renamed"); return; }
-    const action = prompt(`"${l.name}": type a new name to rename, or type DELETE to remove it (its games move to ${data.lists[0].name}).`, l.name);
-    if (action == null) return;
-    if (action.trim().toUpperCase() === "DELETE") {
-      const main = data.lists[0];
-      const have = new Set(main.games.map(g=>g.appid));
+      if (name) { l.name = name.slice(0, 40); commit(); renderAll(); }
+    });
+    $("listRows").querySelectorAll("[data-ldel]").forEach(b => b.onclick = () => {
+      if (b.dataset.armed !== "1") {
+        b.dataset.armed = "1"; b.classList.add("arm"); b.textContent = "Sure?";
+        setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.classList.remove("arm"); b.textContent = "✕"; } }, 3000);
+        return;
+      }
+      const l = data.lists[+b.dataset.ldel];
+      const main = data.lists.find(x => x.id === "main") || data.lists[0];
+      const have = new Set(main.games.map(g => g.appid));
       l.games.forEach(g => { if (!have.has(g.appid)) main.games.push(g); });
-      data.lists = data.lists.filter(x=>x.id!==l.id);
-      data.activeId = main.id;
-      persist(); syncUp(); renderAll();
-      toast("List deleted — games moved to " + esc(main.name));
-    } else if (action.trim()) {
-      l.name = action.trim().slice(0,40);
-      persist(); syncUp(); renderAll();
-    }
+      data.lists = data.lists.filter(x => x.id !== l.id);
+      if (data.activeId === l.id) data.activeId = main.id;
+      commit(); renderAll();
+      toast(`Deleted "${esc(l.name)}" — games moved to ${esc(main.name)}`);
+    });
   }
 
   // ============ hero + games ============
@@ -1196,7 +1247,7 @@
       $("games").innerHTML = rows.map((g, gi) => {
         const a = achOf(g.appid);
         const s = stats[g.appid]||{};
-        const m = hrs(s.mainStory);
+        const m = hrs(s.mainStory), c100 = hrs(s.completionist);
         const pct = a && !a.none ? Math.round(a.pct*100) : 0;
         const full = a && !a.none && a.pct===1;
         const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
@@ -1204,7 +1255,7 @@
           <div class="trow" data-open="${g.appid}">
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
-            <div class="tmini">${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}</span></div>
+            <div class="tmini">${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
             ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
           </div>
           <div class="bar ${full?"full":""}"><i style="width:${pct}%"></i></div>
@@ -2438,11 +2489,10 @@
     return l;
   }
   function ensureHundo() {
+    // creates the 100% list (slot 1) on first run; after that the user's
+    // chosen order is respected
     const before = JSON.stringify(data.lists.map(x=>x.id));
     completedList();
-    // keep it in slot 1
-    const idx = data.lists.findIndex(isHundo);
-    if (idx > 1) { const [l] = data.lists.splice(idx, 1); data.lists.splice(1, 0, l); }
     if (JSON.stringify(data.lists.map(x=>x.id)) !== before) { persist(); syncUp(); }
   }
   async function scanCompleted(progress) {
