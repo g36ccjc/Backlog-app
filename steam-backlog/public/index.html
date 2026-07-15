@@ -9,7 +9,7 @@
 <title>Backlog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
@@ -26,9 +26,7 @@
     --teal: #47c69f;
     --danger: #d96a61;
     --r: 18px;
-    --display: "Sora", -apple-system, sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, monospace;
-    --vio: #9d8cff;
+    --display: "Chakra Petch", -apple-system, sans-serif;
     --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -662,91 +660,6 @@
 
   /* sheet handle + spacing */
   .sheet { background: #171d2a; }
-
-  /* ================= design v3: night arcade ================= */
-  :root { --bg: #08090d; --surface: #10131b; --surface-2: #171b26; --ink: #e9ecf4; --ink-dim: #7e879b; --gold: #ffb454; --r: 10px; }
-  html { background: var(--bg); }
-  body { background: linear-gradient(180deg, #0a0c12 0%, #08090d 240px); }
-  .card, .tile, .chartBox, .pLevel, .fcard, .sheet, .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button, .selectBtn { background: var(--surface); }
-
-  /* topbar: flat instrument bar */
-  .top { background: rgba(8,9,13,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-solid); }
-  .wordmark { font-size: 19px; letter-spacing: -0.02em; }
-  .wordmark b { color: var(--vio); text-shadow: none; }
-
-  /* hero: flat panel, violet rail, no aurora */
-  .hero { border-radius: 14px; padding: 16px 16px 15px; background: var(--surface); box-shadow: none; border: 1px solid var(--line-solid); border-left: 3px solid var(--vio); }
-  .hero::before, .hero::after { display: none; }
-  .hero .line { font-size: 18px; min-height: 2.9em; }
-  .hero .line b, .hero .line .g { font-size: 25px; letter-spacing: -0.02em; }
-  .hero .xp { height: 7px; border-radius: 2px; }
-  .hero .xp > i { border-radius: 2px; }
-
-  /* joined list: one panel, hairline-divided rows */
-  .games { gap: 0; border: 1px solid var(--line-solid); border-radius: 14px; overflow: hidden; background: var(--surface); }
-  .games:empty { border: none; background: none; }
-  .card { border: none; border-radius: 0 !important; }
-  .card + .card { border-top: 1px solid var(--line-solid); }
-  @media (hover:hover) { .card:hover { box-shadow: none; transform: none; background: #141827; } }
-  .games.compact { gap: 0; }
-  .games.grid { gap: 10px; border: none; border-radius: 0; overflow: visible; background: none; }
-  .tile { border: 1px solid var(--line-solid); border-radius: 12px; }
-  .card.selon, .tile.selon { outline: 2px solid var(--vio); }
-  .card.selon::after, .tile.selon::after { background: var(--vio); color: #0e0a22; }
-
-  /* mono readouts for all stat lines */
-  .nums, .tmini, .tile .tstats, .fcard .fsub, .lvlNums, .friendRow .fs, .tmk, .visitFeed .vfItem .up { font-family: var(--mono); font-weight: 500; }
-  .nums { font-size: 11px; }
-  .tmini { font-size: 10.5px; }
-  .nums .meta { border-radius: 3px; }
-
-  /* chips: rectangular uppercase tags */
-  .listbar button, .sorts button { border-radius: 7px; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.07em; padding: 8px 12px; font-family: var(--mono); font-weight: 600; }
-  .listbar button.on { border-color: var(--vio); color: var(--vio); background: rgba(157,140,255,0.08); }
-  .listbar button.new { border: 1px dashed var(--line-strong); }
-  .sorts button.on { background: var(--vio); border-color: var(--vio); color: #0e0a22; }
-  @media (hover:hover) { .sorts button:not(.on):hover, .listbar button:not(.on):hover { color: var(--ink); background: var(--surface-2); } }
-  .filterBox, .viewToggle, .selectBtn { border-radius: 9px; }
-  .selectBtn.on { color: var(--vio); border-color: var(--vio); }
-  .viewToggle button.on { color: var(--vio); }
-
-  /* featured + sections */
-  .featTitle, .chartBox .ct, .gsSection, .dcSection, .visitFeed .vfTitle { font-family: var(--mono); font-weight: 600; letter-spacing: 0.12em; font-size: 10.5px; }
-  .chartBox .ct::before { background: var(--vio); box-shadow: none; }
-  .fcard { border-radius: 10px; }
-  .fcard .fwhy { font-family: var(--mono); letter-spacing: 0.1em; }
-  .decideBtn { border-radius: 10px; border: 1px solid var(--line-solid); color: var(--vio); font-family: var(--mono); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; }
-  .decideBtn:hover { border-color: var(--vio); color: var(--vio); }
-
-  /* sheets: full-width, top-rounded */
-  .modal { padding: 0; }
-  .sheet { border-radius: 18px 18px 0 0; margin-bottom: 0; border-left: none; border-right: none; border-bottom: none; box-shadow: 0 -16px 60px rgba(0,0,0,0.6); }
-  .sheet::after { background: linear-gradient(90deg, transparent, rgba(157,140,255,0.5), transparent); }
-
-  /* interactive = violet, progress stays amber */
-  .dock { border-radius: 16px; background: rgba(14,16,24,0.9); }
-  .dock .primary, .footRow .go, .addAll {
-    background: linear-gradient(180deg, #b3a5ff, var(--vio) 55%);
-    color: #0e0a22;
-    box-shadow: 0 3px 18px rgba(157,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
-  }
-  .steamBtn { background: linear-gradient(180deg, #b3a5ff, var(--vio) 55%); color: #0e0a22; box-shadow: 0 3px 20px rgba(157,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3); border-radius: 11px; }
-  .login::before { background: radial-gradient(36% 38% at 26% 24%, rgba(157,140,255,0.12), transparent 70%), radial-gradient(40% 42% at 78% 78%, rgba(255,180,84,0.07), transparent 70%); }
-  .loginXp i { background: linear-gradient(90deg, #c9962f, var(--gold)); }
-  .login .mark b { color: var(--vio); }
-  .selBar { border-radius: 14px; }
-  .selBar .selDel { color: var(--danger); }
-  .selBar button { font-family: var(--mono); text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; border-radius: 8px; }
-
-  /* profile */
-  .lvlChip, .friendRow .lv { background: var(--gold); }
-  .insignia { border-radius: 10px; }
-  .cell { border-radius: 10px; }
-  .badgeGrid { }
-  .trophyRow img { border-radius: 6px; }
-  .toast { border-radius: 12px; font-family: var(--mono); font-size: 12px; }
-  .skel { border-radius: 0; height: 74px; }
-  .games .skel { border-radius: 0; }
 </style>
 </head>
 <body>
