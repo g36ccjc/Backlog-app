@@ -736,6 +736,7 @@
         <button id="obImport">Import my Steam library</button>
         <button id="obAdd">Search &amp; add games</button>
         <button id="obScan">Scan my 100% completed games</button>
+        <button id="obWishlist">Sync my Steam wishlist</button>
       </div>
     </div>
   </div>
@@ -759,6 +760,7 @@
       <button class="share" id="shareBtn">Share current list</button>
       <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
       <button id="importCompletedBtn">Import my 100% completed games</button>
+      <button id="syncWishlistBtn">Sync my Steam wishlist</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
@@ -997,12 +999,12 @@
 
   function renderListEditor() {
     $("listRows").innerHTML = data.lists.map((l, i) => {
-      const locked = l.id === "main" || isHundo(l);
+      const locked = l.id === "main" || isHundo(l) || isWishlist(l);
       return `<div class="listRow">
         <button data-lup="${i}" aria-label="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
         <button data-ldown="${i}" aria-label="Move down" ${i === data.lists.length - 1 ? "disabled" : ""}>↓</button>
         <div class="lname">${esc(l.name)} <span class="cnt">· ${l.games.length}</span></div>
-        <button data-lren="${i}" ${isHundo(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
+        <button data-lren="${i}" ${isHundo(l) || isWishlist(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
         <button class="ldel" data-ldel="${i}" ${locked ? "disabled" : ""} aria-label="Delete">✕</button>
       </div>`;
     }).join("");
@@ -1044,6 +1046,26 @@
   // ---- hero: rotating time facts about this backlog ----
   let heroFacts = [], heroIdx = 0;
 
+  // wishlist-oriented facts
+  function buildWishlistFacts(games) {
+    const gold = (v) => `<b class="g">${v}</b>`;
+    const n = games.length;
+    let mainTotal = 0, mainCount = 0, metaHi = null;
+    for (const g of games) {
+      const st = stats[g.appid] || {};
+      if (typeof st.mainStory === "number") { mainTotal += st.mainStory; mainCount++; }
+      if (typeof st.metaScore === "number" && (!metaHi || st.metaScore > (stats[metaHi.appid]?.metaScore || 0))) metaHi = g;
+    }
+    const facts = [`${gold(n)} game${n===1?"":"s"} wishlisted`];
+    if (mainCount >= 1)
+      facts.push(`Story time if you owned it all: ${gold(Math.round(mainTotal) + "h")} across ${mainCount} known`);
+    if (mainTotal >= 24)
+      facts.push(`Equivalent to ${gold((mainTotal/24).toFixed(1) + " days")} of continuous play`);
+    if (metaHi)
+      facts.push(`Highest rated on wishlist: <b>${esc(metaHi.name)}</b> (${gold(stats[metaHi.appid].metaScore + " Metacritic")})`);
+    return [facts[0], ...facts.slice(1).sort(() => Math.random() - 0.5)];
+  }
+
   // completion-oriented facts for the 100% list
   function buildHundoFacts(games) {
     const gold = (v) => `<b class="g">${v}</b>`;
@@ -1083,6 +1105,7 @@
     const n = games.length;
     if (!n) return [];
     if (isHundo(activeList())) return buildHundoFacts(games);
+    if (isWishlist(activeList())) return buildWishlistFacts(games);
     let mainLeft = 0, compLeft = 0, playedTotal = 0, achU = 0, achT = 0, done = 0;
     let longest = null, quickest = null;
     for (const g of games) {
@@ -1200,7 +1223,7 @@
   const wildcardPick = {}; // listId -> appid, stable per session
   function renderFeatured() {
     const wrap = $("featWrap");
-    if (sharedMode) { wrap.style.display = "none"; return; }
+    if (sharedMode || isWishlist(activeList())) { wrap.style.display = "none"; return; }
     // candidates: games in this list that aren't 100% completed
     let pool = activeList().games.filter(g => {
       const a = achOf(g.appid);
@@ -1371,7 +1394,7 @@
       }
       animateNext = false;
       renderHero(); renderListbar();
-      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
+      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && !isWishlist(activeList()) && activeList().games.length >= 3) ? "block" : "none";
       return;
     }
 
@@ -1431,7 +1454,7 @@
     }
     animateNext = false;
     renderHero(); renderListbar();
-    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
+    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && !isWishlist(activeList()) && activeList().games.length >= 3) ? "block" : "none";
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
@@ -1710,6 +1733,10 @@
     toast(`Scanning your library <span class="spin"></span>`);
     await scanCompleted(msg => toast(msg + ` <span class="spin"></span>`));
     renderAll();
+  };
+  $("obWishlist").onclick = async () => {
+    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
+    await syncWishlist();
   };
 
   // ---- "can't decide" wizard ----
@@ -2499,6 +2526,7 @@
       </div>`;
     $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
     $("importCompletedBtn").style.display = me && me.steamId ? "block" : "none";
+    $("syncWishlistBtn").style.display = me && me.steamId ? "block" : "none";
     const cells = [
       { v: games.length, k: "games tracked" },
       { v: t.done, k: "games 100% completed", cls: "teal" },
@@ -2673,6 +2701,17 @@
 
   // ---- import fully-completed games into a "Completed" list ----
   function isHundo(l) { return l && (l.id === "hundo" || l.id === "completed" || l.name === "100%"); }
+  function isWishlist(l) { return l && l.id === "wishlist"; }
+  function wishlistList() {
+    let l = data.lists.find(isWishlist);
+    if (!l) {
+      l = { id: "wishlist", name: "Wishlist", games: [] };
+      const hundoIdx = data.lists.findIndex(isHundo);
+      const at = hundoIdx >= 0 ? hundoIdx + 1 : Math.min(1, data.lists.length);
+      data.lists.splice(at, 0, l);
+    }
+    return l;
+  }
   function completedList() {
     let l = data.lists.find(isHundo);
     if (!l) {
@@ -2687,6 +2726,7 @@
     // chosen order is respected
     const before = JSON.stringify(data.lists.map(x=>x.id));
     completedList();
+    wishlistList();
     if (JSON.stringify(data.lists.map(x=>x.id)) !== before) { persist(); syncUp(); }
   }
   async function scanCompleted(progress) {
@@ -2762,6 +2802,41 @@
     btn.disabled = true; btn.textContent = "Scanning your library…";
     await scanCompleted(msg => btn.textContent = msg);
     btn.disabled = false; btn.textContent = "Import my 100% completed games";
+  };
+
+  async function syncWishlist() {
+    try {
+      toast(`Fetching wishlist <span class="spin"></span>`);
+      const r = await fetch("/api/library?wishlist=1");
+      const d = await r.json();
+      if (d.error) { toast(esc(d.error)); return 0; }
+      const items = d.games || [];
+      if (!items.length) { toast(d.note || "No wishlist entries found"); return 0; }
+      const wl = wishlistList();
+      const remoteIds = new Set(items.map(g => g.appid));
+      const have = new Set(wl.games.map(g => g.appid));
+      const fresh = items.filter(g => !have.has(g.appid));
+      for (const g of fresh) wl.games.push({ appid: g.appid, name: g.name, icon: safeUrl(g.icon) });
+      const before = wl.games.length;
+      wl.games = wl.games.filter(g => remoteIds.has(g.appid));
+      const removedCount = before - wl.games.length;
+      persist(); syncUp(); renderAll();
+      if (fresh.length) {
+        const need = fresh.filter(g => !stats[g.appid]);
+        for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
+      }
+      const bits = [];
+      if (fresh.length) bits.push(`+${fresh.length}`);
+      if (removedCount) bits.push(`−${removedCount}`);
+      toast(bits.length ? `Wishlist synced: ${bits.join(" ")}` : "Wishlist already up to date");
+      return fresh.length;
+    } catch (e) { toast("Couldn\'t sync wishlist: " + esc(e.message)); return 0; }
+  }
+  $("syncWishlistBtn").onclick = async () => {
+    const btn = $("syncWishlistBtn");
+    btn.disabled = true; btn.textContent = "Syncing…";
+    await syncWishlist();
+    btn.disabled = false; btn.textContent = "Sync my Steam wishlist";
   };
 
   $("logoutBtn").onclick = async () => {
