@@ -156,6 +156,10 @@
   .tile .tmeta { padding: 7px 8px 9px; }
   .tile .tname { font-size: 11.5px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
   .tile .tstats { font-family: var(--display); font-weight: 600; font-size: 10.5px; color: var(--ink); margin-top: 3px; display: flex; gap: 8px; font-variant-numeric: tabular-nums; }
+  .tile .tstats .meta { padding: 1px 5px; border-radius: 3px; font-size: 10px; color: #16130a; }
+  .tile .tstats .meta.hi { background: #7fd05f; }
+  .tile .tstats .meta.mid { background: var(--gold); }
+  .tile .tstats .meta.lo { background: var(--danger); color: var(--ink); }
   .tile .tstats .a { color: var(--gold); } .tile .tstats .a.full { color: var(--teal); }
   .tile .tstats .tna { color: var(--ink-dim); opacity: 0.6; }
   .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
@@ -1348,12 +1352,15 @@
         const achTxt = !a ? `<span class="tna">— achv</span>` : a.none ? `<span class="tna">no achv</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         const s = stats[g.appid]||{};
         const m = hrs(s.mainStory), c100 = hrs(s.completionist);
+        const ms = s.metaScore;
+        const tMeta = (typeof ms === "number") ? `<span class="meta ${ms>=75?"hi":ms>=50?"mid":"lo"}" title="Metacritic">${ms}</span>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
                onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}">
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
           <div class="tmeta">
             <div class="tname">${esc(g.name)}</div>
+            ${tMeta ? `<div class="tstats">${tMeta}</div>` : ""}
             <div class="tstats">${achTxt}</div>
             <div class="tstats"><span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
           </div>
