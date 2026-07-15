@@ -156,10 +156,6 @@
   .tile .tmeta { padding: 7px 8px 9px; }
   .tile .tname { font-size: 11.5px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
   .tile .tstats { font-family: var(--display); font-weight: 600; font-size: 10.5px; color: var(--ink); margin-top: 3px; display: flex; gap: 8px; font-variant-numeric: tabular-nums; }
-  .tile .tstats .meta { padding: 1px 5px; border-radius: 3px; font-size: 10px; color: #16130a; }
-  .tile .tstats .meta.hi { background: #7fd05f; }
-  .tile .tstats .meta.mid { background: var(--gold); }
-  .tile .tstats .meta.lo { background: var(--danger); color: var(--ink); }
   .tile .tstats .a { color: var(--gold); } .tile .tstats .a.full { color: var(--teal); }
   .tile .tstats .tna { color: var(--ink-dim); opacity: 0.6; }
   .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
@@ -179,7 +175,20 @@
   .gsGrid .cell { padding: 11px 10px; }
   .gsGrid .cell .v { font-size: 17px; }
   .gsGrid .cell .k { font-size: 10px; }
-  .gsSection { font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink-dim); margin: 2px 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .gsLinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .gsLinks .gsLink:nth-child(3) { grid-column: 1 / -1; }
+  .gsLink { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 13px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); text-decoration: none; font-family: var(--display); font-weight: 600; font-size: 13px; transition: border-color 0.15s ease, background 0.15s ease; cursor: pointer; }
+  .gsLink:hover, .gsLink:active { border-color: var(--gold); background: rgba(228,184,92,0.08); }
+  .gsLink .a { color: var(--gold); font-size: 15px; line-height: 1; }
+  @media (max-width: 380px) { .gsLinks { grid-template-columns: 1fr; } .gsLinks .gsLink:nth-child(3) { grid-column: auto; } }
+  .guideList { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
+  .guideItem { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); text-decoration: none; transition: border-color 0.15s ease, background 0.15s ease; }
+  .guideItem:hover, .guideItem:active { border-color: var(--gold); background: rgba(228,184,92,0.06); }
+  .guideItem .gi { flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--gold); }
+  .guideItem .gt { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 14px; }
+  .guideItem .gt .gd { display: block; font-family: var(--body); font-weight: 500; font-size: 11.5px; color: var(--ink-dim); margin-top: 1px; }
+  .guideItem .ga { color: var(--gold); font-size: 15px; }
+    .gsSection { font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink-dim); margin: 2px 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   .card { background: var(--card-grad), var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); overflow: hidden; position: relative; touch-action: pan-y; transition: transform 0.18s ease, border-color 0.18s ease; }
   @media (hover:hover) { .card:hover { border-color: var(--line-strong); } }
   .enter { animation: cardIn 0.32s cubic-bezier(.22,1,.36,1) both; }
@@ -239,7 +248,24 @@
   .card.thinrow .rm { padding: 4px 8px; font-size: 13px; background: none; border: none; color: var(--ink-dim); opacity: 0.55; cursor: pointer; }
   .card.thinrow .rm:hover { color: var(--danger); opacity: 1; }
   .card.thinrow .bar { height: 2px; }
-  /* edit lists sheet */
+  /* friend viewer */
+  .fvAvatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-2); flex-shrink: 0; object-fit: cover; }
+  .fvSub { font-family: var(--display); font-weight: 600; font-size: 12px; color: var(--ink-dim); margin: 4px 0 12px; }
+  .fvTabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; margin-bottom: 6px; }
+  .fvTabs::-webkit-scrollbar { display: none; }
+  .fvTabs button { background: var(--surface); border: 1px solid var(--line-solid); border-radius: 999px; color: var(--ink-dim); padding: 6px 12px; font-family: var(--display); font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .fvTabs button.on { color: var(--ink); border-color: var(--gold); background: var(--surface-2); }
+  .fvList { display: flex; flex-direction: column; gap: 7px; }
+  .fvRow { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 7px 10px 7px 7px; }
+  .fvRow img { width: 74px; height: 28px; border-radius: 5px; object-fit: cover; background: var(--surface); flex-shrink: 0; }
+  .fvRow .fvNm { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fvRow .fvNum { font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .fvRow .fvNum .a { color: var(--gold); } .fvRow .fvNum .a.full { color: var(--teal); }
+  .friendRow.tappable { cursor: pointer; transition: background 0.15s ease; -webkit-tap-highlight-color: transparent; }
+  .friendRow.tappable:active { background: var(--surface-2); }
+  .visRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 12px; font-size: 13.5px; }
+  .visRow select { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 9px; padding: 8px 10px; font-family: var(--body); font-size: 13px; }
+    /* edit lists sheet */
   .listRow { display: flex; align-items: center; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line-solid); }
   .listRow:last-child { border-bottom: none; }
   .listRow .lname { flex: 1; min-width: 0; font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -740,7 +766,6 @@
         <button id="obImport">Import my Steam library</button>
         <button id="obAdd">Search &amp; add games</button>
         <button id="obScan">Scan my 100% completed games</button>
-        <button id="obWishlist">Sync my Steam wishlist</button>
       </div>
     </div>
   </div>
@@ -762,9 +787,16 @@
     <div id="pFriends" style="margin-top:14px"></div>
     <div class="pActions">
       <button class="share" id="shareBtn">Share current list</button>
+      <div class="visRow" id="visRow" style="display:none">
+        <span>Who can view my lists</span>
+        <select id="visSel">
+          <option value="private">Only me</option>
+          <option value="friends">Steam friends here</option>
+          <option value="public">Anyone with a share link</option>
+        </select>
+      </div>
       <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
       <button id="importCompletedBtn">Import my 100% completed games</button>
-      <button id="syncWishlistBtn">Sync my Steam wishlist</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
@@ -804,6 +836,20 @@
         <button id="reviewCancel">Cancel</button>
         <button class="go" id="reviewConfirm">Add selected</button>
       </div>
+    </div>
+  </div>
+
+  <!-- friend viewer sheet -->
+  <div class="modal" id="fvModal">
+    <div class="sheet">
+      <div class="gsHead">
+        <img id="fvAvatar" class="fvAvatar" alt="">
+        <div class="gsName" id="fvName"></div>
+      </div>
+      <div class="fvSub" id="fvSub"></div>
+      <div class="fvTabs" id="fvTabs" style="display:none"></div>
+      <div class="gsBody" id="fvBody"></div>
+      <div class="footRow"><button id="fvClose">Close</button></div>
     </div>
   </div>
 
@@ -870,10 +916,18 @@
 
   <div class="selBar" id="selBar">
     <span id="selCount">0 selected</span>
-    <button id="selAll">All</button>
     <button id="selMove">Move</button>
     <button class="selDel" id="selDelete">Delete</button>
     <button id="selCancel">Cancel</button>
+  </div>
+
+  <div class="modal" id="guideModal">
+    <div class="sheet">
+      <h2 id="guideTitle">100% guides</h2>
+      <div class="hint" id="guideHint">Pick a source. These are the most reliable spots to find a complete 100% or achievement guide.</div>
+      <div class="gsBody" id="guideBody"></div>
+      <div class="footRow"><button id="guideClose">Close</button></div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1004,12 +1058,12 @@
 
   function renderListEditor() {
     $("listRows").innerHTML = data.lists.map((l, i) => {
-      const locked = l.id === "main" || isHundo(l) || isWishlist(l);
+      const locked = l.id === "main" || isHundo(l);
       return `<div class="listRow">
         <button data-lup="${i}" aria-label="Move up" ${i === 0 ? "disabled" : ""}>↑</button>
         <button data-ldown="${i}" aria-label="Move down" ${i === data.lists.length - 1 ? "disabled" : ""}>↓</button>
         <div class="lname">${esc(l.name)} <span class="cnt">· ${l.games.length}</span></div>
-        <button data-lren="${i}" ${isHundo(l) || isWishlist(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
+        <button data-lren="${i}" ${isHundo(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
         <button class="ldel" data-ldel="${i}" ${locked ? "disabled" : ""} aria-label="Delete">✕</button>
       </div>`;
     }).join("");
@@ -1047,29 +1101,58 @@
     });
   }
 
-  // ============ hero + games ============
+  // ---- 100% guides picker ----
+  const guideModal = $("guideModal");
+  $("guideClose").onclick = () => guideModal.classList.remove("show");
+  guideModal.onclick = e => { if (e.target === guideModal) guideModal.classList.remove("show"); };
+
+  function openGuidePicker(g) {
+    const q = encodeURIComponent(g.name + " 100% achievement guide");
+    const sources = [
+      {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.5 3 8.3 7 9.5l1-4c-1.2-.4-2-1.5-2-2.8 0-1.7 1.3-3 3-3 .2 0 .4 0 .6.1L15 8.4V8c0-1.7 1.3-3 3-3s3 1.3 3 3-1.3 3-3 3l-3.4 2.5c.1.3.1.6.1.8 0 1.7-1.3 3-3 3s-3-1.3-3-3v-.1L5.5 15c1 3 3.7 5 6.5 5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>`,
+        title: "Steam Community Guides",
+        desc: "Top-voted user guides on the Steam store page — usually the most complete.",
+        url: `https://steamcommunity.com/app/${g.appid}/guides/?browsefilter=trend&requiredtags%5B0%5D=Achievements&requiredtags%5B1%5D=100%25`,
+      },
+      {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12l-3-5.2c-.4-.8-1.2-1.3-2.1-1.3H6.1c-.9 0-1.7.5-2.1 1.3L1 12l3 5.2c.4.8 1.2 1.3 2.1 1.3h11.8c.9 0 1.7-.5 2.1-1.3L23 12zM10 15.5v-7l6 3.5-6 3.5z"/></svg>`,
+        title: "YouTube video guides",
+        desc: "Full walkthrough and achievement videos.",
+        url: `https://www.youtube.com/results?search_query=${q}`,
+      },
+      {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`,
+        title: "Google search",
+        desc: "Broader web results — wikis, forums, dedicated guide sites.",
+        url: `https://www.google.com/search?q=${q}`,
+      },
+      {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 0 1-10 0V4zM17 5h2.5a2.5 2.5 0 0 1-2.6 3M7 5H4.5a2.5 2.5 0 0 0 2.6 3M12 12v4m-3 4h6m-5.5-4h5l1 4h-7z"/></svg>`,
+        title: "PowerPyx trophy guides",
+        desc: "Well-respected site for detailed 100% roadmaps (coverage varies).",
+        url: `https://www.google.com/search?q=${encodeURIComponent("site:powerpyx.com " + g.name + " trophy achievement guide")}`,
+      },
+      {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/></svg>`,
+        title: "TrueSteamAchievements",
+        desc: "Community-tracked achievement guides and difficulty ratings.",
+        url: `https://www.google.com/search?q=${encodeURIComponent("site:truesteamachievements.com " + g.name)}`,
+      },
+    ];
+    $("guideTitle").textContent = "100% guides — " + g.name;
+    $("guideBody").innerHTML = `<div class="guideList">` + sources.map(x =>
+      `<a class="guideItem" href="${x.url}" target="_blank" rel="noopener noreferrer">
+        <div class="gi">${x.icon}</div>
+        <div class="gt">${esc(x.title)}<span class="gd">${esc(x.desc)}</span></div>
+        <div class="ga">↗</div>
+      </a>`).join("") + `</div>`;
+    guideModal.classList.add("show");
+  }
+
+    // ============ hero + games ============
   // ---- hero: rotating time facts about this backlog ----
   let heroFacts = [], heroIdx = 0;
-
-  // wishlist-oriented facts
-  function buildWishlistFacts(games) {
-    const gold = (v) => `<b class="g">${v}</b>`;
-    const n = games.length;
-    let mainTotal = 0, mainCount = 0, metaHi = null;
-    for (const g of games) {
-      const st = stats[g.appid] || {};
-      if (typeof st.mainStory === "number") { mainTotal += st.mainStory; mainCount++; }
-      if (typeof st.metaScore === "number" && (!metaHi || st.metaScore > (stats[metaHi.appid]?.metaScore || 0))) metaHi = g;
-    }
-    const facts = [`${gold(n)} game${n===1?"":"s"} wishlisted`];
-    if (mainCount >= 1)
-      facts.push(`Story time if you owned it all: ${gold(Math.round(mainTotal) + "h")} across ${mainCount} known`);
-    if (mainTotal >= 24)
-      facts.push(`Equivalent to ${gold((mainTotal/24).toFixed(1) + " days")} of continuous play`);
-    if (metaHi)
-      facts.push(`Highest rated on wishlist: <b>${esc(metaHi.name)}</b> (${gold(stats[metaHi.appid].metaScore + " Metacritic")})`);
-    return [facts[0], ...facts.slice(1).sort(() => Math.random() - 0.5)];
-  }
 
   // completion-oriented facts for the 100% list
   function buildHundoFacts(games) {
@@ -1110,7 +1193,6 @@
     const n = games.length;
     if (!n) return [];
     if (isHundo(activeList())) return buildHundoFacts(games);
-    if (isWishlist(activeList())) return buildWishlistFacts(games);
     let mainLeft = 0, compLeft = 0, playedTotal = 0, achU = 0, achT = 0, done = 0;
     let longest = null, quickest = null;
     for (const g of games) {
@@ -1228,7 +1310,7 @@
   const wildcardPick = {}; // listId -> appid, stable per session
   function renderFeatured() {
     const wrap = $("featWrap");
-    if (sharedMode || isWishlist(activeList())) { wrap.style.display = "none"; return; }
+    if (sharedMode) { wrap.style.display = "none"; return; }
     // candidates: games in this list that aren't 100% completed
     let pool = activeList().games.filter(g => {
       const a = achOf(g.appid);
@@ -1352,15 +1434,12 @@
         const achTxt = !a ? `<span class="tna">— achv</span>` : a.none ? `<span class="tna">no achv</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         const s = stats[g.appid]||{};
         const m = hrs(s.mainStory), c100 = hrs(s.completionist);
-        const ms = s.metaScore;
-        const tMeta = (typeof ms === "number") ? `<span class="meta ${ms>=75?"hi":ms>=50?"mid":"lo"}" title="Metacritic">${ms}</span>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
                onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}">
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
           <div class="tmeta">
             <div class="tname">${esc(g.name)}</div>
-            ${tMeta ? `<div class="tstats">${tMeta}</div>` : ""}
             <div class="tstats">${achTxt}</div>
             <div class="tstats"><span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
           </div>
@@ -1402,7 +1481,7 @@
       }
       animateNext = false;
       renderHero(); renderListbar();
-      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && !isWishlist(activeList()) && activeList().games.length >= 3) ? "block" : "none";
+      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
       return;
     }
 
@@ -1462,7 +1541,7 @@
     }
     animateNext = false;
     renderHero(); renderListbar();
-    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && !isWishlist(activeList()) && activeList().games.length >= 3) ? "block" : "none";
+    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
@@ -1486,20 +1565,9 @@
   function updateSelBar() {
     $("selCount").textContent = `${selected.size} selected`;
     $("selMove").style.display = data.lists.length > 1 ? "block" : "none";
-    const visible = sortedGames();
-    const allOn = visible.length > 0 && visible.every(g => selected.has(g.appid));
-    $("selAll").textContent = allOn ? "None" : "All";
   }
   $("selectBtn").onclick = () => { if (!sharedMode) setSelectMode(!selectMode); };
   $("selCancel").onclick = () => setSelectMode(false);
-  $("selAll").onclick = () => {
-    const visible = sortedGames();
-    const allOn = visible.length > 0 && visible.every(g => selected.has(g.appid));
-    if (allOn) selected.clear();
-    else for (const g of visible) selected.add(g.appid);
-    updateSelBar();
-    renderGames();
-  };
 
   $("selDelete").onclick = () => {
     if (!selected.size) return;
@@ -1661,6 +1729,19 @@
     renderGameSheet();
     gameModal.classList.add("show");
   }
+  // Same slugging as api/stats.js — keeps Metacritic links pointed at the
+  // exact page the score was read from.
+  function mcSlug(name){
+    return name
+      .replace(/[\u2122\u00ae\u00a9]/g, "")
+      .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/['\u2019]/g, "")
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
   function renderGameSheet() {
     if (!sheetGame) return;
     const g = sheetGame;
@@ -1704,6 +1785,21 @@
     const gridHtml = `<div class="gsGrid">` + cells.map(x =>
       `<div class="cell ${x.cls||""}"><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
 
+    // external links: reviews + a picker for 100% guides
+    const steamUrl = `https://store.steampowered.com/app/${g.appid}/#app_reviews_hash`;
+    const mcUrl = `https://www.metacritic.com/game/${mcSlug(g.name)}/user-reviews/`;
+    const linksHtml = `<div class="gsLinks">
+      <a class="gsLink" href="${steamUrl}" target="_blank" rel="noopener noreferrer">
+        <span class="l">Steam reviews</span><span class="a">↗</span>
+      </a>
+      <a class="gsLink" href="${mcUrl}" target="_blank" rel="noopener noreferrer">
+        <span class="l">Metacritic reviews</span><span class="a">↗</span>
+      </a>
+      <button class="gsLink" data-guides="${g.appid}">
+        <span class="l">100% guides</span><span class="a">▸</span>
+      </button>
+    </div>`;
+
     // your review: stars + note
     const myNote = notes[g.appid] || {};
     const starsHtml = [1,2,3,4,5].map(n =>
@@ -1714,12 +1810,14 @@
        <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
-    $("gsBody").innerHTML = detailHtml + gridHtml + reviewHtml
+    $("gsBody").innerHTML = detailHtml + gridHtml + linksHtml + reviewHtml
       + `<div class="gsSection">Achievements</div>` + achPanelHtml(g);
     $("gsBody").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
       openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
       renderGameSheet();
     });
+    const gb = $("gsBody").querySelector("[data-guides]");
+    if (gb) gb.onclick = () => openGuidePicker(g);
     if (!sharedMode) {
       $("gsBody").querySelectorAll("[data-star]").forEach(b => b.onclick = () => {
         const n = +b.dataset.star;
@@ -1752,10 +1850,6 @@
     toast(`Scanning your library <span class="spin"></span>`);
     await scanCompleted(msg => toast(msg + ` <span class="spin"></span>`));
     renderAll();
-  };
-  $("obWishlist").onclick = async () => {
-    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
-    await syncWishlist();
   };
 
   // ---- "can't decide" wizard ----
@@ -2420,132 +2514,30 @@
   }
 
   // ============ profile ============
-  function showProfile(show) {
-    $("profileView").style.display = show ? "block" : "none";
-    $("listView").style.display = show ? "none" : "block";
-    $("dock").style.display = show ? "none" : "flex";
-    if (show) renderProfile();
-  }
-  // XP: 10 per achievement + 250 per 100%'d game. Level = sqrt(xp/100).
-  // (Keep in sync with the same formula in api/friends.js.)
-  // Completion trophies: milestone tiers for games 100%'d. Each earned
-  // trophy grants a flat XP boost, and they stack.
-  // (Keep trophyBonus in sync with the same values in api/friends.js.)
-  const TROPHIES = [
-    { min: 1,    name: "Wood",     xp: 100,    c1: "#9a6b3f", c2: "#6b4423" },
-    { min: 10,   name: "Bronze",   xp: 500,    c1: "#c8824a", c2: "#8c5427" },
-    { min: 25,   name: "Silver",   xp: 1500,   c1: "#d7dfe9", c2: "#96a1b1" },
-    { min: 50,   name: "Gold",     xp: 4000,   c1: "#f0c25e", c2: "#c9962f" },
-    { min: 100,  name: "Platinum", xp: 10000,  c1: "#eef4fb", c2: "#aebfd2" },
-    { min: 250,  name: "Diamond",  xp: 30000,  c1: "#9fe8d8", c2: "#3fa98d" },
-    { min: 1000, name: "Heavenly", xp: 150000, c1: "#faf6ea", c2: "#e3d9bd" },
-  ];
-  function trophyBonus(done) {
-    let b = 0;
-    for (const t of TROPHIES) if (done >= t.min) b += t.xp;
-    return b;
-  }
-  // Hand-drawn trophy: one cup silhouette, per-tier materials. Heavenly gets
-  // gold trim and light rays.
-  function trophySvg(tier, size) {
-    const t = TROPHIES[tier];
-    const id = "tg" + tier;
-    const heavenly = t.name === "Heavenly";
-    const diamond = t.name === "Diamond";
-    const trim = heavenly ? "#e8b64c" : "none";
-    return `<svg width="${size}" height="${size}" viewBox="0 0 48 48" fill="none">
-      <defs>
-        <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="${t.c1}"/><stop offset="1" stop-color="${t.c2}"/>
-        </linearGradient>
-      </defs>
-      ${heavenly ? `<g stroke="#e8b64c" stroke-width="1.4" opacity="0.55" stroke-linecap="round">
-        <path d="M24 1.5v4M10.5 5.5l2.4 3.2M37.5 5.5l-2.4 3.2M4.5 14l3.6 1.6M43.5 14l-3.6 1.6"/>
-      </g>` : ""}
-      <path d="M14 9h20v9.5a10 10 0 0 1-20 0V9z" fill="url(#${id})" ${heavenly ? `stroke="${trim}" stroke-width="1.6"` : ""}/>
-      <path d="M14 11H9.5a1 1 0 0 0-1 1.1c.4 4.4 3 7.2 6.4 8" stroke="${heavenly ? trim : t.c2}" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M34 11h4.5a1 1 0 0 1 1 1.1c-.4 4.4-3 7.2-6.4 8" stroke="${heavenly ? trim : t.c2}" stroke-width="2.4" stroke-linecap="round"/>
-      ${diamond ? `<path d="M18 12l4 5 4-6 4 6" stroke="#e9fff8" stroke-width="1.2" opacity="0.8"/>` : ""}
-      ${!diamond && !heavenly ? `<path d="M18.5 12.5c1 3 1 6 .2 8.5" stroke="#ffffff" stroke-width="1.6" opacity="0.28" stroke-linecap="round"/>` : ""}
-      <path d="M22.5 28.5h3l1 6h-5z" fill="url(#${id})"/>
-      <rect x="17" y="34.5" width="14" height="3.4" rx="1.2" fill="url(#${id})" ${heavenly ? `stroke="${trim}" stroke-width="1.2"` : ""}/>
-      <rect x="14" y="38.8" width="20" height="4.4" rx="1.5" fill="${t.c2}" ${heavenly ? `stroke="${trim}" stroke-width="1.2"` : ""}/>
-      ${heavenly ? `<path d="M24 13.5l1.3 2.6 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z" fill="#e8b64c"/>` : ""}
-    </svg>`;
-  }
-  function xpOf(t){ return t.achU * 10 + t.done * 250 + trophyBonus(t.done); }
-  function levelOf(xp){ return Math.floor(Math.sqrt(xp / 100)); }
-
-  // Rank ladder: named tiers over the level curve, with grades inside each
-  // tier (Recruit II, Veteran IV...). Insignia chevrons build as you climb.
-  const RANKS = [
-    { min: 0,  name: "Newcomer" },
-    { min: 2,  name: "Recruit" },
-    { min: 5,  name: "Adventurer" },
-    { min: 9,  name: "Veteran" },
-    { min: 14, name: "Elite" },
-    { min: 20, name: "Master" },
-    { min: 27, name: "Legend" },
-    { min: 35, name: "Mythic" },
-    { min: 45, name: "Eternal" },
-  ];
-  const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
-  function rankOf(level) {
-    let idx = 0;
-    for (let i = 0; i < RANKS.length; i++) if (level >= RANKS[i].min) idx = i;
-    const r = RANKS[idx];
-    const next = RANKS[idx + 1] || null;
-    const grade = level - r.min;
-    return {
-      name: r.name,
-      grade: idx === 0 ? "" : ROMAN[Math.min(grade, ROMAN.length - 1)],
-      tier: idx,
-      nextName: next ? next.name : null,
-      nextAt: next ? next.min : null,
-    };
-  }
-  // Insignia: 1-4 stacked chevrons (repeating), a diamond appears from tier 5,
-  // colors climb steel -> gold -> teal.
-  function insigniaSvg(tier, size) {
-    if (tier <= 0) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#8b96a8" stroke-width="2"><circle cx="12" cy="12" r="4.5"/></svg>`;
-    const color = tier >= 7 ? "var(--teal)" : tier >= 5 ? "var(--gold)" : tier >= 3 ? "#c6cede" : "#8b96a8";
-    const chevrons = ((tier - 1) % 4) + 1;
-    let paths = "";
-    const gap = 4.6, startY = 19 - (chevrons - 1) * gap;
-    for (let i = 0; i < chevrons; i++) {
-      const y = startY + i * gap;
-      paths += `<path d="M5 ${y}l7-4.6 7 4.6"/>`;
-    }
-    if (tier >= 5) paths += `<path d="M12 2.6l2 2.6-2 2.6-2-2.6z" fill="${color}" stroke="none"/>`;
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round">${paths}</svg>`;
-  }
-
   function renderProfile() {
     const games = allGames();
     const t = totals(games);
-    $("pAvatar").src = me?.avatar || "";
+    $("pAvatar").src = safeUrl(me?.avatar) || "";
     $("pAvatar").style.display = me?.avatar ? "block" : "none";
     $("pName").textContent = me?.name || me?.username || "Player";
     const bits = [`${games.length} games across ${data.lists.length} list${data.lists.length===1?"":"s"}`];
     if (me?.username) bits.unshift("@" + me.username);
     if (me && !me.steamId) bits.push("Steam not linked");
     $("pSub").textContent = bits.join(" · ");
-    // level + XP progress
-    const xp = xpOf(t);
-    const lvl = levelOf(xp);
-    const rank = rankOf(lvl);
-    const floor = 100 * lvl * lvl, next = 100 * (lvl+1) * (lvl+1);
-    const prog = Math.max(0, Math.min(1, (xp - floor) / (next - floor)));
-    $("pLevel").innerHTML = `
-      <div class="insignia">${insigniaSvg(rank.tier, 40)}</div>
-      <div class="lvlBarWrap">
-        <div class="rankName">${rank.name}${rank.grade ? " " + rank.grade : ""} <span class="lvlTag">LV ${lvl}</span></div>
-        <div class="lvlNums">${xp.toLocaleString()} XP · ${(next - xp).toLocaleString()} to LV ${lvl+1}${rank.nextAt != null ? ` · ${esc(rank.nextName)} at LV ${rank.nextAt}` : ""}</div>
-        <div class="xp"><i style="width:${Math.round(prog*100)}%"></i></div>
-      </div>`;
+
+    // minimal completions line — no gamified level system
+    const doneCount = t.done;
+    const nextTier = [1,10,25,50,100,250,1000].find(x => doneCount < x);
+    const tierName = { 1:"Wood", 10:"Bronze", 25:"Silver", 50:"Gold", 100:"Platinum", 250:"Diamond", 1000:"Heavenly" };
+    $("pLevel").innerHTML = doneCount
+      ? `<span class="pStat">${doneCount} completion${doneCount===1?"":"s"}</span>${nextTier ? ` <span class="pStatDim">· next milestone at ${nextTier}${tierName[nextTier]?` (${tierName[nextTier]})`:""}</span>` : ""}`
+      : `<span class="pStatDim">No completions yet</span>`;
+
+    updateVisRow();
     $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
-    $("importCompletedBtn").style.display = me && me.steamId ? "block" : "none";
-    $("syncWishlistBtn").style.display = me && me.steamId ? "block" : "none";
+    if ($("importCompletedBtn")) $("importCompletedBtn").style.display = me && me.steamId ? "block" : "none";
+    if ($("syncWishlistBtn")) $("syncWishlistBtn").style.display = me && me.steamId ? "block" : "none";
+
     const cells = [
       { v: games.length, k: "games tracked" },
       { v: t.done, k: "games 100% completed", cls: "teal" },
@@ -2563,52 +2555,62 @@
     renderFriends();
   }
 
-  // ---- completion trophies ----
-  function renderTrophies(t) {
-    const done = t.done;
-    let curIdx = -1;
-    for (let i = 0; i < TROPHIES.length; i++) if (done >= TROPHIES[i].min) curIdx = i;
-    const cur = curIdx >= 0 ? TROPHIES[curIdx] : null;
-    const nxt = TROPHIES[curIdx + 1] || null;
-    const prog = nxt ? Math.min(1, (done - (cur ? cur.min : 0)) / (nxt.min - (cur ? cur.min : 0))) : 1;
-    const road = TROPHIES.map((tr, i) => `
-      <div class="tMini ${done >= tr.min ? "got" : ""}">
-        ${trophySvg(i, 30)}
-        <div class="tmn">${tr.name}</div>
-        <div class="tmk">${tr.min} · +${tr.xp >= 1000 ? (tr.xp/1000)+"k" : tr.xp} XP</div>
-      </div>`).join("");
-    $("pBadges").innerHTML = `<div class="chartBox">
-      <div class="ct">Completion trophies</div>
-      <div class="tHero">
-        <div class="tArt">${cur ? trophySvg(curIdx, 62) : `<div class="tEmpty"></div>`}</div>
-        <div class="tInfo">
-          <div class="tTitle">${cur ? cur.name + " Trophy" : "No trophy yet"}</div>
-          <div class="tSub">${done} game${done===1?"":"s"} 100%'d${cur ? ` · +${trophyBonus(done).toLocaleString()} XP from trophies` : ""}</div>
-          ${nxt ? `<div class="tSub dim">${nxt.min - done} more to ${nxt.name}</div>
-          <div class="xp" style="margin-top:6px"><i style="width:${Math.round(prog*100)}%"></i></div>` : `<div class="tSub dim">All tiers earned.</div>`}
-        </div>
-      </div>
-      <div class="tRoad">${road}</div>
-    </div>`;
+    function showProfile(show) {
+    $("profileView").style.display = show ? "block" : "none";
+    $("listView").style.display = show ? "none" : "block";
+    $("dock").style.display = show ? "none" : "flex";
+    if (show) renderProfile();
   }
+  // Completion trophy road removed as part of the leveling-system trim.
+  function renderTrophies() { const el = $("pBadges"); if (el) el.innerHTML = ""; }
 
-  // ---- year wrap-up ----
-  function renderWrapup() {
+  // ---- year wrap-up: real Steam year-to-date data ----
+  let yearlyCache = null;
+  async function renderWrapup() {
     const el = $("pWrap");
     const year = new Date().getFullYear();
-    const yearPts = history.filter(h => h.d && h.d.startsWith(year + "-"));
-    if (yearPts.length < 2) { el.innerHTML = ""; return; }
-    const first = yearPts[0], last = yearPts[yearPts.length-1];
-    const doneGain = Math.max(0, (last.done||0) - (first.done||0));
-    const achGain = (last.achU!=null && first.achU!=null) ? Math.max(0, last.achU - first.achU) : null;
-    const pctMove = (last.pct!=null && first.pct!=null) ? Math.round((last.pct - first.pct)*10)/10 : null;
-    el.innerHTML = `<div class="chartBox"><div class="ct">${year} so far</div>
-      <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="cell teal"><div class="v" style="font-size:18px">${doneGain}</div><div class="k">games 100%'d</div></div>
-        <div class="cell gold"><div class="v" style="font-size:18px">${achGain!=null?achGain:"—"}</div><div class="k">achievements earned</div></div>
-        <div class="cell"><div class="v" style="font-size:18px">${pctMove!=null?(pctMove>=0?"+":"")+pctMove+"%":"—"}</div><div class="k">completion change</div></div>
-      </div>
-      <div class="hint" style="margin-top:8px">Tracking since ${esc(first.d)}</div></div>`;
+
+    // Local-only accounts (no Steam link) fall back to the app-tracked history
+    if (!me || !me.steamId) {
+      const yearPts = history.filter(h => h.d && h.d.startsWith(year + "-"));
+      if (yearPts.length < 2) { el.innerHTML = ""; return; }
+      const first = yearPts[0], last = yearPts[yearPts.length-1];
+      const doneGain = Math.max(0, (last.done||0) - (first.done||0));
+      const achGain = (last.achU!=null && first.achU!=null) ? Math.max(0, last.achU - first.achU) : null;
+      el.innerHTML = `<div class="chartBox"><div class="ct">${year} so far</div>
+        <div class="grid" style="grid-template-columns:repeat(2,1fr)">
+          <div class="cell teal"><div class="v" style="font-size:18px">${doneGain}</div><div class="k">games 100%'d</div></div>
+          <div class="cell gold"><div class="v" style="font-size:18px">${achGain!=null?achGain:"—"}</div><div class="k">achievements earned</div></div>
+        </div>
+        <div class="hint" style="margin-top:8px">App-tracked since ${esc(first.d)}. Link Steam for real unlock data.</div></div>`;
+      return;
+    }
+
+    // Steam-linked: show a placeholder immediately, then fetch real data.
+    const cached = yearlyCache;
+    const render = (data, note) => {
+      if (!data) {
+        el.innerHTML = `<div class="chartBox"><div class="ct">${year} so far</div>
+          <div class="hint" style="margin:0">${esc(note || "Loading Steam unlock data…")} <span class="spin"></span></div></div>`;
+        return;
+      }
+      el.innerHTML = `<div class="chartBox"><div class="ct">${data.year} so far</div>
+        <div class="grid" style="grid-template-columns:repeat(2,1fr)">
+          <div class="cell teal"><div class="v" style="font-size:18px">${data.gamesCompletedThisYear}</div><div class="k">games 100%'d</div></div>
+          <div class="cell gold"><div class="v" style="font-size:18px">${data.achievementsEarned.toLocaleString()}</div><div class="k">achievements earned</div></div>
+        </div>
+        <div class="hint" style="margin-top:8px">From Steam unlock timestamps · scanned your ${data.gamesScanned} most-recent games this year.</div></div>`;
+    };
+
+    render(cached);
+
+    try {
+      const r = await fetch("/api/library?yearly=1");
+      const d = await r.json();
+      if (d.error) { el.innerHTML = ""; return; }
+      yearlyCache = d;
+      render(d);
+    } catch { el.innerHTML = ""; }
   }
 
   // ---- rarest trophy shelf ----
@@ -2689,10 +2691,9 @@
         return;
       }
       el.innerHTML = `<div class="chartBox"><div class="ct">Friends on Backlog</div>`
-        + `<div class="friendRow"><img src="${safeUrl(me?.avatar)||""}" alt=""><span class="lv">${insigniaSvg(rankOf(levelOf(xpOf(myT))).tier, 15)} LV ${levelOf(xpOf(myT))}</span><div class="fn">You</div><div class="fs">${myT.achT?Math.round(myT.achPct*100)+"%":"—"} <span class="dim">· ${myT.done} done</span></div></div>`
-        + friends.map(f => `<div class="friendRow">
+        + `<div class="friendRow" style="cursor:default"><img src="${safeUrl(me?.avatar)||""}" alt=""><div class="fn">You</div><div class="fs">${myT.achT?Math.round(myT.achPct*100)+"%":"—"} <span class="dim">· ${myT.done} done</span></div></div>`
+        + friends.map(f => `<div class="friendRow tappable" data-fview="${esc(f.steamId||"")}">
             ${safeUrl(f.avatar)?`<img src="${safeUrl(f.avatar)}" alt="">`:`<div style="width:34px;height:34px;border-radius:50%;background:var(--surface-2)"></div>`}
-            ${f.level!=null?`<span class="lv">${insigniaSvg(rankOf(f.level).tier, 15)} LV ${f.level}</span>`:""}
             <div class="fn">${esc(f.name||"Player")}</div>
             <div class="fs">${f.achPct!=null?f.achPct+"%":"—"} <span class="dim">· ${f.done} done · ${f.games} games</span></div>
           </div>`).join("")
@@ -2702,7 +2703,14 @@
       el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">Link your Steam account to compare with friends.</div></div>`;
       return;
     }
-    if (friendsCache) { render(friendsCache.friends, friendsCache.note); return; }
+    if (friendsCache) {
+      render(friendsCache.friends, friendsCache.note);
+      el.querySelectorAll("[data-fview]").forEach(r => r.onclick = () => {
+        const id = r.dataset.fview;
+        if (id) openFriendView(id);
+      });
+      return;
+    }
     el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">Checking your Steam friends <span class="spin"></span></div></div>`;
     try {
       const r = await fetch("/api/friends");
@@ -2710,27 +2718,21 @@
       if (d.error) throw new Error(d.error);
       friendsCache = { friends: d.friends || [], note: d.note };
       render(friendsCache.friends, friendsCache.note);
+      el.querySelectorAll("[data-fview]").forEach(r => r.onclick = () => {
+        const id = r.dataset.fview;
+        if (id) openFriendView(id);
+      });
     } catch (e) {
       el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">Couldn't check friends: ${esc(e.message)}</div></div>`;
     }
   }
   $("avatarBtn").onclick = () => showProfile(true);
   $("linkSteamBtn").onclick = () => { location.href = "/api/auth/login?link=1"; };
+  function updateVisRow() { $("visRow").style.display = (me && me.steamId) ? "flex" : "none"; }
   $("backBtn").onclick = () => showProfile(false);
 
   // ---- import fully-completed games into a "Completed" list ----
   function isHundo(l) { return l && (l.id === "hundo" || l.id === "completed" || l.name === "100%"); }
-  function isWishlist(l) { return l && l.id === "wishlist"; }
-  function wishlistList() {
-    let l = data.lists.find(isWishlist);
-    if (!l) {
-      l = { id: "wishlist", name: "Wishlist", games: [] };
-      const hundoIdx = data.lists.findIndex(isHundo);
-      const at = hundoIdx >= 0 ? hundoIdx + 1 : Math.min(1, data.lists.length);
-      data.lists.splice(at, 0, l);
-    }
-    return l;
-  }
   function completedList() {
     let l = data.lists.find(isHundo);
     if (!l) {
@@ -2745,7 +2747,6 @@
     // chosen order is respected
     const before = JSON.stringify(data.lists.map(x=>x.id));
     completedList();
-    wishlistList();
     if (JSON.stringify(data.lists.map(x=>x.id)) !== before) { persist(); syncUp(); }
   }
   async function scanCompleted(progress) {
@@ -2821,41 +2822,6 @@
     btn.disabled = true; btn.textContent = "Scanning your library…";
     await scanCompleted(msg => btn.textContent = msg);
     btn.disabled = false; btn.textContent = "Import my 100% completed games";
-  };
-
-  async function syncWishlist() {
-    try {
-      toast(`Fetching wishlist <span class="spin"></span>`);
-      const r = await fetch("/api/library?wishlist=1");
-      const d = await r.json();
-      if (d.error) { toast(esc(d.error)); return 0; }
-      const items = d.games || [];
-      if (!items.length) { toast(d.note || "No wishlist entries found"); return 0; }
-      const wl = wishlistList();
-      const remoteIds = new Set(items.map(g => g.appid));
-      const have = new Set(wl.games.map(g => g.appid));
-      const fresh = items.filter(g => !have.has(g.appid));
-      for (const g of fresh) wl.games.push({ appid: g.appid, name: g.name, icon: safeUrl(g.icon) });
-      const before = wl.games.length;
-      wl.games = wl.games.filter(g => remoteIds.has(g.appid));
-      const removedCount = before - wl.games.length;
-      persist(); syncUp(); renderAll();
-      if (fresh.length) {
-        const need = fresh.filter(g => !stats[g.appid]);
-        for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
-      }
-      const bits = [];
-      if (fresh.length) bits.push(`+${fresh.length}`);
-      if (removedCount) bits.push(`−${removedCount}`);
-      toast(bits.length ? `Wishlist synced: ${bits.join(" ")}` : "Wishlist already up to date");
-      return fresh.length;
-    } catch (e) { toast("Couldn\'t sync wishlist: " + esc(e.message)); return 0; }
-  }
-  $("syncWishlistBtn").onclick = async () => {
-    const btn = $("syncWishlistBtn");
-    btn.disabled = true; btn.textContent = "Syncing…";
-    await syncWishlist();
-    btn.disabled = false; btn.textContent = "Sync my Steam wishlist";
   };
 
   $("logoutBtn").onclick = async () => {

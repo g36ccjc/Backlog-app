@@ -12,6 +12,76 @@ export default async function handler(req, res) {
   const session = getSession(req);
   if (!session) return res.status(401).json({ error: "Not logged in." });
 
+  // ?yearly=1 -> year-to-date stats built from real Steam unlock timestamps.
+  // Walks the user's most-played games and counts achievements unlocked in
+  // the current year, plus games that hit 100% this year.
+  if (req.query?.yearly === "1") {
+    const key = process.env.STEAM_API_KEY;
+    const steamId = session.steamId;
+    if (!steamId) return res.status(400).json({ error: "Link your Steam account to see yearly stats." });
+    if (!key) return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
+
+    const yearStart = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+
+    async function jsonOrNull(url) {
+      try { const r = await fetch(url); if (!r.ok) return null; return await r.json(); }
+      catch { return null; }
+    }
+
+    try {
+      // Which games has the user actually touched this year? rtime_last_played
+      // narrows the scan to games they've opened at least once this year.
+      const owned = await jsonOrNull(
+        `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/` +
+        `?key=${key}&steamid=${steamId}&include_played_free_games=true&format=json`
+      );
+      const games = (owned?.response?.games || [])
+        .filter((g) => g.rtime_last_played && g.rtime_last_played >= yearStart)
+        .sort((a, b) => (b.rtime_last_played || 0) - (a.rtime_last_played || 0))
+        .slice(0, 80); // scan cap keeps us inside the serverless time limit
+
+      let achievementsEarned = 0;
+      let gamesCompletedThisYear = 0;
+
+      // For each candidate: check every achievement's unlocktime. If it lies
+      // within this year, count it. If the game just hit 100% and the *last*
+      // achievement was unlocked this year, count it as a year-completion.
+      await Promise.all(
+        games.map(async (g) => {
+          const d = await jsonOrNull(
+            `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/` +
+            `?appid=${g.appid}&key=${key}&steamid=${steamId}`
+          );
+          const list = d?.playerstats?.achievements;
+          if (!Array.isArray(list) || !list.length) return;
+          let unlockedThisYear = 0;
+          let totalUnlocked = 0;
+          let latestUnlock = 0;
+          for (const a of list) {
+            if (a.achieved === 1) {
+              totalUnlocked++;
+              if (a.unlocktime > latestUnlock) latestUnlock = a.unlocktime;
+              if (a.unlocktime >= yearStart) unlockedThisYear++;
+            }
+          }
+          achievementsEarned += unlockedThisYear;
+          if (totalUnlocked === list.length && latestUnlock >= yearStart) {
+            gamesCompletedThisYear++;
+          }
+        })
+      );
+
+      return res.status(200).json({
+        year: new Date().getFullYear(),
+        achievementsEarned,
+        gamesCompletedThisYear,
+        gamesScanned: games.length,
+      });
+    } catch (err) {
+      return res.status(502).json({ error: err.message });
+    }
+  }
+
   // ?wishlist=1 -> games on the user's Steam wishlist
   if (req.query?.wishlist === "1") {
     const steamId = session.steamId;
