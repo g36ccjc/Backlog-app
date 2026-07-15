@@ -866,6 +866,7 @@
 
   <div class="selBar" id="selBar">
     <span id="selCount">0 selected</span>
+    <button id="selAll">All</button>
     <button id="selMove">Move</button>
     <button class="selDel" id="selDelete">Delete</button>
     <button id="selCancel">Cancel</button>
@@ -1478,9 +1479,20 @@
   function updateSelBar() {
     $("selCount").textContent = `${selected.size} selected`;
     $("selMove").style.display = data.lists.length > 1 ? "block" : "none";
+    const visible = sortedGames();
+    const allOn = visible.length > 0 && visible.every(g => selected.has(g.appid));
+    $("selAll").textContent = allOn ? "None" : "All";
   }
   $("selectBtn").onclick = () => { if (!sharedMode) setSelectMode(!selectMode); };
   $("selCancel").onclick = () => setSelectMode(false);
+  $("selAll").onclick = () => {
+    const visible = sortedGames();
+    const allOn = visible.length > 0 && visible.every(g => selected.has(g.appid));
+    if (allOn) selected.clear();
+    else for (const g of visible) selected.add(g.appid);
+    updateSelBar();
+    renderGames();
+  };
 
   $("selDelete").onclick = () => {
     if (!selected.size) return;
