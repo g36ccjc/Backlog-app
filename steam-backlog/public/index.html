@@ -9,7 +9,7 @@
 <title>Backlog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
@@ -26,7 +26,9 @@
     --teal: #47c69f;
     --danger: #d96a61;
     --r: 18px;
-    --display: "Chakra Petch", -apple-system, sans-serif;
+    --display: "Sora", -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --vio: #9d8cff;
     --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -111,11 +113,23 @@
   .fcard .fwhy.teal { color: var(--teal); }
   .fcard .fname { font-size: 11.5px; font-weight: 650; line-height: 1.25; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .fcard .fsub { font-size: 10px; color: var(--ink-dim); font-family: var(--display); font-weight: 600; margin-top: 2px; }
+  .fcard .fbar { height: 3px; border-radius: 2px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+  .fcard .fbar > i { display: block; height: 100%; background: var(--gold); }
+  .fcard .fbar.full > i { background: var(--teal); }
 
   .controls { display: flex; gap: 8px; margin: 16px 0 10px; }
   .filterBox { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 10px; padding: 0 12px; }
   .filterBox input { flex: 1; border: none; background: none; color: var(--ink); font-family: var(--body); font-size: 14px; padding: 10px 0; outline: none; min-width: 0; }
   .filterBox svg { flex-shrink: 0; opacity: 0.5; }
+  .selectBtn { background: var(--surface); border: 1px solid var(--line-solid); border-radius: 13px; color: var(--ink-dim); padding: 0 12px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; }
+  .selectBtn.on { color: var(--gold); border-color: var(--gold); }
+  .card.selon, .tile.selon { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .card.selon::after, .tile.selon::after { content: "✓"; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: #171204; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; z-index: 2; }
+  .selBar { position: fixed; left: 14px; right: 14px; bottom: calc(12px + env(safe-area-inset-bottom)); margin: 0 auto; max-width: 560px; z-index: 25; display: none; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 18px; background: rgba(20,25,36,0.92); border: 1px solid var(--line-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 16px 44px rgba(0,0,0,0.5); }
+  .selBar.show { display: flex; }
+  .selBar span { flex: 1; font-family: var(--display); font-weight: 700; font-size: 13px; }
+  .selBar button { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 11px; padding: 9px 14px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 13px; }
+  .selBar .selDel { color: var(--danger); }
   .viewToggle { display: flex; border: 1px solid var(--line-solid); border-radius: 10px; overflow: hidden; flex-shrink: 0; }
   .viewToggle button { background: var(--surface); border: none; color: var(--ink-dim); padding: 0 12px; cursor: pointer; display: flex; align-items: center; }
   .viewToggle button.on { background: var(--surface-2); color: var(--gold); }
@@ -538,7 +552,7 @@
   .login { gap: 22px; }
   .login .mark { font-size: 42px; letter-spacing: -0.03em; }
   .login p { font-size: 14px; line-height: 1.6; max-width: 300px; color: var(--ink-dim); }
-  .steamBtn { border-radius: 15px; padding: 15px 30px; background: linear-gradient(180deg, #efc878, var(--gold) 55%); box-shadow: 0 4px 26px rgba(228,184,92,0.32), inset 0 1px 0 rgba(255,255,255,0.35); }
+  .steamBtn { border-radius: 13px; padding: 13px 0; font-size: 15px; letter-spacing: 0.01em; width: min(270px, 78vw); text-align: center; background: linear-gradient(180deg, #efc878, var(--gold) 55%); box-shadow: 0 3px 20px rgba(228,184,92,0.28), inset 0 1px 0 rgba(255,255,255,0.32); }
 
   /* profile */
   .chartBox { background: var(--surface); border-radius: var(--r); padding: 15px 16px; }
@@ -648,6 +662,91 @@
 
   /* sheet handle + spacing */
   .sheet { background: #171d2a; }
+
+  /* ================= design v3: night arcade ================= */
+  :root { --bg: #08090d; --surface: #10131b; --surface-2: #171b26; --ink: #e9ecf4; --ink-dim: #7e879b; --gold: #ffb454; --r: 10px; }
+  html { background: var(--bg); }
+  body { background: linear-gradient(180deg, #0a0c12 0%, #08090d 240px); }
+  .card, .tile, .chartBox, .pLevel, .fcard, .sheet, .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button, .selectBtn { background: var(--surface); }
+
+  /* topbar: flat instrument bar */
+  .top { background: rgba(8,9,13,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-solid); }
+  .wordmark { font-size: 19px; letter-spacing: -0.02em; }
+  .wordmark b { color: var(--vio); text-shadow: none; }
+
+  /* hero: flat panel, violet rail, no aurora */
+  .hero { border-radius: 14px; padding: 16px 16px 15px; background: var(--surface); box-shadow: none; border: 1px solid var(--line-solid); border-left: 3px solid var(--vio); }
+  .hero::before, .hero::after { display: none; }
+  .hero .line { font-size: 18px; min-height: 2.9em; }
+  .hero .line b, .hero .line .g { font-size: 25px; letter-spacing: -0.02em; }
+  .hero .xp { height: 7px; border-radius: 2px; }
+  .hero .xp > i { border-radius: 2px; }
+
+  /* joined list: one panel, hairline-divided rows */
+  .games { gap: 0; border: 1px solid var(--line-solid); border-radius: 14px; overflow: hidden; background: var(--surface); }
+  .games:empty { border: none; background: none; }
+  .card { border: none; border-radius: 0 !important; }
+  .card + .card { border-top: 1px solid var(--line-solid); }
+  @media (hover:hover) { .card:hover { box-shadow: none; transform: none; background: #141827; } }
+  .games.compact { gap: 0; }
+  .games.grid { gap: 10px; border: none; border-radius: 0; overflow: visible; background: none; }
+  .tile { border: 1px solid var(--line-solid); border-radius: 12px; }
+  .card.selon, .tile.selon { outline: 2px solid var(--vio); }
+  .card.selon::after, .tile.selon::after { background: var(--vio); color: #0e0a22; }
+
+  /* mono readouts for all stat lines */
+  .nums, .tmini, .tile .tstats, .fcard .fsub, .lvlNums, .friendRow .fs, .tmk, .visitFeed .vfItem .up { font-family: var(--mono); font-weight: 500; }
+  .nums { font-size: 11px; }
+  .tmini { font-size: 10.5px; }
+  .nums .meta { border-radius: 3px; }
+
+  /* chips: rectangular uppercase tags */
+  .listbar button, .sorts button { border-radius: 7px; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.07em; padding: 8px 12px; font-family: var(--mono); font-weight: 600; }
+  .listbar button.on { border-color: var(--vio); color: var(--vio); background: rgba(157,140,255,0.08); }
+  .listbar button.new { border: 1px dashed var(--line-strong); }
+  .sorts button.on { background: var(--vio); border-color: var(--vio); color: #0e0a22; }
+  @media (hover:hover) { .sorts button:not(.on):hover, .listbar button:not(.on):hover { color: var(--ink); background: var(--surface-2); } }
+  .filterBox, .viewToggle, .selectBtn { border-radius: 9px; }
+  .selectBtn.on { color: var(--vio); border-color: var(--vio); }
+  .viewToggle button.on { color: var(--vio); }
+
+  /* featured + sections */
+  .featTitle, .chartBox .ct, .gsSection, .dcSection, .visitFeed .vfTitle { font-family: var(--mono); font-weight: 600; letter-spacing: 0.12em; font-size: 10.5px; }
+  .chartBox .ct::before { background: var(--vio); box-shadow: none; }
+  .fcard { border-radius: 10px; }
+  .fcard .fwhy { font-family: var(--mono); letter-spacing: 0.1em; }
+  .decideBtn { border-radius: 10px; border: 1px solid var(--line-solid); color: var(--vio); font-family: var(--mono); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; }
+  .decideBtn:hover { border-color: var(--vio); color: var(--vio); }
+
+  /* sheets: full-width, top-rounded */
+  .modal { padding: 0; }
+  .sheet { border-radius: 18px 18px 0 0; margin-bottom: 0; border-left: none; border-right: none; border-bottom: none; box-shadow: 0 -16px 60px rgba(0,0,0,0.6); }
+  .sheet::after { background: linear-gradient(90deg, transparent, rgba(157,140,255,0.5), transparent); }
+
+  /* interactive = violet, progress stays amber */
+  .dock { border-radius: 16px; background: rgba(14,16,24,0.9); }
+  .dock .primary, .footRow .go, .addAll {
+    background: linear-gradient(180deg, #b3a5ff, var(--vio) 55%);
+    color: #0e0a22;
+    box-shadow: 0 3px 18px rgba(157,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .steamBtn { background: linear-gradient(180deg, #b3a5ff, var(--vio) 55%); color: #0e0a22; box-shadow: 0 3px 20px rgba(157,140,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3); border-radius: 11px; }
+  .login::before { background: radial-gradient(36% 38% at 26% 24%, rgba(157,140,255,0.12), transparent 70%), radial-gradient(40% 42% at 78% 78%, rgba(255,180,84,0.07), transparent 70%); }
+  .loginXp i { background: linear-gradient(90deg, #c9962f, var(--gold)); }
+  .login .mark b { color: var(--vio); }
+  .selBar { border-radius: 14px; }
+  .selBar .selDel { color: var(--danger); }
+  .selBar button { font-family: var(--mono); text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; border-radius: 8px; }
+
+  /* profile */
+  .lvlChip, .friendRow .lv { background: var(--gold); }
+  .insignia { border-radius: 10px; }
+  .cell { border-radius: 10px; }
+  .badgeGrid { }
+  .trophyRow img { border-radius: 6px; }
+  .toast { border-radius: 12px; font-family: var(--mono); font-size: 12px; }
+  .skel { border-radius: 0; height: 74px; }
+  .games .skel { border-radius: 0; }
 </style>
 </head>
 <body>
@@ -687,6 +786,11 @@
 
     <div class="visitFeed" id="visitFeed" style="display:none"></div>
 
+    <div class="featWrap" id="recentWrap" style="display:none">
+      <div class="featHead"><span class="featTitle">Recently played</span></div>
+      <div class="feat" id="recent"></div>
+    </div>
+
     <div class="featWrap" id="featWrap" style="display:none">
       <div class="featHead">
         <span class="featTitle">Up next</span>
@@ -702,6 +806,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="filter" type="search" placeholder="Filter this list" autocomplete="off">
       </div>
+      <button class="selectBtn" id="selectBtn" aria-label="Select games"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></button>
       <div class="viewToggle">
         <button id="viewList" aria-label="List view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 5.5h16M4 12h16M4 18.5h16"/></svg></button>
         <button id="viewCompact" aria-label="Compact view"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4.5h16M4 9.5h16M4 14.5h16M4 19.5h16"/></svg></button>
@@ -842,6 +947,13 @@
         <button class="go" id="wheelSpin">Spin</button>
       </div>
     </div>
+  </div>
+
+  <div class="selBar" id="selBar">
+    <span id="selCount">0 selected</span>
+    <button id="selMove">Move</button>
+    <button class="selDel" id="selDelete">Delete</button>
+    <button id="selCancel">Cancel</button>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1131,6 +1243,46 @@
     }, 380);
   }, 7000);
 
+  // ---- Recently played (Steam two-week activity) ----
+  let recentGames = null;
+  async function loadRecent() {
+    if (sharedMode || !me || !me.steamId) return;
+    try {
+      const r = await fetch("/api/library?recent=1");
+      const d = await r.json();
+      if (d.error || !Array.isArray(d.games)) return;
+      recentGames = d.games
+        .sort((x, y) => y.playtime2w - x.playtime2w)
+        .slice(0, 3);
+      // make sure achievement data exists for them (tracked or not)
+      const need = recentGames.filter(g => !stats[g.appid]);
+      if (need.length) fetchStats(need);
+      renderRecent();
+    } catch { /* section simply stays hidden */ }
+  }
+  function renderRecent() {
+    const wrap = $("recentWrap");
+    if (!recentGames || !recentGames.length || sharedMode) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+    $("recent").innerHTML = recentGames.map(g => {
+      const a = achOf(g.appid);
+      const pct = a && !a.none ? Math.round(a.pct * 100) : null;
+      const full = a && !a.none && a.pct === 1;
+      const h2w = g.playtime2w / 60 >= 10 ? Math.round(g.playtime2w / 60) : Math.round(g.playtime2w / 6) / 10;
+      return `<div class="fcard" data-recent="${g.appid}">
+        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <div class="fbody">
+          <div class="fwhy ${full ? "teal" : ""}">${pct != null ? pct + "% complete" : "Playing"}</div>
+          <div class="fname">${esc(g.name)}</div>
+          <div class="fsub">${h2w}h past 2 weeks</div>
+          ${pct != null ? `<div class="fbar ${full ? "full" : ""}"><i style="width:${pct}%"></i></div>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    $("recent").querySelectorAll("[data-recent]").forEach(el =>
+      el.onclick = () => openGameSheet(+el.dataset.recent));
+  }
+
   // ---- Up Next: reason-based picks from the active list ----
   const wildcardPick = {}; // listId -> appid, stable per session
   function renderFeatured() {
@@ -1141,7 +1293,7 @@
       const a = achOf(g.appid);
       return !(a && !a.none && a.pct === 1);
     });
-    if (pool.length < 3) { wrap.style.display = "none"; return; }
+    if (pool.length < 3) { wrap.style.display = "none"; renderRecent(); return; }
 
     const S = id => stats[id] || {};
     const picks = [];
@@ -1190,6 +1342,7 @@
       take(w, "Random", () => "Random pick");
     }
 
+    renderRecent();
     if (picks.length < 2) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
     $("feat").innerHTML = picks.slice(0,5).map(({g, why, sub, cls}) =>
@@ -1258,7 +1411,7 @@
         const achTxt = !a ? `<span class="tna">— achv</span>` : a.none ? `<span class="tna">no achv</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         const s = stats[g.appid]||{};
         const m = hrs(s.mainStory), c100 = hrs(s.completionist);
-        return `<li class="tile${animateNext?" enter":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+        return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
                onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}">
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
@@ -1270,7 +1423,11 @@
         </li>`;
       }).join("");
       $("games").querySelectorAll("[data-tile]").forEach(el =>
-        el.onclick = () => { if (!sharedMode) openGameSheet(+el.dataset.tile); });
+        el.onclick = () => {
+          if (sharedMode) return;
+          if (selectMode) return toggleSelect(+el.dataset.tile);
+          openGameSheet(+el.dataset.tile);
+        });
       animateNext = false;
       renderHero(); renderListbar();
       return;
@@ -1284,7 +1441,7 @@
         const pct = a && !a.none ? Math.round(a.pct*100) : 0;
         const full = a && !a.none && a.pct===1;
         const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
-        return `<li class="card thinrow${animateNext?" enter":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+        return `<li class="card thinrow${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <div class="trow" data-open="${g.appid}">
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
@@ -1295,8 +1452,8 @@
         </li>`;
       }).join("");
       if (!sharedMode) {
-        $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); removeGame(+b.dataset.rm); });
-        $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => openGameSheet(+el.dataset.open));
+        $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.rm); removeGame(+b.dataset.rm); });
+        $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => { if (selectMode) return toggleSelect(+el.dataset.open); openGameSheet(+el.dataset.open); });
         wireSwipes();
       }
       animateNext = false;
@@ -1327,7 +1484,7 @@
            ${data.lists.length>1 ? `<button class="mv" data-mv="${g.appid}" aria-label="Move ${esc(g.name)}">⇄</button>` : ""}
          </div>`;
       const open = !sharedMode && openGame === g.appid;
-      return `<li class="card${animateNext?" enter":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+      return `<li class="card${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
         <div class="row" ${sharedMode?"":`data-open="${g.appid}"`}>
           <img class="cap" src="${capsule(g)}" loading="lazy" alt=""
                onerror="this.onerror=null;this.src='${safeUrl(g.icon)||""}';if(!this.src)this.style.visibility='hidden'">
@@ -1349,10 +1506,10 @@
       </li>`;
     }).join("");
     if (!sharedMode) {
-      $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); removeGame(+b.dataset.rm); });
-      $("games").querySelectorAll("[data-mv]").forEach(b => b.onclick = (e) => { e.stopPropagation(); openMove(+b.dataset.mv); });
-      $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => toggleGame(+el.dataset.open));
-      $("games").querySelectorAll("[data-det]").forEach(b => b.onclick = (e) => { e.stopPropagation(); openGameSheet(+b.dataset.det); });
+      $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.rm); removeGame(+b.dataset.rm); });
+      $("games").querySelectorAll("[data-mv]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.mv); openMove(+b.dataset.mv); });
+      $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => { if (selectMode) return toggleSelect(+el.dataset.open); toggleGame(+el.dataset.open); });
+      $("games").querySelectorAll("[data-det]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.det); openGameSheet(+b.dataset.det); });
       wireSwipes();
       $("games").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
         openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
@@ -1365,9 +1522,89 @@
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
+  // ---- select mode: bulk delete / move ----
+  let selectMode = false;
+  let selected = new Set();
+  function setSelectMode(on) {
+    selectMode = on;
+    selected = new Set();
+    $("selectBtn").classList.toggle("on", on);
+    $("selBar").classList.toggle("show", on);
+    $("dock").style.display = on ? "none" : "";
+    updateSelBar();
+    renderGames();
+  }
+  function toggleSelect(appid) {
+    if (selected.has(appid)) selected.delete(appid); else selected.add(appid);
+    updateSelBar();
+    renderGames();
+  }
+  function updateSelBar() {
+    $("selCount").textContent = `${selected.size} selected`;
+    $("selMove").style.display = data.lists.length > 1 ? "block" : "none";
+  }
+  $("selectBtn").onclick = () => { if (!sharedMode) setSelectMode(!selectMode); };
+  $("selCancel").onclick = () => setSelectMode(false);
+
+  $("selDelete").onclick = () => {
+    if (!selected.size) return;
+    const l = activeList();
+    const listId = l.id;
+    const removed = [];
+    l.games.forEach((g, idx) => { if (selected.has(g.appid)) removed.push({ g, idx }); });
+    l.games = l.games.filter(g => !selected.has(g.appid));
+    const n = removed.length;
+    setSelectMode(false);
+    persist(); syncUp(); renderAll();
+    toastAction(`Deleted ${n} game${n>1?"s":""}`, "Undo", () => {
+      const back = data.lists.find(x => x.id === listId);
+      if (!back) return;
+      for (const { g, idx } of removed) {
+        if (!back.games.some(x => x.appid === g.appid)) back.games.splice(Math.min(idx, back.games.length), 0, g);
+      }
+      persist(); syncUp(); renderAll();
+    }, 8000);
+  };
+
+  $("selMove").onclick = () => {
+    if (!selected.size) return;
+    const ids = new Set(selected);
+    $("moveTitle").textContent = `Move ${ids.size} game${ids.size>1?"s":""} to…`;
+    $("moveOpts").innerHTML = data.lists
+      .filter(l=>l.id!==data.activeId)
+      .map(l=>`<button data-to="${l.id}">${esc(l.name)} · ${l.games.length} games</button>`).join("");
+    $("moveOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
+      const from = activeList();
+      const fromId = from.id;
+      const to = data.lists.find(l=>l.id===b.dataset.to);
+      if (!to) return;
+      const moved = [];
+      from.games.forEach((g, idx) => { if (ids.has(g.appid)) moved.push({ g, idx }); });
+      from.games = from.games.filter(g => !ids.has(g.appid));
+      const actuallyAdded = [];
+      for (const { g } of moved) {
+        if (!to.games.some(x => x.appid === g.appid)) { to.games.push(g); actuallyAdded.push(g.appid); }
+      }
+      moveModal.classList.remove("show");
+      setSelectMode(false);
+      persist(); syncUp(); renderAll();
+      const addedIds = new Set(actuallyAdded);
+      toastAction(`Moved ${moved.length} to ${esc(to.name)}`, "Undo", () => {
+        const src = data.lists.find(x => x.id === fromId);
+        const dst = data.lists.find(x => x.id === to.id);
+        if (dst) dst.games = dst.games.filter(g => !addedIds.has(g.appid));
+        if (src) for (const { g, idx } of moved) {
+          if (!src.games.some(x => x.appid === g.appid)) src.games.splice(Math.min(idx, src.games.length), 0, g);
+        }
+        persist(); syncUp(); renderAll();
+      }, 8000);
+    });
+    moveModal.classList.add("show");
+  };
+
   // ---- swipe gestures: left = remove, right = move ----
   function wireSwipes() {
-    if (sharedMode) return;
+    if (sharedMode || selectMode) return;
     $("games").querySelectorAll("[data-card]").forEach(card => {
       let x0 = 0, y0 = 0, dx = 0, active = false, decided = false;
       card.addEventListener("touchstart", e => {
@@ -1455,12 +1692,15 @@
   }
 
   function openGameSheet(appid) {
-    const g = activeList().games.find(x=>x.appid===appid);
+    let g = activeList().games.find(x=>x.appid===appid);
+    const inActive = !!g;
+    if (!g) g = allGames().find(x=>x.appid===appid) || (recentGames||[]).find(x=>x.appid===appid);
     if (!g) return;
     sheetGame = g;
     openAch = null;
     $("gsName").textContent = g.name;
-    $("gsMove").style.display = data.lists.length>1 ? "block" : "none";
+    $("gsMove").style.display = inActive && data.lists.length>1 ? "block" : "none";
+    $("gsRemove").style.display = inActive ? "block" : "none";
     if (!achCache[appid]) loadAchievements(appid);
     if (!detailsCache[appid]) loadDetails(appid);
     renderGameSheet();
@@ -1936,14 +2176,23 @@
     if (!stats[g.appid]) fetchStats([g]);
     return true;
   }
-  // Bulk add: single state update, stats fetched in batches of 50
+  // Bulk add: single state update, stats in batches, undoable
   function addGamesBulk(items) {
     const fresh = items.filter(g => g && !hasGame(g.appid));
     if (!fresh.length) return 0;
+    const listId = data.activeId;
     for (const g of fresh) activeList().games.push({ appid:g.appid, name:g.name, icon:safeUrl(g.icon) });
     persist(); syncUp(); renderGames();
     const need = fresh.filter(g => !stats[g.appid]);
     for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
+    const ids = new Set(fresh.map(g => g.appid));
+    toastAction(`Added ${fresh.length} game${fresh.length>1?"s":""}`, "Undo", () => {
+      const l = data.lists.find(x => x.id === listId);
+      if (!l) return;
+      l.games = l.games.filter(g => !ids.has(g.appid));
+      persist(); syncUp(); renderAll();
+      toast(`Removed ${fresh.length} game${fresh.length>1?"s":""}`);
+    }, 8000);
     return fresh.length;
   }
   function removeGame(id) {
@@ -1978,7 +2227,7 @@
       });
       const d = await r.json();
       if (d.stats) {
-        Object.assign(stats, d.stats);
+        for (const [id, v] of Object.entries(d.stats)) stats[id] = { ...(stats[id] || {}), ...v };
         persist(); syncUp(); renderGames();
       }
     } catch {}
@@ -2081,7 +2330,6 @@
         ab.textContent = `Added ${n} ✓`;
         ab.disabled = true;
         $("addResults").querySelectorAll(".res").forEach(r => { r.classList.add("in"); const b = r.querySelector(".addOne"); if (b) b.textContent = "✓"; });
-        toast(`Added ${n} game${n>1?"s":""} to ${esc(activeList().name)}`);
       };
     } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
@@ -2147,7 +2395,7 @@
   $("reviewConfirm").onclick = () => {
     const n = addGamesBulk(matches.filter(m=>m.include&&m.chosen).map(m=>m.chosen));
     reviewModal.classList.remove("show");
-    toast(n?`Added ${n} game${n>1?"s":""} to ${esc(activeList().name)}`:"Nothing new to add");
+    if (!n) toast("Nothing new to add");
   };
 
   async function runMatch(titles) {
@@ -2536,25 +2784,44 @@
       const owned = d.games || [];
       if (!owned.length) throw new Error(d.note || "No games returned from Steam.");
 
+      // Family-shared games never appear in the owned library, but games
+      // played recently do — include them as candidates too.
+      const pool = [...owned];
+      const inPool = new Set(owned.map(g => g.appid));
+      for (const g of recentGames || []) {
+        if (!inPool.has(g.appid)) { pool.push({ appid: g.appid, name: g.name, icon: null }); inPool.add(g.appid); }
+      }
+
       // Skip games already tracked anywhere (backlog games that hit 100%
       // already count toward your profile; we don't move them).
       const tracked = new Set(allGames().map(g => g.appid));
-      const candidates = owned.filter(g => !tracked.has(g.appid));
+      const candidates = pool.filter(g => !tracked.has(g.appid));
 
-      // Check achievements for candidates we don't have stats for yet
+      // Achievements only, in chunks, with one retry per chunk — the full
+      // stats pipeline is too slow for bulk scans and was timing out.
       const unknown = candidates.filter(g => !stats[g.appid]);
+      let failedChunks = 0;
       for (let i = 0; i < unknown.length; i += 50) {
         progress(`Checking achievements… ${Math.min(i+50, unknown.length)}/${unknown.length}`);
         const chunk = unknown.slice(i, i+50);
-        try {
-          const sr = await fetch("/api/stats", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: chunk.map(g => ({ appid: g.appid, name: g.name })) })
-          });
-          const sd = await sr.json();
-          if (sd.stats) Object.assign(stats, sd.stats);
-        } catch { /* keep going; missed games just won't qualify this run */ }
+        let ok = false;
+        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+          try {
+            const sr = await fetch("/api/stats", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ achOnly: true, items: chunk.map(g => ({ appid: g.appid, name: g.name })) })
+            });
+            if (!sr.ok) throw new Error(sr.status);
+            const sd = await sr.json();
+            if (sd.stats) {
+              for (const [id, v] of Object.entries(sd.stats)) stats[id] = { ...(stats[id] || {}), ...v };
+              ok = true;
+            }
+          } catch { /* retry once */ }
+        }
+        if (!ok) failedChunks++;
       }
+      if (failedChunks > 0) toast(`Note: ${failedChunks * 50} games couldn't be checked — run the scan again to cover them`);
 
       const finished = candidates.filter(g => {
         const s = stats[g.appid];
@@ -2760,6 +3027,7 @@
     ensureHundo();
     renderAll();
     silentRefresh();
+    loadRecent();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState==="visible") syncDown();
     });

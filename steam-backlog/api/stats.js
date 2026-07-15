@@ -257,6 +257,9 @@ export default async function handler(req, res) {
   }
   items = items.slice(0, 60);
   if (!items.length) return res.status(400).json({ error: "No games provided." });
+  // achOnly: skip HLTB and Metacritic entirely — used by bulk scans so a
+  // chunk of 50 games finishes well inside the serverless time limit.
+  const achOnly = body?.achOnly === true;
 
   const results = {};
   const playtimes = (key && steamId) ? await playtimeMap(key, steamId) : new Map();
@@ -265,12 +268,15 @@ export default async function handler(req, res) {
       const [ach, hltb, store] = await Promise.all([
         (key && steamId) ? steamAchievements(appid, key, steamId)
             : Promise.resolve({ achTotal: null, achUnlocked: null }),
-        hltbTimes(appid, name),
-        hasMeta ? Promise.resolve({ metaScore: knownMeta, genres: knownGenres || [] }) : storeMeta(appid, name),
+        achOnly ? Promise.resolve(null) : hltbTimes(appid, name),
+        achOnly ? Promise.resolve(null)
+                : (hasMeta ? Promise.resolve({ metaScore: knownMeta, genres: knownGenres || [] }) : storeMeta(appid, name)),
       ]);
       // null = not owned; a number (possibly 0) = owned
       const playtimeMinutes = playtimes.has(appid) ? playtimes.get(appid) : null;
-      results[appid] = { ...ach, ...hltb, playtimeMinutes, metaScore: store.metaScore, genres: store.genres, metaV: 2 };
+      results[appid] = achOnly
+        ? { ...ach, playtimeMinutes }
+        : { ...ach, ...hltb, playtimeMinutes, metaScore: store.metaScore, genres: store.genres, metaV: 2 };
     })
   );
 
