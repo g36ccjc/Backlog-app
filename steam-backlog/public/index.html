@@ -2682,6 +2682,100 @@
   }
 
   let friendsCache = null;
+  // ---- friend viewer sheet ----
+  const fvModal = $("fvModal");
+  $("fvClose").onclick = () => fvModal.classList.remove("show");
+  fvModal.onclick = e => { if (e.target === fvModal) fvModal.classList.remove("show"); };
+  let fvData = null, fvTab = null;
+
+  async function openFriendView(friendId) {
+    fvData = null; fvTab = null;
+    $("fvName").textContent = "Loading…";
+    $("fvSub").textContent = "";
+    $("fvTabs").style.display = "none";
+    $("fvTabs").innerHTML = "";
+    $("fvBody").innerHTML = `<div class="hint">Fetching profile <span class="spin"></span></div>`;
+    $("fvAvatar").src = "";
+    fvModal.classList.add("show");
+    try {
+      const r = await fetch("/api/friends?view=" + encodeURIComponent(friendId));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Couldn't load profile");
+      fvData = d;
+      $("fvName").textContent = d.profile?.name || "Player";
+      $("fvAvatar").src = safeUrl(d.profile?.avatar) || "";
+      const bits = [];
+      if (d.achPct != null) bits.push(`${d.achPct}% completion`);
+      if (typeof d.done === "number") bits.push(`${d.done} completed`);
+      if (typeof d.games === "number") bits.push(`${d.games} tracked`);
+      $("fvSub").textContent = bits.join(" · ");
+      if (d.visibility === "private" || !Array.isArray(d.lists)) {
+        $("fvBody").innerHTML = `<div class="hint">This user's lists are private. They can change that on their profile.</div>`;
+        return;
+      }
+      const showable = d.lists.filter(l => l.games && l.games.length);
+      if (!showable.length) {
+        $("fvBody").innerHTML = `<div class="hint">No games in any list yet.</div>`;
+        return;
+      }
+      const orderKey = (l) => l.id === "hundo" ? 0 : l.id === "main" ? 1 : l.id === "wishlist" ? 2 : 3;
+      showable.sort((a, b) => orderKey(a) - orderKey(b));
+      fvTab = showable[0].id;
+      $("fvTabs").style.display = "flex";
+      renderFvTabs(showable);
+      renderFvList(showable);
+    } catch (e) {
+      $("fvBody").innerHTML = `<div class="hint">${esc(e.message)}</div>`;
+    }
+  }
+  function renderFvTabs(lists) {
+    $("fvTabs").innerHTML = lists.map(l =>
+      `<button class="${fvTab===l.id?"on":""}" data-fvt="${esc(l.id)}">${esc(l.name)} · ${l.games.length}</button>`
+    ).join("");
+    $("fvTabs").querySelectorAll("button").forEach(b => b.onclick = () => {
+      fvTab = b.dataset.fvt; renderFvTabs(lists); renderFvList(lists);
+    });
+  }
+  function renderFvList(lists) {
+    const l = lists.find(x => x.id === fvTab) || lists[0];
+    const st = fvData.stats || {};
+    $("fvBody").innerHTML = `<div class="fvList">` + l.games.slice(0, 300).map(g => {
+      const s = st[g.appid] || {};
+      const a = s.achTotal > 0 ? { u: s.achUnlocked||0, t: s.achTotal, full: s.achUnlocked===s.achTotal } : null;
+      const bits = [];
+      if (a) bits.push(`<span class="a ${a.full?"full":""}">${a.u}/${a.t}</span>`);
+      if (typeof s.metaScore === "number") bits.push(`${s.metaScore}mc`);
+      if (typeof s.mainStory === "number") bits.push(`${hrs(s.mainStory)}h`);
+      return `<div class="fvRow">
+        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <div class="fvNm">${esc(g.name)}</div>
+        <div class="fvNum">${bits.join(" · ")}</div>
+      </div>`;
+    }).join("") + `</div>` + (l.games.length > 300 ? `<div class="hint">Showing first 300 of ${l.games.length}</div>` : "");
+  }
+
+  // ---- profile privacy toggle ----
+  async function loadVisibility() {
+    try {
+      const r = await fetch("/api/friends?visibility=1");
+      const d = await r.json();
+      if (d.value) $("visSel").value = d.value;
+    } catch {}
+  }
+  $("visSel").onchange = async () => {
+    const v = $("visSel").value;
+    try {
+      const r = await fetch("/api/friends?visibility=1", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ value: v })
+      });
+      if (!r.ok) throw new Error("save failed");
+      toast(v === "private" ? "Lists set to private" :
+            v === "friends" ? "Steam friends here can view your lists" :
+            "Anyone with a share link can view your lists");
+    } catch { toast("Couldn't save that setting"); }
+  };
+
   async function renderFriends() {
     const el = $("pFriends");
     const myT = totals(allGames());
@@ -3001,6 +3095,7 @@
     renderAll();
     silentRefresh();
     loadRecent();
+    loadVisibility();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState==="visible") syncDown();
     });
