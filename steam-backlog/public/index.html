@@ -160,6 +160,9 @@
   .tile .tstats .tna { color: var(--ink-dim); opacity: 0.6; }
   .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
   .tile .barWrap { height: 3px; background: var(--surface-2); }
+  .tile .mscore { position: absolute; top: 6px; right: 6px; z-index: 2; font-family: var(--display); font-weight: 700; font-size: 11px; line-height: 1; padding: 4px 6px; border-radius: 8px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); color: var(--ink); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-variant-numeric: tabular-nums; }
+  .tile .mscore.hi { color: var(--teal); }
+  .tile .mscore.mid { color: var(--gold); }
   .tile .barWrap > i { display: block; height: 100%; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); }
   .tile .barWrap.full > i { background: var(--teal); }
   /* game bottom sheet (tile view) */
@@ -333,6 +336,11 @@
   .bkNear { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 0; cursor: pointer; }
   .bkNear .nm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bkNear .pc { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--gold); }
+  .mpRow { display: flex; align-items: center; gap: 10px; padding: 7px 0 0; cursor: pointer; }
+  .mpRow .rk { width: 16px; flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 11px; color: var(--ink-dim); opacity: 0.7; font-variant-numeric: tabular-nums; }
+  .mpRow .nm { flex: 1; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mpRow .hh { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .mpRow:first-of-type .hh { color: var(--gold); }
   .tHero { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
   .tArt { flex-shrink: 0; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35)) drop-shadow(0 0 16px rgba(232,182,76,0.16)); }
   .tEmpty { width: 62px; height: 62px; border-radius: 14px; border: 1.5px dashed var(--line-strong); }
@@ -805,6 +813,7 @@
     <div id="pBadges"></div>
     <div class="grid" id="pGrid"></div>
     <div id="pChart" style="margin-top:14px"></div>
+    <div id="pPlayed" style="margin-top:14px"></div>
     <div id="pWrap" style="margin-top:14px"></div>
     <div id="pShowcase" style="margin-top:14px"></div>
     <div id="pFriends" style="margin-top:14px"></div>
@@ -819,8 +828,6 @@
         </select>
       </div>
       <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
-      <button id="importCompletedBtn">Import my 100% completed games</button>
-      <button id="syncWishlistBtn" style="display:none">Sync my Steam wishlist</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
@@ -1159,6 +1166,7 @@
         return;
       }
       const l = data.lists[+b.dataset.ldel];
+      if (isWishlist(l)) data.noWl = true; // don't auto-recreate a deleted Wishlist
       const main = data.lists.find(x => x.id === "main") || data.lists[0];
       const have = new Set(main.games.map(g => g.appid));
       l.games.forEach(g => { if (!have.has(g.appid)) main.games.push(g); });
@@ -1513,7 +1521,10 @@
         const achTxt = !a ? `<span class="tna">— achv</span>` : a.none ? `<span class="tna">no achv</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         const s = stats[g.appid]||{};
         const m = hrs(s.mainStory), c100 = hrs(s.completionist);
+        const msBadge = typeof s.metaScore === "number"
+          ? `<div class="mscore ${s.metaScore>=75?"hi":s.metaScore>=50?"mid":""}">${s.metaScore}</div>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+          ${msBadge}
           <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
                onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}">
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
@@ -2684,8 +2695,6 @@
 
     updateVisRow();
     $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
-    if ($("importCompletedBtn")) $("importCompletedBtn").style.display = me && me.steamId ? "block" : "none";
-    if ($("syncWishlistBtn")) $("syncWishlistBtn").style.display = me && me.steamId ? "block" : "none";
 
     const cells = [
       { v: games.length, k: "games tracked" },
@@ -2698,6 +2707,7 @@
     $("pGrid").innerHTML = cells.map(c =>
       `<div class="cell ${c.cls||""}"><div class="v">${c.v}</div><div class="k">${c.k}</div></div>`).join("");
     renderChart();
+    renderMostPlayed();
     renderTrophies(t);
     renderWrapup();
     renderShowcase();
@@ -2712,6 +2722,27 @@
   }
   // Completion trophy road removed as part of the leveling-system trim.
   function renderTrophies() { const el = $("pBadges"); if (el) el.innerHTML = ""; }
+
+  // ---- most played: quiet top-5 by lifetime hours ----
+  function renderMostPlayed() {
+    const el = $("pPlayed");
+    const top = allGames()
+      .map(g => ({ g, m: stats[g.appid]?.playtimeMinutes }))
+      .filter(x => typeof x.m === "number" && x.m >= 60)
+      .sort((a, b) => b.m - a.m)
+      .slice(0, 5);
+    if (top.length < 2) { el.innerHTML = ""; return; }
+    el.innerHTML = `<div class="chartBox">
+      <div class="ct">Most played</div>
+      ${top.map((x, i) => `<div class="mpRow" data-mp="${x.g.appid}">
+        <span class="rk">${i + 1}</span>
+        <span class="nm">${esc(x.g.name)}</span>
+        <span class="hh">${hrs(x.m / 60)}h</span>
+      </div>`).join("")}
+    </div>`;
+    el.querySelectorAll("[data-mp]").forEach(row =>
+      row.onclick = () => openGameSheet(+row.dataset.mp));
+  }
 
   // ---- year wrap-up: real Steam year-to-date data ----
   let yearlyCache = null;
@@ -3092,12 +3123,6 @@
       toast("Couldn't scan: " + esc(e.message));
     }
   }
-  $("importCompletedBtn").onclick = async () => {
-    const btn = $("importCompletedBtn");
-    btn.disabled = true; btn.textContent = "Scanning your library…";
-    await scanCompleted(msg => btn.textContent = msg);
-    btn.disabled = false; btn.textContent = "Import my 100% completed games";
-  };
 
   // ---- sync Steam wishlist into a "Wishlist" list ----
   const WLSYNC_KEY = "backlog.wlsync.v1";
@@ -3113,6 +3138,15 @@
     if (h < 24) return ` · synced ${h}h ago`;
     return ` · synced ${Math.floor(h / 24)}d ago`;
   }
+  function ensureWishlist() {
+    // creates the Wishlist list on first run for Steam-linked users, so its
+    // tab (and the sync bar on it) is always reachable. Respects deletion.
+    if (!me || !me.steamId || data.noWl) return;
+    if (!data.lists.some(isWishlist)) {
+      data.lists.push({ id: "wishlist", name: "Wishlist", games: [] });
+      persist(); syncUp(); renderListbar();
+    }
+  }
   function wishlistList() {
     let l = data.lists.find(isWishlist);
     if (!l) {
@@ -3124,6 +3158,7 @@
   async function syncWishlist(progress) {
     try {
       progress("Reading your Steam wishlist…");
+      delete data.noWl; // explicit sync means they want the list back
       const r = await fetch("/api/library?wishlist=1");
       const d = await r.json();
       if (d.error) throw new Error(d.error);
@@ -3164,12 +3199,6 @@
       toast("Couldn't sync wishlist: " + esc(e.message));
     }
   }
-  $("syncWishlistBtn").onclick = async () => {
-    const btn = $("syncWishlistBtn");
-    btn.disabled = true; btn.textContent = "Syncing wishlist…";
-    await syncWishlist(msg => btn.textContent = msg);
-    btn.disabled = false; btn.textContent = "Sync my Steam wishlist";
-  };
   $("wlSyncGo").onclick = async () => {
     const b = $("wlSyncGo");
     b.disabled = true; b.textContent = "Syncing…";
@@ -3361,6 +3390,7 @@
     animateNext = true;
     await syncDown();
     ensureHundo();
+    ensureWishlist();
     renderAll();
     silentRefresh();
     loadRecent();
