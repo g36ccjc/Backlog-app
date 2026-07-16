@@ -187,6 +187,98 @@ function secsToTimes(mainSecs, compSecs) {
   return { mainStory: h(mainSecs), completionist: h(compSecs) };
 }
 
+// ---- HLTB name-search fallback ---------------------------------------
+// The appid-mapping service doesn't know a sizeable share of games. For
+// those we search HowLongToBeat directly. Their search API requires a
+// rotating key embedded in their JS bundle; we extract it once and cache
+// it for the lifetime of the (warm) function instance.
+const HLTB_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+let hltbTok = { v: null, at: 0 };
+
+async function hltbToken() {
+  if (hltbTok.v && Date.now() - hltbTok.at < 60 * 60 * 1000) return hltbTok.v;
+  try {
+    const home = await fetch("https://howlongtobeat.com/", {
+      headers: { "User-Agent": HLTB_UA, "Accept": "text/html" },
+    });
+    if (!home.ok) return null;
+    const html = await home.text();
+    // the key lives in the _app chunk; check that first, then a few others
+    const chunks = [...html.matchAll(/src="(\/_next\/static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]);
+    chunks.sort((a, b) => (b.includes("_app") ? 1 : 0) - (a.includes("_app") ? 1 : 0));
+    for (const src of chunks.slice(0, 5)) {
+      try {
+        const r = await fetch("https://howlongtobeat.com" + src, { headers: { "User-Agent": HLTB_UA } });
+        if (!r.ok) continue;
+        const js = await r.text();
+        const pathM = js.match(/\/api\/(search|seek|find)\//);
+        if (!pathM) continue;
+        const keyM = js.match(
+          /\/api\/(?:search|seek|find)\/"\.concat\("([^"]+)"\)(?:\.concat\("([^"]+)"\))?/
+        );
+        if (keyM) {
+          hltbTok = { v: { path: pathM[1], key: (keyM[1] || "") + (keyM[2] || "") }, at: Date.now() };
+          return hltbTok.v;
+        }
+      } catch { /* try next chunk */ }
+    }
+  } catch { /* fall through */ }
+  return null;
+}
+
+async function hltbSearch(name) {
+  const tok = await hltbToken();
+  if (!tok) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(`https://howlongtobeat.com/api/${tok.path}/${tok.key}`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": HLTB_UA,
+        "Referer": "https://howlongtobeat.com/",
+        "Origin": "https://howlongtobeat.com",
+      },
+      body: JSON.stringify({
+        searchType: "games",
+        searchTerms: String(name).replace(/[\u2122\u00ae\u00a9]/g, "").split(/\s+/).filter(Boolean),
+        searchPage: 1,
+        size: 5,
+        searchOptions: {
+          games: {
+            userId: 0, platform: "", sortCategory: "popular", rangeCategory: "main",
+            rangeTime: { min: null, max: null },
+            gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
+            rangeYear: { min: "", max: "" }, modifier: "",
+          },
+          users: { sortCategory: "postcount" },
+          lists: { sortCategory: "follows" },
+          filter: "", sort: 0, randomizer: 0,
+        },
+        useCache: true,
+      }),
+    });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const list = Array.isArray(d?.data) ? d.data : [];
+    if (!list.length) return null;
+    const best = list
+      .map((e) => ({ e, s: similarity(name, e.game_name || "") }))
+      .sort((a, b) => b.s - a.s)[0];
+    if (!best || best.s < 0.4) return null;
+    const t = secsToTimes(best.e.comp_main, best.e.comp_100);
+    if (hasTimes(t)) return t;
+    if (best.e.game_id != null) return await hltbPage(best.e.game_id);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function hltbTimes(appid, name) {
   try {
     const d = await getJson(`${HLTB_BASE}/${appid}`);
@@ -218,8 +310,17 @@ async function hltbTimes(appid, name) {
         }
       }
     }
+    // Last resort: the mapping service doesn't know this game at all —
+    // search HowLongToBeat by name directly.
+    if (name) {
+      const t = await hltbSearch(name);
+      if (t) return t;
+    }
     return { mainStory: null, completionist: null };
   } catch {
+    if (name) {
+      try { const t = await hltbSearch(name); if (t) return t; } catch { /* give up */ }
+    }
     return { mainStory: null, completionist: null };
   }
 }

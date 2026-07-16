@@ -278,6 +278,11 @@
   .listRow .ldel.arm { background: var(--danger); color: var(--ink); border-color: var(--danger); }
   .empty { text-align: center; color: var(--ink-dim); padding: 40px 20px; line-height: 1.6; }
   .obBtns { display: flex; flex-direction: column; gap: 9px; max-width: 300px; margin: 0 auto; }
+  .wlSync { display: none; align-items: center; gap: 10px; margin: 2px 0 10px; padding: 9px 9px 9px 13px; border-radius: 13px; background: var(--card-grad), var(--surface); border: 1px solid var(--line-solid); }
+  .wlSync.show { display: flex; }
+  .wlSync .t { flex: 1; font-size: 12.5px; color: var(--ink-dim); }
+  .wlSync button { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 10px; padding: 8px 13px; cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 12.5px; flex-shrink: 0; }
+  .wlSync button:hover { border-color: var(--gold); }
   .obBtns button { font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; background: var(--surface); border: 1px solid var(--line-solid); color: var(--ink); text-align: left; }
   .obBtns button:hover { border-color: var(--gold); }
   /* skeleton loading */
@@ -320,6 +325,14 @@
   .chartBox .ct { font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
   .chartBox .ct::before { content: ""; width: 3px; height: 11px; border-radius: 2px; background: linear-gradient(180deg, var(--gold), #c9962f); box-shadow: var(--glow); flex-shrink: 0; }
   .chartBox svg { width: 100%; height: 76px; display: block; }
+  .bkRow { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+  .bkLabel { width: 88px; flex-shrink: 0; font-size: 12px; color: var(--ink-dim); }
+  .bkBar { flex: 1; height: 10px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+  .bkFill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+  .bkCount { width: 30px; flex-shrink: 0; text-align: right; font-family: var(--display); font-weight: 700; font-size: 12.5px; }
+  .bkNear { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 0; cursor: pointer; }
+  .bkNear .nm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bkNear .pc { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--gold); }
   .tHero { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
   .tArt { flex-shrink: 0; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35)) drop-shadow(0 0 16px rgba(232,182,76,0.16)); }
   .tEmpty { width: 62px; height: 62px; border-radius: 14px; border: 1.5px dashed var(--line-strong); }
@@ -763,14 +776,20 @@
     </div>
     <div class="sorts" id="sorts"></div>
 
+    <div class="wlSync" id="wlSync">
+      <div class="t"><span id="wlSyncLabel">Synced from your Steam wishlist</span><span id="wlSyncWhen"></span></div>
+      <button id="wlSyncGo">Sync now</button>
+    </div>
+
     <ul class="games" id="games"></ul>
     <div class="empty" id="empty" style="display:none">
       <b>Welcome to your backlog</b>
-      <div style="margin-bottom:16px">Three ways to get started:</div>
+      <div style="margin-bottom:16px">Here's how to get started:</div>
       <div class="obBtns">
         <button id="obImport">Import my Steam library</button>
         <button id="obAdd">Search &amp; add games</button>
         <button id="obScan">Scan my 100% completed games</button>
+        <button id="obWishlist">Import my Steam wishlist</button>
       </div>
     </div>
   </div>
@@ -783,7 +802,7 @@
         <div class="s" id="pSub"></div>
       </div>
     </div>
-    <div id="pBadges" style="margin-bottom:14px"></div>
+    <div id="pBadges"></div>
     <div class="grid" id="pGrid"></div>
     <div id="pChart" style="margin-top:14px"></div>
     <div id="pWrap" style="margin-top:14px"></div>
@@ -1468,6 +1487,17 @@
   function renderGames() {
     const rows = sortedGames();
     const games = activeList().games;
+    // Sync bar: visible on the Wishlist and 100% lists for Steam-linked users
+    const al = activeList();
+    const syncType = (!sharedMode && me && me.steamId)
+      ? (isWishlist(al) ? "wishlist" : isHundo(al) ? "hundo" : null) : null;
+    $("wlSync").classList.toggle("show", !!syncType);
+    if (syncType) {
+      $("wlSyncLabel").textContent = syncType === "wishlist"
+        ? "Synced from your Steam wishlist"
+        : "Synced from your Steam achievements";
+      $("wlSyncWhen").textContent = syncAgo(syncType === "wishlist" ? WLSYNC_KEY : HDSYNC_KEY);
+    }
     $("empty").style.display = games.length ? "none" : "block";
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
@@ -2288,7 +2318,9 @@
       if (Array.isArray(d.showcase) && d.showcase.length) showcase = d.showcase;
       persist(); renderAll();
       const missing = allGames().filter(g=>!stats[g.appid]);
-      if (missing.length) fetchStats(missing);
+      // chunked — the stats endpoint caps each request at 60 games, so one
+      // big call silently dropped everything past the cap on large lists
+      for (let i = 0; i < missing.length; i += 40) fetchStats(missing.slice(i, i + 40));
     } catch { toast("Couldn't reach sync — showing this device's copy"); }
   }
 
@@ -2308,7 +2340,7 @@
     for (const g of fresh) activeList().games.push({ appid:g.appid, name:g.name, icon:safeUrl(g.icon) });
     persist(); syncUp(); renderGames();
     const need = fresh.filter(g => !stats[g.appid]);
-    for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
+    for (let i = 0; i < need.length; i += 40) fetchStats(need.slice(i, i + 40));
     const ids = new Set(fresh.map(g => g.appid));
     toastAction(`Added ${fresh.length} game${fresh.length>1?"s":""}`, "Undo", () => {
       const l = data.lists.find(x => x.id === listId);
@@ -2369,30 +2401,35 @@
   // items: [{appid, name}] — names enable HLTB fallback matching
   async function fetchStats(items) {
     if (!items.length || sharedMode) return;
-    try {
-      const r = await fetch("/api/stats", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ items: items.map(g=>{
-          const it = { appid: g.appid, name: g.name };
-          const known = stats[g.appid];
-          if (known && "metaScore" in known && known.metaV === 2) { it.metaScore = known.metaScore; it.metaV = 2; } // cached from Metacritic — echo
-          if (known && "genres" in known) it.genres = known.genres;
-          return it;
-        }) })
-      });
-      const d = await r.json();
-      if (d.stats) {
-        for (const [id, v] of Object.entries(d.stats)) stats[id] = { ...(stats[id] || {}), ...v };
-        persist(); syncUp(); renderGames();
-      }
-    } catch {}
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await fetch("/api/stats", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ items: items.map(g=>{
+            const it = { appid: g.appid, name: g.name };
+            const known = stats[g.appid];
+            if (known && "metaScore" in known && known.metaV === 2) { it.metaScore = known.metaScore; it.metaV = 2; } // cached from Metacritic — echo
+            if (known && "genres" in known) it.genres = known.genres;
+            return it;
+          }) })
+        });
+        if (!r.ok) throw new Error(r.status);
+        const d = await r.json();
+        if (d.stats) {
+          for (const [id, v] of Object.entries(d.stats)) stats[id] = { ...(stats[id] || {}), ...v };
+          persist(); syncUp(); renderGames();
+          return;
+        }
+      } catch { /* brief pause, then one retry */ }
+      await new Promise(res => setTimeout(res, 900));
+    }
   }
   function refreshAll() {
     const games = allGames();
     if (!games.length) return;
     toast(`Refreshing stats <span class="spin"></span>`);
     const chunks=[];
-    for (let i=0;i<games.length;i+=50) chunks.push(games.slice(i,i+50));
+    for (let i=0;i<games.length;i+=40) chunks.push(games.slice(i,i+40));
     Promise.all(chunks.map(fetchStats)).then(()=>toast("Stats updated"));
   }
 
@@ -2775,22 +2812,45 @@
 
   function renderChart() {
     const el = $("pChart");
-    const pts = history.filter(h => h.pct != null).slice(-90);
-    if (pts.length < 2) { el.innerHTML = ""; return; }
-    const W = 320, H = 76, P = 4;
-    const lo = Math.min(...pts.map(p=>p.pct)), hi = Math.max(...pts.map(p=>p.pct));
-    const span = Math.max(hi - lo, 1);
-    const x = i => P + (i/(pts.length-1)) * (W - 2*P);
-    const y = v => H - P - ((v - lo)/span) * (H - 2*P);
-    const path = pts.map((p,i) => `${i?"L":"M"}${x(i).toFixed(1)},${y(p.pct).toFixed(1)}`).join(" ");
-    const first = pts[0], lastP = pts[pts.length-1];
+    const games = allGames();
+    // Bucket every game that has achievements by how far along it is.
+    const buckets = [
+      { k: "Not started",  test: p => p === 0,              color: "var(--ink-dim)", n: 0 },
+      { k: "Under 50%",    test: p => p > 0 && p < 0.5,     color: "#8a7ec9",        n: 0 },
+      { k: "50–89%",       test: p => p >= 0.5 && p < 0.9,  color: "var(--gold)",    n: 0 },
+      { k: "Nearly there", test: p => p >= 0.9 && p < 1,    color: "#e8875c",        n: 0 },
+      { k: "100% done",    test: p => p === 1,              color: "var(--teal)",    n: 0 },
+    ];
+    const near = [];
+    let counted = 0;
+    for (const g of games) {
+      const a = achOf(g.appid);
+      if (!a || a.none) continue;
+      counted++;
+      for (const b of buckets) if (b.test(a.pct)) { b.n++; break; }
+      if (a.pct >= 0.5 && a.pct < 1) near.push({ g, a });
+    }
+    if (!counted) { el.innerHTML = ""; return; }
+    near.sort((x, y) => y.a.pct - x.a.pct);
+    const max = Math.max(...buckets.map(b => b.n), 1);
+    const rows = buckets.map(b => `
+      <div class="bkRow">
+        <div class="bkLabel">${b.k}</div>
+        <div class="bkBar"><div class="bkFill" style="width:${b.n ? Math.max(b.n / max * 100, 4).toFixed(1) : 0}%; background:${b.color}"></div></div>
+        <div class="bkCount">${b.n}</div>
+      </div>`).join("");
+    const nearRows = near.slice(0, 3).map(({ g, a }) => `
+      <div class="bkNear" data-near="${g.appid}">
+        <span class="nm">${esc(g.name)}</span>
+        <span class="pc">${a.u}/${a.t} · ${a.t - a.u} left</span>
+      </div>`).join("");
     el.innerHTML = `<div class="chartBox">
-      <div class="ct">Completion over time — ${first.pct}% → <span style="color:var(--gold)">${lastP.pct}%</span> · ${lastP.done} finished</div>
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <path d="${path}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${x(pts.length-1)}" cy="${y(lastP.pct)}" r="3" fill="var(--gold)"/>
-      </svg>
+      <div class="ct">Progress breakdown — ${counted} game${counted === 1 ? "" : "s"} with achievements</div>
+      ${rows}
+      ${near.length ? `<div class="ct" style="margin-top:14px">Closest to 100%</div>${nearRows}` : ""}
     </div>`;
+    el.querySelectorAll("[data-near]").forEach(row =>
+      row.onclick = () => openGameSheet(+row.dataset.near));
   }
 
   let friendsCache = null;
@@ -2976,15 +3036,23 @@
       const tracked = new Set(allGames().map(g => g.appid));
       const candidates = pool.filter(g => !tracked.has(g.appid));
 
-      // Achievements only, in chunks, with one retry per chunk — the full
-      // stats pipeline is too slow for bulk scans and was timing out.
-      const unknown = candidates.filter(g => !stats[g.appid]);
+      // Rescan games with unknown stats, plus in-progress ones — a game
+      // cached at 97% may have hit 100% since the last scan. Untouched 0%
+      // games stay cached, which keeps repeat scans fast. Achievements only,
+      // in chunks, with one retry per chunk — the full stats pipeline is too
+      // slow for bulk scans and was timing out.
+      const unknown = candidates.filter(g => {
+        const s = stats[g.appid];
+        if (!s || s.achTotal == null) return true;
+        return s.achTotal > 0 && s.achUnlocked > 0 && s.achUnlocked < s.achTotal;
+      });
       let failedChunks = 0;
       for (let i = 0; i < unknown.length; i += 50) {
         progress(`Checking achievements… ${Math.min(i+50, unknown.length)}/${unknown.length}`);
         const chunk = unknown.slice(i, i+50);
         let ok = false;
-        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+          if (attempt) await new Promise(res => setTimeout(res, 700));
           try {
             const sr = await fetch("/api/stats", {
               method: "POST", headers: { "Content-Type": "application/json" },
@@ -3006,6 +3074,7 @@
         const s = stats[g.appid];
         return s && s.achTotal > 0 && s.achUnlocked === s.achTotal;
       });
+      localStorage.setItem(HDSYNC_KEY, String(Date.now()));
 
       if (!finished.length) {
         toast("No new 100% completed games found");
@@ -3031,8 +3100,21 @@
   };
 
   // ---- sync Steam wishlist into a "Wishlist" list ----
+  const WLSYNC_KEY = "backlog.wlsync.v1";
+  const HDSYNC_KEY = "backlog.hdsync.v1";
+  function isWishlist(l) { return l && (l.id === "wishlist" || l.name === "Wishlist"); }
+  function syncAgo(key) {
+    const t = +localStorage.getItem(key) || 0;
+    if (!t) return "";
+    const m = Math.floor((Date.now() - t) / 60000);
+    if (m < 1) return " · synced just now";
+    if (m < 60) return ` · synced ${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return ` · synced ${h}h ago`;
+    return ` · synced ${Math.floor(h / 24)}d ago`;
+  }
   function wishlistList() {
-    let l = data.lists.find(x => x.id === "wishlist" || x.name === "Wishlist");
+    let l = data.lists.find(isWishlist);
     if (!l) {
       l = { id: "wishlist", name: "Wishlist", games: [] };
       data.lists.push(l);
@@ -3046,23 +3128,38 @@
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const items = d.games || [];
-      if (!items.length) { toast(esc(d.note || "Your Steam wishlist is empty")); return; }
-
       const l = wishlistList();
+
+      // Mirror removals: drop games no longer wishlisted on Steam. Uses the
+      // complete appid list (independent of name-lookup failures) so games
+      // are never removed just because a store lookup was rate-limited.
+      let removed = 0;
+      if (Array.isArray(d.allAppids)) {
+        const onSteam = new Set(d.allAppids);
+        const before = l.games.length;
+        l.games = l.games.filter(g => onSteam.has(g.appid));
+        removed = before - l.games.length;
+      }
+
+      // Mirror additions: new wishlist games, skipping ones tracked anywhere
       const have = new Set(l.games.map(g => g.appid));
       const tracked = new Set(allGames().map(g => g.appid));
       const fresh = [];
       for (const g of items) {
-        if (have.has(g.appid) || tracked.has(g.appid)) continue; // skip games already tracked anywhere
+        if (have.has(g.appid) || tracked.has(g.appid)) continue;
         l.games.push({ appid: g.appid, name: g.name, icon: safeUrl(g.icon) });
         fresh.push(g);
       }
+
+      if (!items.length && !removed) { toast(esc(d.note || "Your Steam wishlist is empty")); return; }
+      localStorage.setItem(WLSYNC_KEY, String(Date.now()));
       persist(); syncUp(); renderListbar(); renderGames();
       const need = fresh.filter(g => !stats[g.appid]);
-      for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
-      toast(fresh.length
-        ? `Added ${fresh.length} game${fresh.length===1?"":"s"} to Wishlist`
-        : "Wishlist is already up to date");
+      for (let i = 0; i < need.length; i += 40) fetchStats(need.slice(i, i + 40));
+      const bits = [];
+      if (fresh.length) bits.push(`${fresh.length} added`);
+      if (removed) bits.push(`${removed} removed`);
+      toast(bits.length ? `Wishlist synced — ${bits.join(", ")}` : "Wishlist is already up to date");
     } catch (e) {
       toast("Couldn't sync wishlist: " + esc(e.message));
     }
@@ -3072,6 +3169,22 @@
     btn.disabled = true; btn.textContent = "Syncing wishlist…";
     await syncWishlist(msg => btn.textContent = msg);
     btn.disabled = false; btn.textContent = "Sync my Steam wishlist";
+  };
+  $("wlSyncGo").onclick = async () => {
+    const b = $("wlSyncGo");
+    b.disabled = true; b.textContent = "Syncing…";
+    if (isWishlist(activeList())) await syncWishlist(() => {});
+    else await scanCompleted(msg => { b.textContent = "Scanning…"; });
+    b.disabled = false; b.textContent = "Sync now";
+    renderAll();
+  };
+  $("obWishlist").onclick = async () => {
+    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
+    toast(`Importing your wishlist <span class="spin"></span>`);
+    await syncWishlist(msg => toast(msg + ` <span class="spin"></span>`));
+    const wl = data.lists.find(isWishlist);
+    if (wl && wl.games.length) { data.activeId = wl.id; persist(); }
+    renderAll();
   };
 
   $("logoutBtn").onclick = async () => {
@@ -3190,7 +3303,7 @@
     if (!games.length) return;
     if (Date.now() - last < 60*60*1000) { showVisitDiff(); recordHistoryPoint(); return; }
     const chunks = [];
-    for (let i=0;i<games.length;i+=50) chunks.push(games.slice(i,i+50));
+    for (let i=0;i<games.length;i+=40) chunks.push(games.slice(i,i+40));
     await Promise.all(chunks.map(fetchStats));
     save(REFRESH_AT_KEY, Date.now());
     showVisitDiff();

@@ -96,6 +96,7 @@ export default async function handler(req, res) {
       if (!items.length) {
         return res.status(200).json({
           games: [],
+          allAppids: [],
           note: "No wishlist entries found. If you do have games wishlisted, make sure your Steam profile's Game details is set to Public.",
         });
       }
@@ -124,7 +125,7 @@ export default async function handler(req, res) {
       // preserve wishlist priority order
       const pri = new Map(items.map((it, i) => [it.appid, i]));
       named.sort((a, b) => (pri.get(a.appid) ?? 0) - (pri.get(b.appid) ?? 0));
-      return res.status(200).json({ games: named });
+      return res.status(200).json({ games: named, allAppids: items.map((it) => it.appid) });
     } catch (err) {
       return res.status(502).json({ error: err.message });
     }
