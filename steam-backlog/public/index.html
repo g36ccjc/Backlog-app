@@ -264,6 +264,8 @@
   .friendRow.tappable { cursor: pointer; transition: background 0.15s ease; -webkit-tap-highlight-color: transparent; }
   .friendRow.tappable:active { background: var(--surface-2); }
   .visRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 12px; font-size: 13.5px; }
+  .delChk { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--ink-dim); padding: 6px 2px 14px; cursor: pointer; }
+  .delChk input { width: 17px; height: 17px; accent-color: var(--gold); }
   .visRow select { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 9px; padding: 8px 10px; font-family: var(--body); font-size: 13px; }
     /* edit lists sheet */
   .listRow { display: flex; align-items: center; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line-solid); }
@@ -345,9 +347,14 @@
   .friendRow .fn { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .friendRow .fs { font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--gold); flex-shrink: 0; }
   .friendRow .fs .dim { color: var(--ink-dim); font-weight: 600; }
-  .stars { display: flex; gap: 4px; margin: 6px 0 8px; }
-  .stars button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--line-solid); padding: 0 2px; }
-  .stars button.on { color: var(--gold); }
+  .score10 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 6px 0 10px; }
+  .score10 button { background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 8px; color: var(--ink-dim); font-family: var(--display); font-weight: 700; font-size: 13px; padding: 9px 0; cursor: pointer; transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease; font-variant-numeric: tabular-nums; }
+  .score10 button:hover { color: var(--ink); border-color: var(--line-strong); }
+  .score10 button.on { background: var(--gold); border-color: var(--gold); color: #16130a; }
+  .rNow { color: var(--gold); font-family: var(--display); font-weight: 700; font-size: 13px; text-transform: none; letter-spacing: 0; }
+  .rNow .rOf { color: var(--ink-dim); font-size: 11px; }
+  .rNone { color: var(--ink-dim); font-weight: 500; font-size: 11.5px; text-transform: none; letter-spacing: 0; }
+  @media (max-width: 380px) { .score10 button { font-size: 12px; padding: 8px 0; } }
   .noteBox { width: 100%; min-height: 64px; resize: vertical; font-family: var(--body); font-size: 13.5px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 10px; outline: none; }
   .pActions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
   .pActions button { font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 12px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
@@ -930,7 +937,20 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- delete confirmation -->
+  <div class="modal" id="delModal">
+    <div class="sheet">
+      <h2>Remove this game?</h2>
+      <div class="hint" id="delHint" style="margin-bottom:4px"></div>
+      <label class="delChk"><input type="checkbox" id="delDontAsk"> Don't ask me again</label>
+      <div class="footRow">
+        <button id="delCancel">Cancel</button>
+        <button class="go" id="delConfirm">Remove</button>
+      </div>
+    </div>
+  </div>
+
+    <div class="toast" id="toast"></div>
 
 <script>
   // ============ state ============
@@ -952,7 +972,37 @@
   let data = load(DATA_KEY, null);
   let stats = load(STATS_KEY, {});
   let sort = load(SORT_KEY, { id: "name", asc: true });
-  let notes = load("backlog.notes.v4", {});     // appid -> {rating, note}
+  let notes = load("backlog.notes.v4", {});     // appid -> {rating, note} (rating is 1-10)
+
+  // One-time migration: ratings used to be 1-5 stars. Double them so an old
+  // 4-star read as 8/10 rather than being misread as a poor 4/10. The flag
+  // makes this idempotent so ratings can never be doubled twice.
+  const RATING_SCALE_KEY = "backlog.ratingScale.v1";
+  // Doubles any legacy 1-5 rating to the 1-10 scale. Runs on local data at
+  // boot and on anything synced down from another device that hasn't been
+  // migrated yet. Guarded by a per-record flag so it can't double twice.
+  function migrateRatings(obj) {
+    if (!obj || typeof obj !== "object") return { obj, changed: false };
+    let changed = false;
+    for (const k of Object.keys(obj)) {
+      const rec = obj[k];
+      if (!rec || typeof rec !== "object") continue;
+      const r = rec.rating;
+      if (typeof r === "number" && r >= 1 && r <= 5 && rec.r10 !== true) {
+        rec.rating = r * 2; rec.r10 = true; changed = true;
+      } else if (typeof r === "number" && rec.r10 !== true) {
+        rec.r10 = true; changed = true; // already >5, just mark it
+      }
+    }
+    return { obj, changed };
+  }
+  {
+    const { changed } = migrateRatings(notes);
+    if (changed || load(RATING_SCALE_KEY, null) !== 10) {
+      save(RATING_SCALE_KEY, 10);
+      save("backlog.notes.v4", notes);
+    }
+  }
   let history = load("backlog.history.v4", []); // [{d, pct, done, achU}]
   let showcase = load("backlog.showcase.v4", []); // rarest unlocked achievements
   let view = load(VIEW_KEY, "list");   // "list" | "grid"
@@ -1493,7 +1543,7 @@
       const played = pm==null ? null : (pm===0 ? "0h" : (pm/60 >= 10 ? Math.round(pm/60) : Math.round(pm/6)/10) + "h");
       const ms = s.metaScore;
       const myR = notes[g.appid]?.rating;
-      const starBadge = myR ? `<span class="a">★${myR}</span>` : "";
+      const starBadge = myR ? `<span class="a">${myR}/10</span>` : "";
       const metaBadge = (typeof ms === "number")
         ? `<span class="meta ${ms>=75?"hi":ms>=50?"mid":"lo"}" title="Metacritic">${ms}</span>` : "";
       const achTxt = !a ? `<span class="na">— achv</span>`
@@ -1800,13 +1850,14 @@
       </button>
     </div>`;
 
-    // your review: stars + note
+    // your review: 1-10 score + note
     const myNote = notes[g.appid] || {};
-    const starsHtml = [1,2,3,4,5].map(n =>
-      `<button class="${myNote.rating>=n?"on":""}" data-star="${n}" aria-label="${n} star${n>1?"s":""}">★</button>`).join("");
+    const scoreHtml = [1,2,3,4,5,6,7,8,9,10].map(n =>
+      `<button class="${myNote.rating===n?"on":""}" data-score="${n}" aria-label="Rate ${n} out of 10">${n}</button>`).join("");
+    const rTxt = myNote.rating ? `<span class="rNow">${myNote.rating}<span class="rOf">/10</span></span>` : `<span class="rNone">Not rated</span>`;
     const reviewHtml = sharedMode ? "" :
-      `<div class="gsSection">Your review</div>
-       <div class="stars" id="gsStars">${starsHtml}</div>
+      `<div class="gsSection">Your rating ${rTxt}</div>
+       <div class="score10" id="gsScore">${scoreHtml}</div>
        <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
@@ -1819,9 +1870,10 @@
     const gb = $("gsBody").querySelector("[data-guides]");
     if (gb) gb.onclick = () => openGuidePicker(g);
     if (!sharedMode) {
-      $("gsBody").querySelectorAll("[data-star]").forEach(b => b.onclick = () => {
-        const n = +b.dataset.star;
+      $("gsBody").querySelectorAll("[data-score]").forEach(b => b.onclick = () => {
+        const n = +b.dataset.score;
         const cur = notes[g.appid]?.rating;
+        // tapping the current score clears it
         notes[g.appid] = { ...(notes[g.appid]||{}), rating: cur === n ? null : n };
         persist(); syncUp(); renderGameSheet(); renderGames();
       });
@@ -1920,11 +1972,11 @@
     for (const gen of s.genres || []) tasteHit += taste[gen] || 0;
     sc += Math.min(25, tasteHit * 60);
 
-    // your own verdicts outrank any critic
+    // your own verdicts outrank any critic (ratings are 1-10)
     const r = notes[g.appid]?.rating;
-    if (r >= 4) sc += 18;
-    else if (r === 3) sc += 4;
-    else if (r != null && r <= 2) sc -= 30;
+    if (r >= 8) sc += 18;
+    else if (r >= 6) sc += 4;
+    else if (r != null && r <= 4) sc -= 30;
 
     // critics as a mild tiebreaker only
     if (typeof s.metaScore === "number") sc += (s.metaScore - 70) * 0.25;
@@ -2212,7 +2264,12 @@
       if (!data.lists.length) data = freshData();
       if (!data.lists.find(l=>l.id===data.activeId)) data.activeId = data.lists[0].id;
       stats = d.stats || {};
-      if (d.notes && typeof d.notes === "object") notes = d.notes;
+      if (d.notes && typeof d.notes === "object") {
+        notes = d.notes;
+        // another device may still be on the old 1-5 scale
+        const { changed } = migrateRatings(notes);
+        if (changed) syncUp();
+      }
       if (Array.isArray(d.history) && d.history.length >= history.length) history = d.history;
       if (Array.isArray(d.showcase) && d.showcase.length) showcase = d.showcase;
       persist(); renderAll();
@@ -2248,7 +2305,28 @@
     }, 8000);
     return fresh.length;
   }
+  const DEL_CONFIRM_KEY = "backlog.confirmDelete.v1"; // "always" | "never" | unset(=ask once)
+  const delModal = $("delModal");
+  let pendingDelete = null;
   function removeGame(id) {
+    const mode = load(DEL_CONFIRM_KEY, null);
+    // Ask on the very first deletion (unset), or always if the user chose that.
+    if (mode !== "never") {
+      const l = activeList();
+      const g = l.games.find(x=>x.appid===id);
+      if (!g) return;
+      pendingDelete = id;
+      const firstTime = load(DEL_CONFIRM_KEY, null) === null;
+      $("delHint").innerHTML = `<b>${esc(g.name)}</b> will be removed from ${esc(l.name)}. You can undo right after.`
+        + (firstTime ? `<br><span style="color:var(--ink-dim)">Removing is always undoable, so we'll only ask this once.</span>` : "");
+      // First-ever delete: pre-tick so it won't nag again unless they untick.
+      $("delDontAsk").checked = firstTime;
+      delModal.classList.add("show");
+      return;
+    }
+    doRemoveGame(id);
+  }
+  function doRemoveGame(id) {
     const l = activeList();
     const idx = l.games.findIndex(g=>g.appid===id);
     if (idx < 0) return;
@@ -2263,6 +2341,16 @@
       }
     });
   }
+  $("delCancel").onclick = () => { pendingDelete = null; delModal.classList.remove("show"); renderGames(); };
+  delModal.onclick = e => { if (e.target === delModal) { pendingDelete = null; delModal.classList.remove("show"); renderGames(); } };
+  $("delConfirm").onclick = () => {
+    // First confirmation establishes the default: ticking "don't ask again"
+    // means never ask again; leaving it unticked keeps asking every time.
+    save(DEL_CONFIRM_KEY, $("delDontAsk").checked ? "never" : "always");
+    const id = pendingDelete; pendingDelete = null;
+    delModal.classList.remove("show");
+    if (id != null) doRemoveGame(id);
+  };
 
   // items: [{appid, name}] — names enable HLTB fallback matching
   async function fetchStats(items) {
