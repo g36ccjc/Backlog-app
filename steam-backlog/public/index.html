@@ -301,7 +301,6 @@
   .pHead img { width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--line-solid); }
   .pHead .n { font-family: var(--display); font-weight: 700; font-size: 20px; }
   .pHead .s { color: var(--ink-dim); font-size: 12.5px; margin-top: 2px; }
-  .pLevel { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: var(--r); padding: 12px 14px; margin: -8px 0 14px; }
   .insignia { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: radial-gradient(circle at 50% 42%, rgba(232,182,76,0.13), transparent 72%), var(--surface-2); border: 1px solid var(--line-solid); }
   .rankName { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.2px; }
   .rankName .lvlTag { color: var(--ink-dim); font-size: 12px; font-weight: 600; margin-left: 6px; }
@@ -450,7 +449,7 @@
 
   /* ---------- polish layer ---------- */
   /* surfaces: soft top-light gradient + lifted shadow instead of flat panels */
-  .card, .tile, .fcard, .chartBox, .pLevel, .visitFeed, .sharedBanner, .badge, .cell {
+  .card, .tile, .fcard, .chartBox, .visitFeed, .sharedBanner, .badge, .cell {
     background: linear-gradient(180deg, #1b2130 0%, var(--surface) 82%);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 10px 24px -16px rgba(0,0,0,0.55);
   }
@@ -592,7 +591,6 @@
   /* profile */
   .chartBox { background: var(--surface); border-radius: var(--r); padding: 15px 16px; }
   .cell { border-radius: 14px; }
-  .pLevel { border-radius: var(--r); padding: 14px 15px; background: var(--surface); }
   .insignia { border-radius: 13px; }
   .pActions button { border-radius: 13px; transition: border-color 0.15s ease; }
 
@@ -614,7 +612,7 @@
       linear-gradient(180deg, #0d1017 0%, #090b0f 100%);
     background-attachment: fixed;
   }
-  .card, .tile, .chartBox, .pLevel, .fcard, .sheet { background: #171d2a; }
+  .card, .tile, .chartBox, .fcard, .sheet { background: #171d2a; }
   .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
 
   /* topbar: borderless fade */
@@ -785,7 +783,6 @@
         <div class="s" id="pSub"></div>
       </div>
     </div>
-    <div class="pLevel" id="pLevel"></div>
     <div id="pBadges" style="margin-bottom:14px"></div>
     <div class="grid" id="pGrid"></div>
     <div id="pChart" style="margin-top:14px"></div>
@@ -2612,14 +2609,6 @@
     if (me?.username) bits.unshift("@" + me.username);
     if (me && !me.steamId) bits.push("Steam not linked");
     $("pSub").textContent = bits.join(" · ");
-
-    // minimal completions line — no gamified level system
-    const doneCount = t.done;
-    const nextTier = [1,10,25,50,100,250,1000].find(x => doneCount < x);
-    const tierName = { 1:"Wood", 10:"Bronze", 25:"Silver", 50:"Gold", 100:"Platinum", 250:"Diamond", 1000:"Heavenly" };
-    $("pLevel").innerHTML = doneCount
-      ? `<span class="pStat">${doneCount} completion${doneCount===1?"":"s"}</span>${nextTier ? ` <span class="pStatDim">· next milestone at ${nextTier}${tierName[nextTier]?` (${tierName[nextTier]})`:""}</span>` : ""}`
-      : `<span class="pStatDim">No completions yet</span>`;
 
     updateVisRow();
     $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
