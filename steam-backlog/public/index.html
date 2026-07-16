@@ -801,6 +801,7 @@
       </div>
       <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
       <button id="importCompletedBtn">Import my 100% completed games</button>
+      <button id="syncWishlistBtn" style="display:none">Sync my Steam wishlist</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
@@ -920,6 +921,7 @@
 
   <div class="selBar" id="selBar">
     <span id="selCount">0 selected</span>
+    <button id="selAll" aria-label="Select all">All</button>
     <button id="selMove">Move</button>
     <button class="selDel" id="selDelete">Delete</button>
     <button id="selCancel">Cancel</button>
@@ -1612,9 +1614,24 @@
   function updateSelBar() {
     $("selCount").textContent = `${selected.size} selected`;
     $("selMove").style.display = data.lists.length > 1 ? "block" : "none";
+    const visible = sortedGames().map(g => g.appid);
+    const allOn = visible.length > 0 && visible.every(id => selected.has(id));
+    $("selAll").textContent = allOn ? "None" : "All";
   }
   $("selectBtn").onclick = () => { if (!sharedMode) setSelectMode(!selectMode); };
   $("selCancel").onclick = () => setSelectMode(false);
+
+  // Select all currently visible games (respects the filter box); tapping
+  // again while everything is selected clears the selection instead.
+  $("selAll").onclick = () => {
+    const visible = sortedGames().map(g => g.appid);
+    if (!visible.length) return;
+    const allOn = visible.every(id => selected.has(id));
+    if (allOn) visible.forEach(id => selected.delete(id));
+    else visible.forEach(id => selected.add(id));
+    updateSelBar();
+    renderGames();
+  };
 
   $("selDelete").onclick = () => {
     if (!selected.size) return;
@@ -2422,6 +2439,44 @@
     });
   }
 
+  // Renders a result list with an "Add all" button whenever more than one
+  // game is addable. opts.confirmFirst arms the button (used for whole-library
+  // imports, where the commitment is big); a search returns a handful, so one
+  // tap is enough there — addGamesBulk gives an Undo either way.
+  function renderResults(container, items, opts = {}) {
+    const addable = items.filter(g => !hasGame(g.appid));
+    const label = () => `Add all ${addable.length} to ${activeList().name}`;
+    container.innerHTML =
+      (addable.length > 1 ? `<button class="addAll" id="resAddAll">${esc(label())}</button>` : "")
+      + items.map(resultRow).join("");
+    wireResults(container, items);
+
+    const ab = container.querySelector("#resAddAll");
+    if (!ab) return;
+    const commit = () => {
+      const n = addGamesBulk(addable);
+      ab.textContent = `Added ${n} ✓`;
+      ab.disabled = true;
+      container.querySelectorAll(".res").forEach(r => {
+        r.classList.add("in");
+        const b = r.querySelector(".addOne");
+        if (b) b.textContent = "✓";
+      });
+    };
+    ab.onclick = () => {
+      if (!opts.confirmFirst) return commit();
+      if (ab.dataset.armed !== "1") {
+        ab.dataset.armed = "1";
+        ab.textContent = `Tap again to add all ${addable.length}`;
+        setTimeout(() => {
+          if (ab.isConnected && ab.dataset.armed === "1") { ab.dataset.armed = ""; ab.textContent = label(); }
+        }, 3500);
+        return;
+      }
+      commit();
+    };
+  }
+
   $("searchInput").oninput = () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(async () => {
@@ -2433,10 +2488,8 @@
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         const items = d.results||[];
-        $("addResults").innerHTML = items.length
-          ? items.map(resultRow).join("")
-          : `<div class="hint">No matches.</div>`;
-        wireResults($("addResults"), items);
+        if (!items.length) $("addResults").innerHTML = `<div class="hint">No matches.</div>`;
+        else renderResults($("addResults"), items);
       } catch(e){ $("addResults").innerHTML = `<div class="hint">Search failed: ${esc(e.message)}</div>`; }
     }, 350);
   };
@@ -2449,26 +2502,8 @@
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const items = d.games||[];
-      const addable = items.filter(g => !hasGame(g.appid));
-      const allBtn = addable.length > 1
-        ? `<button class="addAll" id="libAddAll">Add all ${addable.length} games to ${esc(activeList().name)}</button>` : "";
-      $("addResults").innerHTML = items.length
-        ? allBtn + items.map(resultRow).join("")
-        : `<div class="hint">${esc(d.note||"No games found.")}</div>`;
-      wireResults($("addResults"), items);
-      const ab = document.getElementById("libAddAll");
-      if (ab) ab.onclick = () => {
-        if (ab.dataset.armed !== "1") {
-          ab.dataset.armed = "1";
-          ab.textContent = `Tap again to add all ${addable.length}`;
-          setTimeout(() => { if (ab.isConnected) { ab.dataset.armed = ""; ab.textContent = `Add all ${addable.length} games to ${activeList().name}`; } }, 3500);
-          return;
-        }
-        const n = addGamesBulk(addable);
-        ab.textContent = `Added ${n} ✓`;
-        ab.disabled = true;
-        $("addResults").querySelectorAll(".res").forEach(r => { r.classList.add("in"); const b = r.querySelector(".addOne"); if (b) b.textContent = "✓"; });
-      };
+      if (!items.length) $("addResults").innerHTML = `<div class="hint">${esc(d.note||"No games found.")}</div>`;
+      else renderResults($("addResults"), items, { confirmFirst: true });
     } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
 
@@ -2993,6 +3028,50 @@
     btn.disabled = true; btn.textContent = "Scanning your library…";
     await scanCompleted(msg => btn.textContent = msg);
     btn.disabled = false; btn.textContent = "Import my 100% completed games";
+  };
+
+  // ---- sync Steam wishlist into a "Wishlist" list ----
+  function wishlistList() {
+    let l = data.lists.find(x => x.id === "wishlist" || x.name === "Wishlist");
+    if (!l) {
+      l = { id: "wishlist", name: "Wishlist", games: [] };
+      data.lists.push(l);
+    }
+    return l;
+  }
+  async function syncWishlist(progress) {
+    try {
+      progress("Reading your Steam wishlist…");
+      const r = await fetch("/api/library?wishlist=1");
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      const items = d.games || [];
+      if (!items.length) { toast(esc(d.note || "Your Steam wishlist is empty")); return; }
+
+      const l = wishlistList();
+      const have = new Set(l.games.map(g => g.appid));
+      const tracked = new Set(allGames().map(g => g.appid));
+      const fresh = [];
+      for (const g of items) {
+        if (have.has(g.appid) || tracked.has(g.appid)) continue; // skip games already tracked anywhere
+        l.games.push({ appid: g.appid, name: g.name, icon: safeUrl(g.icon) });
+        fresh.push(g);
+      }
+      persist(); syncUp(); renderListbar(); renderGames();
+      const need = fresh.filter(g => !stats[g.appid]);
+      for (let i = 0; i < need.length; i += 50) fetchStats(need.slice(i, i + 50));
+      toast(fresh.length
+        ? `Added ${fresh.length} game${fresh.length===1?"":"s"} to Wishlist`
+        : "Wishlist is already up to date");
+    } catch (e) {
+      toast("Couldn't sync wishlist: " + esc(e.message));
+    }
+  }
+  $("syncWishlistBtn").onclick = async () => {
+    const btn = $("syncWishlistBtn");
+    btn.disabled = true; btn.textContent = "Syncing wishlist…";
+    await syncWishlist(msg => btn.textContent = msg);
+    btn.disabled = false; btn.textContent = "Sync my Steam wishlist";
   };
 
   $("logoutBtn").onclick = async () => {
