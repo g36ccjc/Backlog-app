@@ -1687,11 +1687,15 @@
     const SORTLIST = wl ? [...SORTS, { id: "deal", label: "Deals" }] : SORTS;
     $("sorts").innerHTML = SORTLIST.map(s => {
       const on = s.id===sort.id;
-      return `<button class="${on?"on":""}" data-s="${s.id}">${s.label}${on ? (sort.asc?" ↑":" ↓") : ""}</button>`;
+      return `<button class="${on?"on":""}" data-s="${s.id}">${s.label}${on && s.id !== "custom" ? (sort.asc?" ↑":" ↓") : ""}</button>`;
     }).join("");
     $("sorts").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (sort.id===b.dataset.s) sort.asc = !sort.asc;
       else sort = { id: b.dataset.s, asc: b.dataset.s==="name" }; // deals default to biggest discount first
+      if (sort.id === "custom" && !localStorage.getItem("backlog.draghint.v2")) {
+        localStorage.setItem("backlog.draghint.v2", "1");
+        toast("Hold a game, then drag it to set your play order");
+      }
       save(SORT_KEY, sort); animateNext = true; renderSorts(); renderGames();
     });
   }
@@ -1898,10 +1902,6 @@
   function wireDrag() {
     if (dragWired) return;
     dragWired = true;
-    if (dragActive() && !localStorage.getItem("backlog.draghint.v2")) {
-      localStorage.setItem("backlog.draghint.v2", "1");
-      toast("Hold a game, then drag it to set your play order");
-    }
     const cont = $("games");
     const HOLD = 260, SLOP = 10;
     let li = null, ghost = null, lifted = false, sx = 0, sy = 0, holdT = null, pid = null, offX = 0, offY = 0;
@@ -1911,6 +1911,8 @@
       const r = li.getBoundingClientRect();
       offX = x - r.left; offY = y - r.top;
       ghost = li.cloneNode(true);
+      ghost.classList.remove("enter", "selon");
+      ghost.style.animation = "none";
       ghost.classList.add("dragGhost");
       Object.assign(ghost.style, {
         position: "fixed", left: "0", top: "0", margin: "0", zIndex: "70",
@@ -1983,6 +1985,7 @@
       if (!t) return;
       if (e.target.closest("button")) return; // info / move / remove buttons keep working
       li = t; sx = e.clientX; sy = e.clientY; pid = e.pointerId;
+      if (e.pointerType === "mouse") e.preventDefault(); // stops text-select & native image drag
       if (e.pointerType !== "mouse") {
         holdT = setTimeout(() => { if (li && !lifted) lift(sx, sy); }, HOLD);
       }
@@ -2003,7 +2006,7 @@
     document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
   }
   function commitCustomOrder() {
-    const ids = [...$("games").children].map(li => +li.dataset.card).filter(Boolean);
+    const ids = [...$("games").children].map(li => +(li.dataset.card || li.dataset.tile)).filter(Boolean);
     if (!ids.length) return;
     const l = activeList();
     const pos = new Map(ids.map((id, i) => [id, i]));
