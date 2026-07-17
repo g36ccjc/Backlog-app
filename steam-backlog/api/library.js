@@ -174,10 +174,11 @@ export default async function handler(req, res) {
         playtimeForever: g.playtime_forever || 0,
         lastPlayed: rtimes.get(g.appid) || null,
       }));
-      // sort by true recency when Steam gave us timestamps; otherwise keep
-      // Steam's own recently-played order rather than inventing one
-      if (games.some((g) => g.lastPlayed)) {
-        games.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+      // Only sort by timestamps when EVERY game has one — a partial set
+      // would rank the stamped games and unfairly sink the rest (often the
+      // newest). Otherwise keep Steam's own recently-played order.
+      if (games.length && games.every((g) => g.lastPlayed)) {
+        games.sort((a, b) => b.lastPlayed - a.lastPlayed);
       }
       return res.status(200).json({ games });
     } catch (err) {

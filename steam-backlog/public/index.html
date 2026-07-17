@@ -226,6 +226,11 @@
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
   .wprice { font-family: var(--display); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
   .wprice.deal { background: #2ea36b; color: #fff; }
+  .dragH { display: flex; align-items: center; justify-content: center; width: 30px; align-self: stretch; flex-shrink: 0; color: var(--ink-dim); font-size: 16px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .dragH:active { cursor: grabbing; color: var(--gold); }
+  li.dragging { opacity: 0.88; position: relative; z-index: 5; }
+  li.dragging > div { border-color: var(--gold); }
+  .games.customsort { display: flex !important; flex-direction: column; }
   .xlHead { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 16px 2px 8px; }
   .xlRow { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; padding: 7px 10px 7px 7px; margin-bottom: 7px; cursor: pointer; }
   .xlRow img { width: 62px; height: 26px; border-radius: 5px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
@@ -1113,11 +1118,13 @@
   const VIEW_KEY = "backlog.view.v4";
 
   const SORTS = [
+    { id: "custom", label: "My order" },
     { id: "name", label: "A–Z" },
     { id: "ach",  label: "Achievements" },
     { id: "main", label: "Main story" },
     { id: "comp", label: "100% time" },
     { id: "meta", label: "Metacritic" },
+    { id: "rating", label: "My rating" },
   ];
 
   function freshData(){ return { lists: [{ id:"main", name:"Backlog", games: [] }], activeId: "main" }; }
@@ -1528,7 +1535,12 @@
       const r = await fetch("/api/library?recent=1");
       const d = await r.json();
       if (d.error || !Array.isArray(d.games)) return;
-      recentGames = d.games.slice(0, 3); // backend orders by actual last-played
+      // best-known recency per game: Steam's timestamp when provided, else
+      // the moment we observed its playtime increase
+      const rec = (g) => Math.max((g.lastPlayed || 0) * 1000, stats[g.appid]?.lastActive || 0);
+      recentGames = d.games.slice();
+      if (recentGames.some((g) => rec(g) > 0)) recentGames.sort((a, b) => rec(b) - rec(a));
+      recentGames = recentGames.slice(0, 3);
       // make sure achievement data exists for them (tracked or not)
       const need = recentGames.filter(g => !stats[g.appid]);
       if (need.length) fetchStats(need);
@@ -1544,7 +1556,8 @@
       const pct = a && !a.none ? Math.round(a.pct * 100) : null;
       const full = a && !a.none && a.pct === 1;
       const h2w = g.playtime2w / 60 >= 10 ? Math.round(g.playtime2w / 60) : Math.round(g.playtime2w / 6) / 10;
-      const days = g.lastPlayed ? Math.floor((Date.now() / 1000 - g.lastPlayed) / 86400) : null;
+      const ts = g.lastPlayed ? g.lastPlayed * 1000 : (stats[g.appid]?.lastActive || null);
+      const days = ts ? Math.floor((Date.now() - ts) / 86400000) : null;
       const when = days == null ? null : days <= 0 ? "Today" : days === 1 ? "Yesterday" : days + "d ago";
       return `<div class="fcard" data-recent="${g.appid}">
         <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
@@ -1642,6 +1655,7 @@
   function sortedGames() {
     const q = filterText.trim().toLowerCase();
     let arr = activeList().games.filter(g => !q || g.name.toLowerCase().includes(q));
+    if (sort.id === "custom") return arr; // the list's stored order IS the custom order
     const dir = sort.asc ? 1 : -1;
     arr.sort((a,b) => {
       const sa=stats[a.appid]||{}, sb=stats[b.appid]||{};
@@ -1652,6 +1666,7 @@
         case "comp": return cmpNum(sa.completionist, sb.completionist, dir);
         case "meta": return cmpNum(sa.metaScore, sb.metaScore, dir);
         case "ach":  return cmpNum(aa&&!aa.none?aa.pct:null, ab&&!ab.none?ab.pct:null, dir);
+        case "rating": return cmpNum(notes[a.appid]?.rating ?? null, notes[b.appid]?.rating ?? null, dir);
         case "deal": {
           const pa = sa.wlPrice, pb = sb.wlPrice;
           const da = pa && !pa.free ? (pa.discount || 0) : null;
@@ -1710,6 +1725,8 @@
       $("obAlt").style.display = alt ? "block" : "none";
       if (alt) { $("obAltTitle").textContent = alt.t; $("obAltSub").textContent = alt.s; }
     }
+    const dragMode = sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim() && view !== "grid";
+    $("games").classList.toggle("customsort", dragMode);
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
@@ -1763,6 +1780,7 @@
         const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         return `<li class="card thinrow${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <div class="trow" data-open="${g.appid}">
+            ${dragMode ? `<span class="dragH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
             <div class="tmini">${priceBadge(g.appid)}${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
@@ -1805,6 +1823,7 @@
       const open = !sharedMode && openGame === g.appid;
       return `<li class="card${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
         <div class="row" ${sharedMode?"":`data-open="${g.appid}"`}>
+          ${dragMode ? `<span class="dragH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
           <div class="capBox">
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
             <img class="cap" src="${portrait(g)}" loading="lazy" alt=""
@@ -1841,6 +1860,7 @@
     }
     animateNext = false;
     renderHero(); renderListbar();
+    wireDrag();
   }
   // Cross-list matches: when filtering, also surface games tracked in your
   // other lists so "do I already have this anywhere?" is one search away.
@@ -1867,6 +1887,50 @@
         <span class="xn">${esc(g.name)}</span><span class="xl">${esc(list)}</span>
       </div>`).join("");
     el.querySelectorAll("[data-xl]").forEach(r => r.onclick = () => openGameSheet(+r.dataset.xl));
+  }
+  // Drag-to-reorder for "My order": grab the ≡ handle, move the card, and
+  // the list's stored order is rewritten on release (synced like any edit).
+  function wireDrag() {
+    const handles = $("games").querySelectorAll("[data-drag]");
+    if (!handles.length) return;
+    if (!localStorage.getItem("backlog.draghint.v1")) {
+      localStorage.setItem("backlog.draghint.v1", "1");
+      toast("Drag the ≡ handle to set your play order");
+    }
+    handles.forEach(h => {
+      h.onpointerdown = (e) => {
+        e.preventDefault();
+        const li = h.closest("li");
+        if (!li) return;
+        li.classList.add("dragging");
+        try { h.setPointerCapture(e.pointerId); } catch {}
+        h.onpointermove = (ev) => {
+          // keep the page scrolling when dragging near the edges
+          if (ev.clientY < 100) window.scrollBy(0, -9);
+          else if (ev.clientY > innerHeight - 100) window.scrollBy(0, 9);
+          const siblings = [...$("games").children].filter(x => x !== li);
+          let placed = false;
+          for (const el of siblings) {
+            const r = el.getBoundingClientRect();
+            if (ev.clientY < r.top + r.height / 2) { $("games").insertBefore(li, el); placed = true; break; }
+          }
+          if (!placed) $("games").appendChild(li);
+        };
+        h.onpointerup = h.onpointercancel = () => {
+          h.onpointermove = h.onpointerup = h.onpointercancel = null;
+          li.classList.remove("dragging");
+          commitCustomOrder();
+        };
+      };
+    });
+  }
+  function commitCustomOrder() {
+    const ids = [...$("games").children].map(li => +li.dataset.card).filter(Boolean);
+    if (!ids.length) return;
+    const l = activeList();
+    const pos = new Map(ids.map((id, i) => [id, i]));
+    l.games.sort((a, b) => (pos.get(a.appid) ?? 1e9) - (pos.get(b.appid) ?? 1e9));
+    persist(); syncUp();
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
@@ -2490,7 +2554,17 @@
         if (!r.ok) throw new Error(r.status);
         const d = await r.json();
         if (d.stats) {
-          for (const [id, v] of Object.entries(d.stats)) stats[id] = { ...(stats[id] || {}), ...v };
+          for (const [id, v] of Object.entries(d.stats)) {
+            const prev = stats[id] || {};
+            // playtime went up since we last looked -> they just played it.
+            // Our own recency signal, independent of what Steam exposes.
+            let lastActive = prev.lastActive || 0;
+            if (typeof prev.playtimeMinutes === "number" && typeof v.playtimeMinutes === "number"
+                && v.playtimeMinutes > prev.playtimeMinutes) {
+              lastActive = Date.now();
+            }
+            stats[id] = { ...prev, ...v, ...(lastActive ? { lastActive } : {}) };
+          }
           persist(); syncUp(); renderGames();
           return;
         }
