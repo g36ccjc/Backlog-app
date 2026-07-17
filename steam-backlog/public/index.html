@@ -120,6 +120,12 @@
   .feat::-webkit-scrollbar { display: none; }
   .fcard { flex: 0 0 128px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; overflow: hidden; cursor: pointer; }
   .fcard img { width: 100%; height: 60px; object-fit: cover; display: block; background: var(--surface-2); }
+  .fcard.dice { border-style: dashed; border-color: rgba(228,184,92,0.45); cursor: pointer; }
+  .fcard.dice .diceFace { height: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: linear-gradient(180deg, rgba(228,184,92,0.10), transparent), var(--surface-2); }
+  @media (hover:hover) { .fcard.dice:hover { border-color: var(--gold); } .fcard.dice:hover .diceFace { animation: diceWiggle 0.5s ease; } }
+  .fcard.dice:active .diceFace { animation: diceWiggle 0.5s ease; }
+  @keyframes diceWiggle { 0%{transform:rotate(0)} 25%{transform:rotate(-14deg) scale(1.08)} 60%{transform:rotate(11deg) scale(1.05)} 100%{transform:rotate(0)} }
+  .fcard.diceLand { border-style: solid; border-color: var(--teal); }
   .fcard .fbody { padding: 7px 9px 9px; }
   .fcard .fwhy { font-family: var(--display); font-weight: 700; font-size: 9.5px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.4px; }
   .fcard .fwhy.teal { color: var(--teal); }
@@ -1575,26 +1581,28 @@
         recentGames.sort((a, b) => rec(b) - rec(a));
       }
       recentGames = recentGames.slice(0, 3);
-      // Recently played but not tracked anywhere? Import it into the
-      // Backlog automatically — it gets full stats like any other game,
-      // and (crucially, for family-shared titles Steam's ownership APIs
-      // hide) becomes permanently trackable through its achievements.
-      if (pref("autoAddRecent")) {
-        const main = data.lists.find(x => x.id === "main") || data.lists[0];
-        let added = 0;
-        for (const g of recentGames) {
-          if (!allGames().some(x => x.appid === g.appid)) {
-            main.games.push({ appid: g.appid, name: g.name, icon: null });
-            added++;
-          }
-        }
-        if (added) {
-          persist(); syncUp(); renderListbar(); renderGames();
-          toast(`Added ${added} recently played game${added === 1 ? "" : "s"} to Backlog`);
+      renderRecent(); // show best cached answer immediately…
+
+      // …then force-fresh achievement timestamps for every plausible
+      // candidate (server set + tracked games with any progress or signal)
+      // and re-rank. One page load = converged strip, no waiting on the
+      // hourly refresh cycle.
+      const pool2 = new Map(cand);
+      for (const g of allGames()) {
+        const st = stats[g.appid] || {};
+        if (!pool2.has(g.appid) && ((st.achUnlocked || 0) > 0 || st.lastActive)) {
+          pool2.set(g.appid, { appid: g.appid, name: g.name, playtime2w: 0,
+            playtimeForever: st.playtimeMinutes || 0, lastPlayed: null, lastPlayedText: null });
         }
       }
-      // make sure full stats exist for them (tracked or not)
-      const need = recentGames.filter(g => !stats[g.appid]);
+      const fresh = [...pool2.values()].slice(0, 80);
+      for (let i = 0; i < fresh.length; i += 40) {
+        await fetchStats(fresh.slice(i, i + 40), true); // achOnly: fast, includes lastUnlock
+      }
+      let ranked = [...pool2.values()].filter(g => rec(g) >= fortnight || cand.has(g.appid));
+      if (!d.ordered && ranked.some(g => rec(g) > 0)) ranked.sort((a, b) => rec(b) - rec(a));
+      recentGames = ranked.slice(0, 3);
+      const need = recentGames.filter(g => !stats[g.appid] || stats[g.appid].mainStory === undefined);
       if (need.length) fetchStats(need);
       renderRecent();
     } catch { /* section simply stays hidden */ }
@@ -1709,9 +1717,58 @@
           <div class="fname">${esc(g.name)}</div>
           <div class="fsub">${typeof sub === "function" ? esc(sub(g.appid) || "") : esc(sub||"")}</div>
         </div>
-      </div>`).join("");
+      </div>`).join("") +
+      `<div class="fcard dice" id="diceCard" role="button" aria-label="Roll the dice to pick a game">
+        <img src="" alt="" style="display:none">
+        <div class="diceFace">🎲</div>
+        <div class="fbody">
+          <div class="fwhy">Can't choose?</div>
+          <div class="fname">Roll the dice</div>
+          <div class="fsub">Tap to pick for you</div>
+        </div>
+      </div>`;
     $("feat").querySelectorAll("[data-feat]").forEach(el =>
       el.onclick = () => openGameSheet(+el.dataset.feat));
+    const dc = document.getElementById("diceCard");
+    if (dc) dc.onclick = () => rollDice(dc);
+  }
+
+  // The dice card: rapid shuffle through the list's games, easing to a
+  // stop on the chosen one, then its sheet opens.
+  async function rollDice(card) {
+    if (card.dataset.rolling) return;
+    const pool = activeList().games.filter(g => {
+      const a = achOf(g.appid);
+      return !(a && !a.none && a.pct === 1); // finished games aren't "next"
+    });
+    if (pool.length < 2) { toast("Not enough games to roll"); return; }
+    card.dataset.rolling = "1";
+    const img = card.querySelector("img");
+    const face = card.querySelector(".diceFace");
+    const whyEl = card.querySelector(".fwhy");
+    const nameEl = card.querySelector(".fname");
+    const subEl = card.querySelector(".fsub");
+    face.style.display = "none";
+    img.style.display = "block";
+    whyEl.textContent = "Rolling…";
+    subEl.textContent = "";
+    let pick = null, last = null;
+    for (let i = 0; i < 14; i++) {
+      do { pick = pool[Math.floor(Math.random() * pool.length)]; }
+      while (pool.length > 1 && pick === last);
+      last = pick;
+      img.src = capsule(pick);
+      nameEl.textContent = pick.name;
+      await new Promise(r => setTimeout(r, 45 + i * i * 1.6)); // ease out
+    }
+    whyEl.textContent = "Play this!";
+    whyEl.classList.add("teal");
+    card.classList.add("diceLand");
+    setTimeout(() => {
+      openGameSheet(pick.appid);
+      delete card.dataset.rolling;
+      renderFeatured(); // restore the dice card for next time
+    }, 700);
   }
 
   // nulls always sink to the bottom, regardless of sort direction
@@ -2719,13 +2776,13 @@
   };
 
   // items: [{appid, name}] — names enable HLTB fallback matching
-  async function fetchStats(items) {
+  async function fetchStats(items, achOnly) {
     if (!items.length || sharedMode) return;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const r = await fetch("/api/stats", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ items: items.map(g=>{
+          body: JSON.stringify({ achOnly: !!achOnly, items: items.map(g=>{
             const it = { appid: g.appid, name: g.name };
             const known = stats[g.appid];
             if (known && "metaScore" in known && known.metaV === 2) { it.metaScore = known.metaScore; it.metaV = 2; } // cached from Metacritic — echo
@@ -3605,8 +3662,6 @@
       desc: "Quietly update achievements and hours about once an hour" },
     { k: "autoSync",      def: true,  label: "Auto-sync lists daily",
       desc: "Keep the Wishlist and 100% lists mirrored from Steam once a day" },
-    { k: "autoAddRecent", def: true,  label: "Auto-add recently played",
-      desc: "Games you've played recently get added to your Backlog automatically" },
     { k: "confirmDelete", def: true,  label: "Confirm before removing games",
       desc: "Ask first when deleting a game (removals are always undoable)", special: "del" },
     { k: "reduceMotion",  def: false, label: "Reduce motion",
