@@ -226,13 +226,11 @@
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
   .wprice { font-family: var(--display); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
   .wprice.deal { background: #2ea36b; color: #fff; }
-  .dragH { display: flex; align-items: center; justify-content: center; width: 30px; align-self: stretch; flex-shrink: 0; color: var(--ink-dim); font-size: 16px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-  .dragH:active { cursor: grabbing; color: var(--gold); }
-  .tile .dragH.tileH { position: absolute; top: 6px; left: 6px; z-index: 3; width: 30px; height: 30px; align-self: auto; background: rgba(13,17,26,0.85); border: 1px solid var(--line-strong); border-radius: 9px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--ink); }
-  body.light .tile .dragH.tileH { background: rgba(255,255,255,0.88); }
-  li.dragging { opacity: 0.88; position: relative; z-index: 5; }
-  li.dragging > div { border-color: var(--gold); }
-  .games.customsort { display: flex !important; flex-direction: column; }
+  .dragGhost { box-shadow: 0 20px 48px rgba(0,0,0,0.55); opacity: 0.97; transition: none; }
+  .dragGhost * { pointer-events: none; }
+  li.dragSlot { opacity: 0.3; }
+  li.dragSlot > div { border-style: dashed !important; border-color: var(--gold) !important; }
+  .games.draggingNow, .games.draggingNow * { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
   .xlHead { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 16px 2px 8px; }
   .xlRow { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; padding: 7px 10px 7px 7px; margin-bottom: 7px; cursor: pointer; }
   .xlRow img { width: 62px; height: 26px; border-radius: 5px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
@@ -1727,8 +1725,6 @@
       $("obAlt").style.display = alt ? "block" : "none";
       if (alt) { $("obAltTitle").textContent = alt.t; $("obAltSub").textContent = alt.s; }
     }
-    const dragMode = sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim();
-    $("games").classList.toggle("customsort", dragMode && view !== "grid");
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
@@ -1747,7 +1743,6 @@
           ? `<div class="mscore ${s.metaScore>=75?"hi":s.metaScore>=50?"mid":""}">${s.metaScore}</div>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           ${msBadge}
-          ${dragMode ? `<span class="dragH tileH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
           <div class="coverBox">
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
             <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
@@ -1784,7 +1779,6 @@
         const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         return `<li class="card thinrow${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <div class="trow" data-open="${g.appid}">
-            ${dragMode ? `<span class="dragH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
             <div class="tmini">${priceBadge(g.appid)}${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
@@ -1828,7 +1822,6 @@
       const open = !sharedMode && openGame === g.appid;
       return `<li class="card${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
         <div class="row" ${sharedMode?"":`data-open="${g.appid}"`}>
-          ${dragMode ? `<span class="dragH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
           <div class="capBox">
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
             <img class="cap" src="${portrait(g)}" loading="lazy" alt=""
@@ -1893,50 +1886,121 @@
       </div>`).join("");
     el.querySelectorAll("[data-xl]").forEach(r => r.onclick = () => openGameSheet(+r.dataset.xl));
   }
-  // Drag-to-reorder for "My order": grab the ≡ handle, move the card, and
-  // the list's stored order is rewritten on release (synced like any edit).
+  // Drag-to-reorder for "My order": press and hold any game (or just drag
+  // with a mouse) — it lifts under your pointer as a floating copy, the
+  // other games slide out of the way, release to drop. A quick tap still
+  // opens the game; a normal flick still scrolls.
+  let justDragged = 0;
+  let dragWired = false;
+  function dragActive() {
+    return sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim();
+  }
   function wireDrag() {
-    const handles = $("games").querySelectorAll("[data-drag]");
-    if (!handles.length) return;
-    if (!localStorage.getItem("backlog.draghint.v1")) {
-      localStorage.setItem("backlog.draghint.v1", "1");
-      toast("Drag the ≡ handle to set your play order");
+    if (dragWired) return;
+    dragWired = true;
+    if (dragActive() && !localStorage.getItem("backlog.draghint.v2")) {
+      localStorage.setItem("backlog.draghint.v2", "1");
+      toast("Hold a game, then drag it to set your play order");
     }
-    handles.forEach(h => {
-      h.onclick = (e) => { e.preventDefault(); e.stopPropagation(); };
-      h.onpointerdown = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const li = h.closest("li");
-        if (!li) return;
-        li.classList.add("dragging");
-        try { h.setPointerCapture(e.pointerId); } catch {}
-        h.onpointermove = (ev) => {
-          // keep the page scrolling when dragging near the edges
-          if (ev.clientY < 100) window.scrollBy(0, -9);
-          else if (ev.clientY > innerHeight - 100) window.scrollBy(0, 9);
-          // nearest-centre insertion: correct in vertical lists AND grids
-          const siblings = [...$("games").children].filter(x => x !== li);
-          let best = null, bestD = Infinity, before = true;
-          for (const el of siblings) {
-            const r = el.getBoundingClientRect();
-            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-            const d = (ev.clientX - cx) ** 2 + (ev.clientY - cy) ** 2;
-            if (d < bestD) {
-              bestD = d; best = el;
-              before = ev.clientY < r.top + r.height / 2
-                || (ev.clientY < r.bottom && ev.clientX < cx);
-            }
-          }
-          if (best) $("games").insertBefore(li, before ? best : best.nextSibling);
-        };
-        h.onpointerup = h.onpointercancel = () => {
-          h.onpointermove = h.onpointerup = h.onpointercancel = null;
-          li.classList.remove("dragging");
-          commitCustomOrder();
-        };
-      };
+    const cont = $("games");
+    const HOLD = 260, SLOP = 10;
+    let li = null, ghost = null, lifted = false, sx = 0, sy = 0, holdT = null, pid = null, offX = 0, offY = 0;
+
+    function lift(x, y) {
+      lifted = true;
+      const r = li.getBoundingClientRect();
+      offX = x - r.left; offY = y - r.top;
+      ghost = li.cloneNode(true);
+      ghost.classList.add("dragGhost");
+      Object.assign(ghost.style, {
+        position: "fixed", left: "0", top: "0", margin: "0", zIndex: "70",
+        width: r.width + "px", height: r.height + "px",
+        transform: `translate(${r.left}px, ${r.top}px)`,
+        pointerEvents: "none",
+      });
+      document.body.appendChild(ghost);
+      li.classList.add("dragSlot");
+      cont.classList.add("draggingNow");
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+    }
+    function flipReorder(target) {
+      const others = [...cont.children].filter(el => el !== li);
+      const first = new Map(others.map(el => [el, el.getBoundingClientRect()]));
+      cont.insertBefore(li, target);
+      for (const el of others) {
+        const f = first.get(el), n = el.getBoundingClientRect();
+        const dx = f.left - n.left, dy = f.top - n.top;
+        if (dx || dy) {
+          el.style.transition = "none";
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          requestAnimationFrame(() => {
+            el.style.transition = "transform 170ms ease";
+            el.style.transform = "";
+            setTimeout(() => { el.style.transition = ""; }, 200);
+          });
+        }
+      }
+    }
+    function moveTo(x, y) {
+      ghost.style.transform = `translate(${x - offX}px, ${y - offY}px)`;
+      if (y < 110) window.scrollBy(0, -10);
+      else if (y > innerHeight - 110) window.scrollBy(0, 10);
+      const sibs = [...cont.children].filter(el => el !== li);
+      let best = null, bestD = Infinity, before = true;
+      for (const el of sibs) {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const d = (x - cx) ** 2 + (y - cy) ** 2;
+        if (d < bestD) {
+          bestD = d; best = el;
+          before = y < r.top + r.height / 2 || (y < r.bottom && x < cx);
+        }
+      }
+      if (!best) return;
+      const target = before ? best : best.nextSibling;
+      if (target === li || target === li.nextSibling) return;
+      flipReorder(target);
+    }
+    function end(commit) {
+      clearTimeout(holdT); holdT = null;
+      if (lifted) {
+        const r = li.getBoundingClientRect();
+        const g = ghost;
+        g.style.transition = "transform 150ms ease";
+        g.style.transform = `translate(${r.left}px, ${r.top}px)`;
+        setTimeout(() => g.remove(), 170);
+        li.classList.remove("dragSlot");
+        cont.classList.remove("draggingNow");
+        if (commit) commitCustomOrder();
+        justDragged = Date.now();
+      }
+      lifted = false; li = null; ghost = null; pid = null;
+    }
+
+    cont.addEventListener("pointerdown", (e) => {
+      if (!dragActive() || e.button > 0 || li) return;
+      const t = e.target.closest("li[data-card], li[data-tile]");
+      if (!t) return;
+      if (e.target.closest("button")) return; // info / move / remove buttons keep working
+      li = t; sx = e.clientX; sy = e.clientY; pid = e.pointerId;
+      if (e.pointerType !== "mouse") {
+        holdT = setTimeout(() => { if (li && !lifted) lift(sx, sy); }, HOLD);
+      }
     });
+    cont.addEventListener("pointermove", (e) => {
+      if (!li || e.pointerId !== pid) return;
+      const dist = Math.hypot(e.clientX - sx, e.clientY - sy);
+      if (!lifted) {
+        if (e.pointerType === "mouse") {
+          if (dist > 6) lift(e.clientX, e.clientY);
+        } else if (dist > SLOP) { clearTimeout(holdT); li = null; return; } // it was a scroll/swipe
+      }
+      if (lifted) moveTo(e.clientX, e.clientY);
+    });
+    cont.addEventListener("pointerup", (e) => { if (li && e.pointerId === pid) end(true); });
+    cont.addEventListener("pointercancel", () => { if (li) end(!!lifted); });
+    // while a game is lifted, the page must not scroll under the drag
+    document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
   }
   function commitCustomOrder() {
     const ids = [...$("games").children].map(li => +li.dataset.card).filter(Boolean);
@@ -2046,10 +2110,10 @@
   // ---- swipe gestures: left = remove, right = move ----
   function wireSwipes() {
     if (sharedMode || selectMode) return;
+    if (sort.id === "custom" && !filterText.trim()) return; // drag-to-reorder owns the cards here
     $("games").querySelectorAll("[data-card]").forEach(card => {
       let x0 = 0, y0 = 0, dx = 0, active = false, decided = false;
       card.addEventListener("touchstart", e => {
-        if (e.target.closest(".dragH")) { active = false; return; } // reorder drag, not a swipe
         x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
         dx = 0; active = true; decided = false;
       }, { passive: true });
@@ -2159,6 +2223,7 @@
   }
 
   function openGameSheet(appid) {
+    if (Date.now() - justDragged < 400) return; // that tap was a drag release
     let g = activeList().games.find(x=>x.appid===appid);
     const inActive = !!g;
     if (!g) g = allGames().find(x=>x.appid===appid) || (recentGames||[]).find(x=>x.appid===appid);
