@@ -108,15 +108,21 @@ export default async function handler(req, res) {
         appids.map(async (id) => {
           try {
             const r2 = await fetch(
-              `https://store.steampowered.com/api/appdetails?appids=${id}&filters=basic&l=english`
+              `https://store.steampowered.com/api/appdetails?appids=${id}&filters=basic,price_overview&l=english&cc=au`
             );
             const dd = await r2.json();
             const e = dd?.[id];
             if (e?.success && e.data?.name) {
+              const po = e.data.price_overview;
               named.push({
                 appid: id,
                 name: e.data.name,
                 icon: e.data.header_image || null,
+                price: e.data.is_free
+                  ? { free: true }
+                  : po
+                  ? { final: po.final, discount: po.discount_percent || 0, str: po.final_formatted || null }
+                  : null,
               });
             } else failed.push(id);
           } catch { failed.push(id); }

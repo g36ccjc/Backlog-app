@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<meta name="description" content="Track your game backlog with Steam achievements, playtime, and HowLongToBeat estimates — synced across devices." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310141c'/%3E%3Crect x='24' y='60' width='52' height='9' rx='4.5' fill='%232b3547'/%3E%3Crect x='24' y='60' width='34' height='9' rx='4.5' fill='%23e8b64c'/%3E%3C/svg%3E" />
 <style>
   :root {
@@ -53,6 +55,16 @@
   }
   .wordmark { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.3px; margin-right: auto; user-select: none; cursor: pointer; }
   .wordmark b { color: var(--gold); font-weight: 700; }
+  .topRefresh { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink-dim); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: color 0.15s ease, border-color 0.15s ease; }
+  .topRefresh svg { display: block; }
+  .topRefresh:active { color: var(--gold); }
+  @media (hover:hover) { .topRefresh:hover { color: var(--gold); border-color: var(--gold); } }
+  .topRefresh.going svg { animation: ptrspin 0.8s linear infinite; }
+  @keyframes ptrspin { to { transform: rotate(360deg); } }
+  .ptr { position: fixed; top: calc(env(safe-area-inset-top) + 6px); left: 50%; z-index: 40; width: 38px; height: 38px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; color: var(--gold); transform: translate(-50%, -64px); opacity: 0; transition: opacity 0.15s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.45); pointer-events: none; }
+  .ptr.pull { opacity: 1; transition: opacity 0.15s ease; }
+  .ptr.go svg { animation: ptrspin 0.8s linear infinite; }
+  body.light .ptr { box-shadow: 0 8px 24px rgba(40,45,60,0.3); }
   .avatarBtn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line-strong); padding: 0; background: var(--surface-2); overflow: hidden; cursor: pointer; box-shadow: 0 0 0 2px rgba(232,182,76,0.18); transition: box-shadow 0.2s ease; }
   @media (hover:hover) { .avatarBtn:hover { box-shadow: 0 0 0 2px rgba(232,182,76,0.45); } }
   .avatarBtn img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -69,7 +81,7 @@
   .listbar button.new { color: var(--gold); border-style: dashed; }
 
   .hero { margin: 12px 0 6px; }
-  .hero .line { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim); cursor: pointer; }
+  .hero .line { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim); }
   .hero .line { transition: opacity 0.38s ease, transform 0.38s ease; min-height: 1.45em; }
   .hero .line.swap { opacity: 0; transform: translateY(-3px); }
   @media (prefers-reduced-motion: reduce) { .hero .line { transition: none; } }
@@ -179,11 +191,10 @@
   .gsGrid .cell .v { font-size: 17px; }
   .gsGrid .cell .k { font-size: 10px; }
   .gsLinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .gsLinks .gsLink:nth-child(3) { grid-column: 1 / -1; }
   .gsLink { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 13px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); text-decoration: none; font-family: var(--display); font-weight: 600; font-size: 13px; transition: border-color 0.15s ease, background 0.15s ease; cursor: pointer; }
   .gsLink:hover, .gsLink:active { border-color: var(--gold); background: rgba(228,184,92,0.08); }
   .gsLink .a { color: var(--gold); font-size: 15px; line-height: 1; }
-  @media (max-width: 380px) { .gsLinks { grid-template-columns: 1fr; } .gsLinks .gsLink:nth-child(3) { grid-column: auto; } }
+  @media (max-width: 380px) { .gsLinks { grid-template-columns: 1fr; } }
   .guideList { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
   .guideItem { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); text-decoration: none; transition: border-color 0.15s ease, background 0.15s ease; }
   .guideItem:hover, .guideItem:active { border-color: var(--gold); background: rgba(228,184,92,0.06); }
@@ -204,6 +215,14 @@
   .nums { display: flex; flex-wrap: wrap; gap: 4px 13px; margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
   .nums .played { color: var(--ink); }
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
+  .wprice { font-family: var(--display); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
+  .wprice.deal { background: #2ea36b; color: #fff; }
+  .xlHead { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 16px 2px 8px; }
+  .xlRow { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; padding: 7px 10px 7px 7px; margin-bottom: 7px; cursor: pointer; }
+  .xlRow img { width: 62px; height: 26px; border-radius: 5px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .xlRow .xn { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .xlRow .xl { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--gold); }
+  body.light .xlRow { background: #ffffff; }
   .nums .meta.hi { background: #7fd05f; }
   .nums .meta.mid { background: var(--gold); }
   .nums .meta.lo { background: var(--danger); color: var(--ink); }
@@ -407,12 +426,6 @@
   .loginXp { width: 150px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-top: -6px; }
   .loginXp i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--gold); animation: xpFill 1.1s cubic-bezier(.22,1,.36,1) 0.25s forwards; }
   @keyframes xpFill { to { width: 68%; } }
-  .orLine { font-family: var(--display); font-weight: 600; font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.6px; }
-  .localForm { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px; }
-  .localForm input { font-family: var(--body); font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-solid); border-radius: 10px; padding: 12px; outline: none; }
-  .localForm .lfRow { display: flex; gap: 8px; }
-  .localForm .lfRow button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 12px; border-radius: 10px; cursor: pointer; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid); }
-  .localForm .lfRow button.ghost { background: none; }
   .avatarBtn.letter { font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--gold); }
 
   .modal { position: fixed; inset: 0; background: rgba(6,8,12,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
@@ -449,9 +462,6 @@
   .moveOpts button { text-align: left; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
   .moveOpts button:hover { border-color: var(--gold); }
 
-  .decideBtn { width: 100%; font-family: var(--display); font-weight: 700; font-size: 13.5px; padding: 12px; margin: 10px 0 2px; border-radius: 12px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px dashed var(--line-solid); }
-  .decideBtn:hover { border-color: var(--gold); color: var(--gold); }
-  .dcSection { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 2px 6px; }
   .wheelCover { width: 231px; max-width: 80%; aspect-ratio: 231/87; object-fit: cover; border-radius: 10px; background: var(--surface-2); margin: 6px 0 10px; }
   .wheelName { font-family: var(--display); font-weight: 700; font-size: 16px; min-height: 1.4em; margin-bottom: 6px; }
   .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
@@ -484,14 +494,13 @@
     background: var(--line-solid); margin: -4px auto 14px; flex-shrink: 0;
   }
   /* gold elements: gradient + soft glow */
-  .dock .primary, .steamBtn, .lvlChip, .sorts button.on, .tabs button.on,
-  .addAll { width: 100%; font-family: var(--display); font-weight: 700; font-size: 13px; padding: 11px; border-radius: 10px; cursor: pointer; background: var(--gold); color: #16130a; border: none; margin-bottom: 4px; box-shadow: 0 2px 14px rgba(232,182,76,0.25); }
-  .addAll:disabled { opacity: 0.7; }
+  .dock .primary, .steamBtn, .lvlChip, .sorts button.on, .tabs button.on, .addAll,
   .res button.addOne, .sheet .footRow .go, .pActions .share {
     background: linear-gradient(180deg, #f0c25c 0%, #dfa93c 100%);
     box-shadow: 0 3px 14px -6px rgba(232,182,76,0.55);
     border-color: transparent;
   }
+  .addAll:disabled { opacity: 0.7; }
   .xp > i, .tile .barWrap > i, .bar > i { box-shadow: 0 0 8px rgba(232,182,76,0.35); }
   .xp.done > i, .tile .barWrap.full > i, .bar.full > i { box-shadow: 0 0 8px rgba(79,195,161,0.35); }
   /* desktop hover: gentle lift on interactive surfaces */
@@ -575,7 +584,6 @@
   .fcard { background: var(--surface); border-radius: 14px; transition: border-color 0.15s ease, transform 0.15s ease; }
   @media (hover:hover) { .fcard:hover { border-color: var(--line-strong); transform: translateY(-1px); } }
   .fcard .fwhy { letter-spacing: 0.07em; }
-  .decideBtn { border-radius: 14px; padding: 14px; font-size: 13px; letter-spacing: 0.01em; transition: border-color 0.18s ease, color 0.18s ease; }
 
   /* sheets: floating panels */
   .modal { padding: 10px; backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); background: rgba(5,7,11,0.55); }
@@ -600,8 +608,8 @@
   .addAll { border-radius: 13px; background: linear-gradient(180deg, #efc878, var(--gold) 55%); box-shadow: 0 2px 14px rgba(228,184,92,0.25), inset 0 1px 0 rgba(255,255,255,0.35); }
 
   /* inputs */
-  .noteBox, .localForm input { border-radius: 13px; transition: border-color 0.15s ease; }
-  .noteBox:focus, .localForm input:focus, .filterBox:focus-within { border-color: rgba(228,184,92,0.5); }
+  .noteBox { border-radius: 13px; transition: border-color 0.15s ease; }
+  .noteBox:focus, .filterBox:focus-within { border-color: rgba(228,184,92,0.5); }
 
   /* login: composed */
   .login { gap: 22px; }
@@ -622,7 +630,7 @@
   .skel { border-radius: var(--r); height: 80px; }
 
   /* uppercase labels: unified tracking */
-  .featTitle, .chartBox .ct, .gsSection, .dcSection, .visitFeed .vfTitle { letter-spacing: 0.08em; font-size: 11.5px; }
+  .featTitle, .chartBox .ct, .gsSection, .visitFeed .vfTitle { letter-spacing: 0.08em; font-size: 11.5px; }
 
   /* ================= high-contrast pass ================= */
   /* real layer separation: darker canvas, lighter raised surfaces */
@@ -636,8 +644,9 @@
   .card, .tile, .chartBox, .fcard, .sheet { background: #171d2a; }
   .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
 
-  /* topbar: borderless fade */
+  /* topbar: borderless fade + signature gold hairline */
   .top { border-bottom: none; background: linear-gradient(180deg, rgba(9,11,15,0.92) 55%, rgba(9,11,15,0)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .top::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(228,184,92,0.65) 30%, rgba(228,184,92,0.65) 70%, transparent); pointer-events: none; }
 
   /* hero: command panel */
   .hero {
@@ -716,6 +725,115 @@
 
   /* sheet handle + spacing */
   .sheet { background: #171d2a; }
+
+  /* ================= light theme ================= */
+  html:has(body.light) { background: #eceae1; }
+  body.light {
+    --bg: #f2efe8;
+    --surface: #ffffff;
+    --surface-2: #edeae1;
+    --line-solid: rgba(55,65,88,0.14);
+    --line-strong: rgba(55,65,88,0.30);
+    --ink: #23262e;
+    --ink-dim: #6d7484;
+    --gold: #a87c15;
+    --teal: #158a68;
+    --glow: 0 0 10px rgba(168,124,21,0.18);
+    --card-grad: none;
+    background:
+      radial-gradient(680px 340px at 50% -120px, rgba(200,150,40,0.08), transparent 70%),
+      linear-gradient(180deg, #f7f4ec 0%, #eceae1 100%);
+    background-attachment: fixed;
+  }
+  body.light .top { background: linear-gradient(180deg, rgba(247,244,236,0.94) 55%, rgba(247,244,236,0)); }
+  body.light .card, body.light .tile, body.light .chartBox, body.light .fcard,
+  body.light .visitFeed, body.light .sharedBanner, body.light .cell, body.light .tMini {
+    background: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 8px 20px -14px rgba(40,45,60,0.28);
+  }
+  body.light .sheet { background: #ffffff; box-shadow: 0 24px 70px rgba(40,45,60,0.28); }
+  body.light .filterBox, body.light .viewToggle button, body.light .listbar button, body.light .sorts button { background: #ffffff; }
+  body.light .listbar button.on { background: #f0ead9; color: var(--ink); border-color: var(--line-strong); }
+  body.light .sorts button.on { background: var(--gold); border-color: var(--gold); color: #fdfbf5; }
+  body.light .tabs button.on { color: #fdfbf5; }
+  @media (hover:hover) { body.light .sorts button:not(.on):hover, body.light .listbar button:not(.on):hover { background: #f4f1e9; color: var(--ink); } }
+  body.light .hero { background: linear-gradient(180deg, rgba(200,150,40,0.09), rgba(200,150,40,0) 45%), #ffffff; box-shadow: 0 14px 34px rgba(40,45,60,0.16); }
+  body.light .hero::after { opacity: 0.5; }
+  body.light .dock { background: rgba(255,255,255,0.88); box-shadow: 0 18px 50px rgba(40,45,60,0.30); }
+  body.light .selBar { background: rgba(255,255,255,0.94); box-shadow: 0 16px 44px rgba(40,45,60,0.3); }
+  body.light .toast { background: rgba(255,255,255,0.96); color: var(--ink); box-shadow: 0 6px 26px rgba(40,45,60,0.3), 0 0 0 1px rgba(168,124,21,0.15); }
+  body.light .modal { background: rgba(90,95,105,0.4); }
+  body.light .tile .mscore { background: rgba(255,255,255,0.88); color: var(--ink); }
+  body.light .skel { background: #ffffff; }
+  body.light .skel::after { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent); }
+  body.light .row:active { background: rgba(0,0,0,0.045); }
+  body.light .friendRow.tappable:active, body.light .achRow:hover { background: #f2efe8; }
+  body.light .login::before { opacity: 0.55; }
+  body.light .dock .primary, body.light .footRow .go, body.light .addAll,
+  body.light .steamBtn, body.light .pActions .share, body.light .res button.addOne {
+    background: linear-gradient(180deg, #c99a2e, #a87c15 60%); color: #fdfbf5;
+  }
+  body.light .wordmark b { text-shadow: 0 0 12px rgba(168,124,21,0.3); }
+  body.light .nums .meta.mid { color: #fdfbf5; }
+  body.light .card.selon::after, body.light .tile.selon::after { color: #fdfbf5; }
+  body.light .score10 button.on { color: #fdfbf5; }
+  body.light .achLinks a { background: #ffffff; }
+  body.light .sw.on { background: rgba(168,124,21,0.18); }
+
+  /* ================= desktop layout ================= */
+  .profile.show { display: block; }
+  @media (min-width: 900px) {
+    body { max-width: 1180px; }
+
+    /* game lists become multi-column */
+    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+    .games.compact { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+    .games.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+
+    /* profile sections flow into two columns */
+    .profile.show { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .pHead, #pBadges, #pGrid, .pActions { grid-column: 1 / -1; }
+    #pChart, #pPlayed, #pWrap, #pShowcase, #pFriends { margin-top: 0 !important; }
+    #pGrid { grid-template-columns: repeat(3, 1fr); }
+    .pActions { max-width: 560px; margin-inline: auto; width: 100%; }
+
+    /* sheets centre on screen instead of docking to the bottom edge */
+    .modal { align-items: center; }
+    .sheet { max-width: 720px; border-radius: 26px; max-height: 82vh; margin-bottom: 0; border-bottom: 1px solid var(--line-strong); }
+
+    /* wider comfortable strips and inputs */
+    .fcard { flex-basis: 150px; }
+    .xlRow { max-width: 560px; }
+  }
+  @media (min-width: 1400px) {
+    .games { grid-template-columns: 1fr 1fr 1fr; }
+    .games.compact { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* ---------- settings ---------- */
+  .setRow { display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line-solid); }
+  .setRow:last-of-type { border-bottom: none; }
+  .setRow .sl { flex: 1; min-width: 0; }
+  .setRow .sl b { display: block; font-size: 14px; font-weight: 650; color: var(--ink); }
+  .setRow .sl span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-top: 2px; line-height: 1.45; }
+  .sw { position: relative; width: 46px; height: 27px; flex-shrink: 0; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line-strong); cursor: pointer; transition: background 0.18s ease, border-color 0.18s ease; padding: 0; }
+  .sw::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink-dim); transition: transform 0.18s ease, background 0.18s ease; }
+  .sw.on { background: rgba(228,184,92,0.22); border-color: var(--gold); }
+  .sw.on::after { transform: translateX(19px); background: var(--gold); }
+  body.rm *, body.rm *::before, body.rm *::after { transition: none !important; animation: none !important; }
+  .setSection { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 2px 2px; }
+  .setSection:first-child { margin-top: 2px; }
+
+  /* ---------- page footer ---------- */
+  .foot { text-align: center; margin: 44px 0 8px; color: var(--ink-dim); }
+  .foot .fdiv { width: 130px; height: 1.5px; margin: 0 auto 20px; border-radius: 1px; background: linear-gradient(90deg, transparent, rgba(228,184,92,0.45), transparent); }
+  .foot .fbrand { font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--ink); }
+  .foot .fbrand b { color: var(--gold); }
+  .foot .fsub { font-family: var(--display); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; margin-top: 4px; }
+  .foot .fnote { font-size: 11px; line-height: 1.6; margin-top: 12px; opacity: 0.75; }
+  .foot .ftop { margin-top: 14px; font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); background: none; border: 1px solid var(--line-solid); border-radius: 999px; padding: 7px 15px; cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease; }
+  .foot .ftop:hover, .foot .ftop:active { color: var(--gold); border-color: var(--gold); }
+  .obBtns button:active, .wlSync button:active, .pActions button:active { transform: scale(0.98); }
 </style>
 </head>
 <body>
@@ -726,20 +844,13 @@
     <p>Track your backlog with Steam achievements, playtime, and HowLongToBeat estimates. Synced across devices.</p>
     <a class="steamBtn" href="/api/auth/login">Sign in through Steam</a>
     <div class="fine">Uses Steam's official sign-in — your password never touches this site. Set your Steam profile's <b>Game details</b> to Public so achievements can show.</div>
-    <div class="orLine">or use a site account</div>
-    <div class="localForm">
-      <input id="luName" type="text" placeholder="Username" autocomplete="username" autocapitalize="none">
-      <input id="luPass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
-      <div class="lfRow">
-        <button id="luSignIn">Sign in</button>
-        <button id="luCreate" class="ghost">Create account</button>
-      </div>
-      <div class="fine" id="luMsg">Steam can be linked later from your profile. There is no password reset.</div>
-    </div>
   </div>
+
+  <div class="ptr" id="ptr" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></div>
 
   <div class="top">
     <div class="wordmark">Back<b>log</b></div>
+    <button class="topRefresh" id="topRefresh" aria-label="Refresh data"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></button>
     <button class="avatarBtn" id="avatarBtn" style="display:none" aria-label="Profile"><img id="avatarImg" src="" alt=""></button>
   </div>
 
@@ -768,8 +879,6 @@
       <div class="feat" id="feat"></div>
     </div>
 
-    <button class="decideBtn" id="decideBtn" style="display:none">Can't decide what to play?</button>
-
     <div class="controls">
       <div class="filterBox">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -790,15 +899,19 @@
     </div>
 
     <ul class="games" id="games"></ul>
+    <div id="xlist"></div>
     <div class="empty" id="empty" style="display:none">
-      <b>Welcome to your backlog</b>
-      <div style="margin-bottom:16px">Here's how to get started:</div>
-      <div class="obBtns">
-        <button id="obImport">Import my Steam library</button>
-        <button id="obAdd">Search &amp; add games</button>
-        <button id="obScan">Scan my 100% completed games</button>
-        <button id="obWishlist">Import my Steam wishlist</button>
+      <div id="obDefault">
+        <b>Welcome to your backlog</b>
+        <div style="margin-bottom:16px">Here's how to get started:</div>
+        <div class="obBtns">
+          <button id="obImport">Import my Steam library</button>
+          <button id="obAdd">Search &amp; add games</button>
+          <button id="obScan">Scan my 100% completed games</button>
+          <button id="obWishlist">Import my Steam wishlist</button>
+        </div>
       </div>
+      <div id="obAlt" style="display:none"><b id="obAltTitle"></b><div id="obAltSub"></div></div>
     </div>
   </div>
 
@@ -827,14 +940,21 @@
           <option value="public">Anyone with a share link</option>
         </select>
       </div>
-      <button id="linkSteamBtn" style="display:none">Link my Steam account</button>
+      <button id="settingsBtn">Settings</button>
       <button id="backBtn">Back to list</button>
       <button class="out" id="logoutBtn">Log out</button>
     </div>
   </div>
 
+  <footer class="foot">
+    <div class="fdiv"></div>
+    <div class="fbrand">Back<b>log</b></div>
+    <div class="fsub">Built for finishing games</div>
+    <div class="fnote">Game data from Steam, HowLongToBeat &amp; Metacritic<br>Not affiliated with Valve Corporation</div>
+    <button class="ftop" id="footTop">Back to top ↑</button>
+  </footer>
+
   <div class="dock" id="dock">
-    <button id="importBtn">Import library</button>
     <button class="primary" id="addBtn">Add games</button>
   </div>
 
@@ -845,9 +965,10 @@
       <div class="tabs" id="addTabs">
         <button class="on" data-tab="search">Search</button>
         <button data-tab="paste">Paste list</button>
+        <button data-tab="library">My library</button>
       </div>
       <input id="searchInput" type="search" placeholder="Search the Steam store" autocomplete="off">
-      <textarea id="pasteInput" placeholder="One game per line, e.g.&#10;Hollow Knight&#10;Hades&#10;Elden Ring" style="display:none"></textarea>
+      <textarea id="pasteInput" placeholder="Paste any list of games — even a whole copied Steam library page.&#10;&#10;Hollow Knight&#10;Hades, Elden Ring&#10;12. Celeste" style="display:none"></textarea>
       <div class="hint" id="addHint">Results come from the Steam store.</div>
       <div class="results" id="addResults"></div>
       <div class="footRow">
@@ -918,19 +1039,6 @@
     </div>
   </div>
 
-  <!-- can't decide wizard -->
-  <div class="modal" id="decideModal">
-    <div class="sheet">
-      <h2 id="dcTitle">What's the goal?</h2>
-      <div class="moveOpts" id="dcOpts"></div>
-      <div class="results" id="dcResults" style="display:none"></div>
-      <div class="footRow">
-        <button id="dcBack" style="display:none">Back</button>
-        <button id="dcClose">Close</button>
-      </div>
-    </div>
-  </div>
-
   <!-- spin the wheel -->
   <div class="modal" id="wheelModal">
     <div class="sheet" style="align-items:center; text-align:center">
@@ -959,6 +1067,15 @@
       <div class="hint" id="guideHint">Pick a source. These are the most reliable spots to find a complete 100% or achievement guide.</div>
       <div class="gsBody" id="guideBody"></div>
       <div class="footRow"><button id="guideClose">Close</button></div>
+    </div>
+  </div>
+
+  <!-- settings sheet -->
+  <div class="modal" id="setModal">
+    <div class="sheet">
+      <h2>Settings</h2>
+      <div class="gsBody" id="setBody"></div>
+      <div class="footRow"><button id="setClose">Done</button></div>
     </div>
   </div>
 
@@ -1079,6 +1196,16 @@
 
   // ============ derived ============
   function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
+  function priceBadge(appid){
+    if (!isWishlist(activeList())) return "";
+    const p = stats[appid]?.wlPrice;
+    if (!p) return "";
+    if (p.free) return `<span class="wprice">Free</span>`;
+    if (!p.str) return "";
+    return p.discount > 0
+      ? `<span class="wprice deal">-${p.discount}% ${esc(p.str)}</span>`
+      : `<span class="wprice">${esc(p.str)}</span>`;
+  }
   function achOf(appid){
     const s = stats[appid];
     if (!s || s.achTotal==null) return null;
@@ -1188,8 +1315,8 @@
       {
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.5 3 8.3 7 9.5l1-4c-1.2-.4-2-1.5-2-2.8 0-1.7 1.3-3 3-3 .2 0 .4 0 .6.1L15 8.4V8c0-1.7 1.3-3 3-3s3 1.3 3 3-1.3 3-3 3l-3.4 2.5c.1.3.1.6.1.8 0 1.7-1.3 3-3 3s-3-1.3-3-3v-.1L5.5 15c1 3 3.7 5 6.5 5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>`,
         title: "Steam Community Guides",
-        desc: "Top-voted user guides on the Steam store page — usually the most complete.",
-        url: `https://steamcommunity.com/app/${g.appid}/guides/?browsefilter=trend&requiredtags%5B0%5D=Achievements&requiredtags%5B1%5D=100%25`,
+        desc: "Top-voted achievement guides from the Steam community.",
+        url: `https://steamcommunity.com/app/${g.appid}/guides/?browsefilter=trend&requiredtags%5B%5D=Achievements`,
       },
       {
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12l-3-5.2c-.4-.8-1.2-1.3-2.1-1.3H6.1c-.9 0-1.7.5-2.1 1.3L1 12l3 5.2c.4.8 1.2 1.3 2.1 1.3h11.8c.9 0 1.7-.5 2.1-1.3L23 12zM10 15.5v-7l6 3.5-6 3.5z"/></svg>`,
@@ -1207,13 +1334,13 @@
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 4h10v3a5 5 0 0 1-10 0V4zM17 5h2.5a2.5 2.5 0 0 1-2.6 3M7 5H4.5a2.5 2.5 0 0 0 2.6 3M12 12v4m-3 4h6m-5.5-4h5l1 4h-7z"/></svg>`,
         title: "PowerPyx trophy guides",
         desc: "Well-respected site for detailed 100% roadmaps (coverage varies).",
-        url: `https://www.google.com/search?q=${encodeURIComponent("site:powerpyx.com " + g.name + " trophy achievement guide")}`,
+        url: `https://www.powerpyx.com/?s=${encodeURIComponent(g.name)}`,
       },
       {
         icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/></svg>`,
         title: "TrueSteamAchievements",
         desc: "Community-tracked achievement guides and difficulty ratings.",
-        url: `https://www.google.com/search?q=${encodeURIComponent("site:truesteamachievements.com " + g.name)}`,
+        url: `https://truesteamachievements.com/searchresults.aspx?search=${encodeURIComponent(g.name)}`,
       },
     ];
     $("guideTitle").textContent = "100% guides — " + g.name;
@@ -1330,6 +1457,7 @@
 
   // subtle phase between facts
   setInterval(() => {
+    if (!pref("rotateHero")) return;
     if (heroFacts.length < 2) return;
     if (document.visibilityState !== "visible") return;
     if ($("listView").style.display === "none") return;
@@ -1361,7 +1489,7 @@
   }
   function renderRecent() {
     const wrap = $("recentWrap");
-    if (!recentGames || !recentGames.length || sharedMode) { wrap.style.display = "none"; return; }
+    if (!recentGames || !recentGames.length || sharedMode || !pref("showRecent")) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
     $("recent").innerHTML = recentGames.map(g => {
       const a = achOf(g.appid);
@@ -1387,6 +1515,7 @@
   function renderFeatured() {
     const wrap = $("featWrap");
     if (sharedMode) { wrap.style.display = "none"; return; }
+    if (!pref("showUpNext")) { wrap.style.display = "none"; renderRecent(); return; }
     // candidates: games in this list that aren't 100% completed
     let pool = activeList().games.filter(g => {
       const a = achOf(g.appid);
@@ -1473,6 +1602,14 @@
         case "comp": return cmpNum(sa.completionist, sb.completionist, dir);
         case "meta": return cmpNum(sa.metaScore, sb.metaScore, dir);
         case "ach":  return cmpNum(aa&&!aa.none?aa.pct:null, ab&&!ab.none?ab.pct:null, dir);
+        case "deal": {
+          const pa = sa.wlPrice, pb = sb.wlPrice;
+          const da = pa && !pa.free ? (pa.discount || 0) : null;
+          const db = pb && !pb.free ? (pb.discount || 0) : null;
+          const c = cmpNum(da, db, dir);
+          if (c) return c;
+          return cmpNum(pa?.final ?? null, pb?.final ?? null, 1); // cheapest first among ties
+        }
       }
       return 0;
     });
@@ -1480,13 +1617,16 @@
   }
 
   function renderSorts() {
-    $("sorts").innerHTML = SORTS.map(s => {
+    const wl = isWishlist(activeList());
+    if (!wl && sort.id === "deal") { sort = { id: "name", asc: true }; save(SORT_KEY, sort); }
+    const SORTLIST = wl ? [...SORTS, { id: "deal", label: "Deals" }] : SORTS;
+    $("sorts").innerHTML = SORTLIST.map(s => {
       const on = s.id===sort.id;
       return `<button class="${on?"on":""}" data-s="${s.id}">${s.label}${on ? (sort.asc?" ↑":" ↓") : ""}</button>`;
     }).join("");
     $("sorts").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (sort.id===b.dataset.s) sort.asc = !sort.asc;
-      else sort = { id: b.dataset.s, asc: b.dataset.s==="name" };
+      else sort = { id: b.dataset.s, asc: b.dataset.s==="name" }; // deals default to biggest discount first
       save(SORT_KEY, sort); animateNext = true; renderSorts(); renderGames();
     });
   }
@@ -1506,7 +1646,20 @@
         : "Synced from your Steam achievements";
       $("wlSyncWhen").textContent = syncAgo(syncType === "wishlist" ? WLSYNC_KEY : HDSYNC_KEY);
     }
+    renderXlist();
     $("empty").style.display = games.length ? "none" : "block";
+    if (!games.length) {
+      const alt = syncType === "wishlist"
+        ? { t: "Your wishlist is empty",
+            s: me && me.steamId ? "Tap Sync now above to import it from Steam." : "Link Steam on your profile to import it." }
+        : (syncType === "hundo" || isHundo(al))
+        ? { t: "No 100% completions yet",
+            s: me && me.steamId ? "Tap Sync now above to scan your Steam library." : "Link Steam on your profile to scan for them." }
+        : (isWishlist(al) ? { t: "Your wishlist is empty", s: "Link Steam on your profile to import it." } : null);
+      $("obDefault").style.display = alt ? "none" : "block";
+      $("obAlt").style.display = alt ? "block" : "none";
+      if (alt) { $("obAltTitle").textContent = alt.t; $("obAltSub").textContent = alt.s; }
+    }
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
@@ -1530,7 +1683,7 @@
           <div class="barWrap ${full?"full":""}"><i style="width:${pct}%"></i></div>
           <div class="tmeta">
             <div class="tname">${esc(g.name)}</div>
-            <div class="tstats">${achTxt}</div>
+            <div class="tstats">${achTxt}${priceBadge(g.appid)}</div>
             <div class="tstats"><span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
           </div>
         </li>`;
@@ -1558,7 +1711,7 @@
           <div class="trow" data-open="${g.appid}">
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
-            <div class="tmini">${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
+            <div class="tmini">${priceBadge(g.appid)}${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
             ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
           </div>
           <div class="bar ${full?"full":""}"><i style="width:${pct}%"></i></div>
@@ -1571,7 +1724,6 @@
       }
       animateNext = false;
       renderHero(); renderListbar();
-      $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
       return;
     }
 
@@ -1604,6 +1756,7 @@
           <div class="info">
             <div class="gname">${esc(g.name)}</div>
             <div class="nums">
+              ${priceBadge(g.appid)}
               ${metaBadge}
               ${starBadge}
               ${achTxt}
@@ -1631,7 +1784,32 @@
     }
     animateNext = false;
     renderHero(); renderListbar();
-    $("decideBtn").style.display = (!sharedMode && !isHundo(activeList()) && activeList().games.length >= 3) ? "block" : "none";
+  }
+  // Cross-list matches: when filtering, also surface games tracked in your
+  // other lists so "do I already have this anywhere?" is one search away.
+  function renderXlist() {
+    const el = $("xlist");
+    const q = filterText.trim().toLowerCase();
+    if (!q || sharedMode) { el.innerHTML = ""; return; }
+    const inActive = new Set(activeList().games.map(g => g.appid));
+    const rows = [], seen = new Set();
+    outer: for (const l of data.lists) {
+      if (l.id === data.activeId) continue;
+      for (const g of l.games) {
+        if (seen.has(g.appid) || inActive.has(g.appid)) continue;
+        if (!g.name.toLowerCase().includes(q)) continue;
+        seen.add(g.appid);
+        rows.push({ g, list: l.name });
+        if (rows.length >= 20) break outer;
+      }
+    }
+    if (!rows.length) { el.innerHTML = ""; return; }
+    el.innerHTML = `<div class="xlHead">In your other lists</div>` + rows.map(({ g, list }) =>
+      `<div class="xlRow" data-xl="${g.appid}">
+        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <span class="xn">${esc(g.name)}</span><span class="xl">${esc(list)}</span>
+      </div>`).join("");
+    el.querySelectorAll("[data-xl]").forEach(r => r.onclick = () => openGameSheet(+r.dataset.xl));
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
@@ -1834,18 +2012,6 @@
     renderGameSheet();
     gameModal.classList.add("show");
   }
-  // Same slugging as api/stats.js — keeps Metacritic links pointed at the
-  // exact page the score was read from.
-  function mcSlug(name){
-    return name
-      .replace(/[\u2122\u00ae\u00a9]/g, "")
-      .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/['\u2019]/g, "")
-      .replace(/&/g, " and ")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
 
   function renderGameSheet() {
     if (!sheetGame) return;
@@ -1879,10 +2045,16 @@
     const achCell = a && !a.none ? `${a.u}<span class="u">/${a.t}</span>` : "—";
     const achCls = a && !a.none && a.pct===1 ? "teal" : "gold";
     const metaCls = typeof ms==="number" ? (ms>=75?"teal":ms>=50?"gold":"") : "";
+    const wp = s.wlPrice;
+    const priceCell = wp && pm == null
+      ? { v: wp.free ? "Free" : (wp.str ? esc(wp.str) : "—"),
+          k: wp.discount > 0 ? `price · -${wp.discount}%` : "price",
+          cls: wp.discount > 0 ? "teal" : "" }
+      : null;
     const cells = [
       { v: typeof ms==="number" ? ms : "—", k: "Metacritic", cls: metaCls },
       { v: achCell, k: "achievements", cls: achCls },
-      { v: played + (pm==null?"":`<span class="u">h</span>`), k: "played" },
+      priceCell || { v: played + (pm==null?"":`<span class="u">h</span>`), k: "played" },
       { v: m==null?"—":m+`<span class="u">h</span>`, k: "main story" },
       { v: c==null?"—":c+`<span class="u">h</span>`, k: "100% time" },
       { v: a && !a.none ? Math.round(a.pct*100)+`<span class="u">%</span>` : "—", k: "completion", cls: achCls },
@@ -1890,10 +2062,16 @@
     const gridHtml = `<div class="gsGrid">` + cells.map(x =>
       `<div class="cell ${x.cls||""}"><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
 
-    // external links: reviews + a picker for 100% guides
-    const steamUrl = `https://store.steampowered.com/app/${g.appid}/#app_reviews_hash`;
-    const mcUrl = `https://www.metacritic.com/game/${mcSlug(g.name)}/user-reviews/`;
+    // external links: reviews + a picker for 100% guides.
+    // Steam: the community reviews hub is a dedicated page (the old store
+    // #anchor often failed to scroll). Metacritic: their search always lands
+    // somewhere useful, unlike a guessed slug which 404s on name mismatches.
+    const steamUrl = `https://steamcommunity.com/app/${g.appid}/reviews/?browsefilter=toprated&p=1`;
+    const mcUrl = `https://www.metacritic.com/search/${encodeURIComponent(g.name.replace(/[\u2122\u00ae\u00a9]/g, "").trim())}/?category=13`;
     const linksHtml = `<div class="gsLinks">
+      <a class="gsLink" href="steam://store/${g.appid}" rel="noopener noreferrer">
+        <span class="l">Open in Steam</span><span class="a">↗</span>
+      </a>
       <a class="gsLink" href="${steamUrl}" target="_blank" rel="noopener noreferrer">
         <span class="l">Steam reviews</span><span class="a">↗</span>
       </a>
@@ -1948,221 +2126,16 @@
 
   // ---- onboarding buttons ----
   $("obImport").onclick = () => {
-    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
-    $("addTitle").textContent = `Add games to ${activeList().name}`; addModal.classList.add("show"); setTab("search"); loadLibrary();
+    if (me && !me.steamId) { toast("Sign in through Steam to use this"); return; }
+    $("addTitle").textContent = `Add games to ${activeList().name}`; addModal.classList.add("show"); setTab("library");
   };
   $("obAdd").onclick = () => openAdd();
   $("obScan").onclick = async () => {
-    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
+    if (me && !me.steamId) { toast("Sign in through Steam to use this"); return; }
     toast(`Scanning your library <span class="spin"></span>`);
     await scanCompleted(msg => toast(msg + ` <span class="spin"></span>`));
     renderAll();
   };
-
-  // ---- "can't decide" wizard ----
-  const decideModal = $("decideModal");
-  let dcGoal = null;
-
-  const DC_GOALS = [
-    { id: "hundo", label: "100% a game" },
-    { id: "story", label: "Just finish a story" },
-    { id: "fun",   label: "Whatever's fun" },
-  ];
-  const DC_STYLES = [
-    { id: "short",  label: "Short & focused (under ~10h)" },
-    { id: "rpg",    label: "Big RPG / open world" },
-    { id: "action", label: "Action & shooters" },
-    { id: "strat",  label: "Strategy & sims" },
-    { id: "indie",  label: "Indie gems" },
-    { id: "any",    label: "Surprise me" },
-  ];
-  // Curated acclaimed picks per style, suggested only if not already tracked
-  const DC_POOL = {
-    short:  ["Portal 2","INSIDE","Firewatch","Celeste","What Remains of Edith Finch","Titanfall 2","A Short Hike"],
-    rpg:    ["The Witcher 3: Wild Hunt","Elden Ring","Baldur's Gate 3","Cyberpunk 2077","The Elder Scrolls V: Skyrim Special Edition","Fallout: New Vegas","Persona 5 Royal"],
-    action: ["DOOM Eternal","Titanfall 2","Deep Rock Galactic","Half-Life 2","DUSK","Risk of Rain 2","ULTRAKILL"],
-    strat:  ["Into the Breach","Sid Meier's Civilization VI","Factorio","Slay the Spire","XCOM 2","Stardew Valley","RimWorld"],
-    indie:  ["Hades","Hollow Knight","Celeste","Stardew Valley","Outer Wilds","Undertale","Balatro"],
-    any:    ["Portal 2","Hades","The Witcher 3: Wild Hunt","Outer Wilds","DOOM Eternal","Slay the Spire","Hollow Knight"],
-  };
-
-  function styleMatch(g, style) {
-    const s = stats[g.appid] || {};
-    const gen = s.genres || [];
-    switch (style) {
-      case "short":  return s.mainStory != null && s.mainStory <= 10;
-      case "rpg":    return gen.includes("RPG");
-      case "action": return gen.includes("Action");
-      case "strat":  return gen.includes("Strategy") || gen.includes("Simulation");
-      case "indie":  return gen.includes("Indie");
-      default:       return true;
-    }
-  }
-
-  // Taste profile: which genres you actually play and finish, learned from
-  // your whole collection — hours carry weight, completions carry more.
-  function tasteProfile() {
-    const w = {};
-    let total = 0;
-    for (const g of allGames()) {
-      const s = stats[g.appid] || {};
-      const a = achOf(g.appid);
-      const hours = (s.playtimeMinutes || 0) / 60;
-      const signal = Math.min(hours, 60) + (a && !a.none ? a.pct * 25 : 0) + (a && !a.none && a.pct === 1 ? 25 : 0);
-      if (signal <= 0) continue;
-      for (const gen of s.genres || []) { w[gen] = (w[gen] || 0) + signal; total += signal; }
-    }
-    if (total > 0) for (const k in w) w[k] = w[k] / total; // normalize 0..1
-    return w;
-  }
-
-  function goalScore(g, goal, taste) {
-    const s = stats[g.appid] || {};
-    const a = achOf(g.appid);
-    const playedH = (s.playtimeMinutes || 0) / 60;
-    let sc = 0;
-
-    // taste: how strongly this game's genres match what you demonstrably play
-    let tasteHit = 0;
-    for (const gen of s.genres || []) tasteHit += taste[gen] || 0;
-    sc += Math.min(25, tasteHit * 60);
-
-    // your own verdicts outrank any critic (ratings are 1-10)
-    const r = notes[g.appid]?.rating;
-    if (r >= 8) sc += 18;
-    else if (r >= 6) sc += 4;
-    else if (r != null && r <= 4) sc -= 30;
-
-    // critics as a mild tiebreaker only
-    if (typeof s.metaScore === "number") sc += (s.metaScore - 70) * 0.25;
-
-    if (goal === "hundo") {
-      if (!a || a.none || a.pct === 1) return -1;
-      sc += 40 * a.pct; // momentum: closer = better
-      if (s.completionist != null) {
-        const remaining100 = Math.max(0, s.completionist * (1 - a.pct));
-        sc += Math.max(0, 22 - remaining100 * 0.22); // achievable 100%s float up
-      }
-      return sc;
-    }
-    if (goal === "story") {
-      if (s.mainStory != null && playedH > s.mainStory * 0.85) return -1; // likely beaten
-      if (playedH >= 1) sc += 12; // already started: momentum
-      if (s.mainStory != null) {
-        const remaining = Math.max(0, s.mainStory - playedH);
-        sc += Math.max(0, 18 - remaining * 0.12); // finishable stories rank up
-      } else sc -= 8; // unknown length is a worse story bet
-      return sc;
-    }
-    // fun: taste + a dash of chaos
-    return sc + Math.random() * 14;
-  }
-
-  function openDecider() {
-    dcGoal = null;
-    renderDcStep();
-    decideModal.classList.add("show");
-  }
-  $("decideBtn").onclick = openDecider;
-  $("dcClose").onclick = () => decideModal.classList.remove("show");
-  decideModal.onclick = e => { if (e.target === decideModal) decideModal.classList.remove("show"); };
-  $("dcBack").onclick = () => { dcGoal = null; renderDcStep(); };
-
-  function renderDcStep() {
-    $("dcResults").style.display = "none";
-    $("dcOpts").style.display = "flex";
-    $("dcBack").style.display = dcGoal ? "block" : "none";
-    const opts = dcGoal ? DC_STYLES : DC_GOALS;
-    $("dcTitle").textContent = dcGoal ? "What type of game?" : "What's the goal?";
-    $("dcOpts").innerHTML = opts.map(o => `<button data-dc="${o.id}">${o.label}</button>`).join("");
-    $("dcOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
-      if (!dcGoal) { dcGoal = b.dataset.dc; renderDcStep(); }
-      else showDcResults(dcGoal, b.dataset.dc);
-    });
-  }
-
-  async function showDcResults(goal, style) {
-    $("dcTitle").textContent = "Results";
-    $("dcOpts").style.display = "none";
-    $("dcBack").style.display = "block";
-    const out = $("dcResults");
-    out.style.display = "flex";
-
-    // from their list
-    let pool = activeList().games.filter(g => {
-      const a = achOf(g.appid);
-      return !(a && !a.none && a.pct === 1);
-    });
-    let matched = pool.filter(g => styleMatch(g, style));
-    let relaxed = false;
-    if (matched.length < 1) { matched = pool; relaxed = true; }
-    const taste = tasteProfile();
-    const topTaste = Object.entries(taste).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
-    const ranked = matched
-      .map(g => ({ g, sc: goalScore(g, goal, taste) }))
-      .filter(x => x.sc >= 0)
-      .sort((x,y) => y.sc - x.sc)
-      .slice(0, 3)
-      .map(x => x.g);
-
-    const mine = ranked.length
-      ? ranked.map(g => `<div class="res" data-dcopen="${g.appid}" style="cursor:pointer">
-          <img src="${capsule(g)}" alt="" onerror="this.style.visibility='hidden'">
-          <div class="n">${esc(g.name)}<div class="sub">${dcWhy(g, goal, topTaste)}</div></div>
-        </div>`).join("")
-      : `<div class="hint">No matches in this list.</div>`;
-
-    out.innerHTML = `<div class="dcSection">From your backlog${relaxed ? " (closest matches)" : ""}</div>` + mine
-      + `<div class="dcSection">Not in your lists — commonly recommended</div><div class="hint" id="dcExtra">Searching <span class="spin"></span></div>`;
-
-    out.querySelectorAll("[data-dcopen]").forEach(el => el.onclick = () => {
-      decideModal.classList.remove("show");
-      openGameSheet(+el.dataset.dcopen);
-    });
-
-    // out-of-collection suggestions: curated names, resolved live, not already tracked
-    const owned = new Set(allGames().map(g => g.appid));
-    const names = [...(DC_POOL[style] || DC_POOL.any)].sort(() => Math.random() - 0.5);
-    const extras = [];
-    for (const name of names) {
-      if (extras.length >= 2) break;
-      try {
-        const r = await fetch("/api/search?q=" + encodeURIComponent(name));
-        const d = await r.json();
-        const best = rankOptions(name, d.results || [])[0];
-        if (best && !owned.has(best.appid) && !extras.some(x => x.appid === best.appid)) extras.push(best);
-      } catch {}
-    }
-    const extraEl = document.getElementById("dcExtra");
-    if (!extraEl) return;
-    if (!extras.length) { extraEl.textContent = "No suggestions — matches are already in your lists."; return; }
-    extraEl.outerHTML = extras.map(it => `<div class="res" data-dcadd="${it.appid}">
-        ${safeUrl(it.icon)?`<img src="${safeUrl(it.icon)}" alt="">`:`<div class="ph"></div>`}
-        <div class="n">${esc(it.name)}</div>
-        <button class="addOne">Add</button>
-      </div>`).join("");
-    out.querySelectorAll("[data-dcadd]").forEach(row => {
-      row.querySelector(".addOne").onclick = () => {
-        const it = extras.find(x => x.appid === +row.dataset.dcadd);
-        if (it && addGame(it)) { row.classList.add("in"); row.querySelector(".addOne").textContent = "✓"; }
-      };
-    });
-  }
-  function dcWhy(g, goal, topTaste) {
-    const s = stats[g.appid] || {}, a = achOf(g.appid);
-    const playedH = (s.playtimeMinutes || 0) / 60;
-    const bits = [];
-    const r = notes[g.appid]?.rating;
-    if (r >= 4) bits.push(`you rated it ★${r}`);
-    if (goal === "hundo" && a && !a.none) bits.push(`${a.t - a.u} achv to go`);
-    if (goal === "story" && playedH >= 1 && s.mainStory != null)
-      bits.push(`${Math.max(0, Math.round((s.mainStory - playedH)*10)/10)}h left`);
-    else if (s.mainStory != null) bits.push(`${hrs(s.mainStory)}h story`);
-    const hit = (s.genres || []).find(gen => topTaste.includes(gen));
-    if (hit) bits.push(`matches your ${hit} playtime`);
-    else if (typeof s.metaScore === "number" && s.metaScore >= 80) bits.push(`${s.metaScore} Metacritic`);
-    return bits.slice(0, 3).join(" · ");
-  }
 
   // ---- spin the wheel ----
   const wheelModal = $("wheelModal");
@@ -2293,9 +2266,11 @@
 
   // ============ mutations + sync ============
   let syncTimer = null;
+  let syncPending = false; // an edit is queued/in-flight to the cloud
   function syncUp() {
     if (sharedMode) return;
     clearTimeout(syncTimer);
+    syncPending = true;
     syncTimer = setTimeout(async () => {
       try {
         await fetch("/api/list", {
@@ -2303,6 +2278,7 @@
           body: JSON.stringify({ lists: data.lists, stats, notes, history, showcase })
         });
       } catch {}
+      syncPending = false;
     }, 600);
   }
   async function syncDown() {
@@ -2461,12 +2437,14 @@
     $("pasteGo").style.display = tab==="paste" ? "block" : "none";
     $("addHint").textContent = tab==="search"
       ? "Results come from the Steam store."
-      : "Paste or type games, one per line, then match them all at once.";
+      : tab==="paste"
+      ? "Paste or type games, one per line, then match them all at once."
+      : "Your owned Steam games — tap Add on any.";
     $("addResults").innerHTML = "";
+    if (tab === "library") loadLibrary();
   }
   $("addTabs").querySelectorAll("button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
   $("addBtn").onclick = openAdd;
-  $("importBtn").onclick = () => { $("addTitle").textContent = `Add games to ${activeList().name}`; addModal.classList.add("show"); setTab("search"); loadLibrary(); };
   $("addClose").onclick = () => addModal.classList.remove("show");
   addModal.onclick = e => { if (e.target===addModal) addModal.classList.remove("show"); };
 
@@ -2542,8 +2520,10 @@
     }, 350);
   };
 
+  let libCache = null;
   async function loadLibrary() {
     $("addHint").textContent = "Your owned Steam games — tap Add on any.";
+    if (libCache) { renderResults($("addResults"), libCache, { confirmFirst: true }); return; }
     $("addResults").innerHTML = `<div class="hint">Loading your library <span class="spin"></span></div>`;
     try {
       const r = await fetch("/api/library");
@@ -2551,7 +2531,7 @@
       if (d.error) throw new Error(d.error);
       const items = d.games||[];
       if (!items.length) $("addResults").innerHTML = `<div class="hint">${esc(d.note||"No games found.")}</div>`;
-      else renderResults($("addResults"), items, { confirmFirst: true });
+      else { libCache = items; renderResults($("addResults"), items, { confirmFirst: true }); }
     } catch(e){ $("addResults").innerHTML = `<div class="hint">Couldn't load library: ${esc(e.message)}</div>`; }
   }
 
@@ -2603,13 +2583,42 @@
   const reviewModal = $("reviewModal");
   let matches = [];
 
+  // Turns any pasted blob into game titles: a copied Steam library page,
+  // a spreadsheet column, a comma-separated message, a bulleted note. Noise
+  // lines (playtimes, "Play"/"Install" buttons, achievement counts, page
+  // chrome) are filtered out automatically.
+  function parsePastedList(raw) {
+    let lines = raw.split(/\r?\n|;|\t/);
+    // single-line comma list — but never split commas inside numbers ("40,000")
+    if (lines.length === 1 && raw.includes(",")) lines = raw.split(/,(?=\s*\D)/);
+    const NOISE = /^(my games|all games|games|installed|ready to play|play|install|installing|update|queued|store page|store hub|community hub|achievements?|trading cards|categories|collections|sort by.*|search|filters?|view|details|last played.*|total playtime.*|\d+ games?)$/i;
+    const out = [], seen = new Set();
+    for (let t of lines) {
+      t = t.trim()
+        .replace(/^[-\u2013\u2014\u2022*\u00b7\u25aa\u25e6>]+\s*/, "")   // bullets / dashes
+        .replace(/^\d{1,4}[.)]\s+/, "")                                       // "12. " numbering
+        .replace(/[\u2122\u00ae\u00a9]/g, "")
+        .replace(/\s+\d+([.,]\d+)?\s*(hrs?|hours?|h)( on record)?( played)?\s*$/i, "") // trailing playtime
+        .replace(/\s+achievements?\s+\d+\s*(of|\/)\s*\d+\s*$/i, "")
+        .trim();
+      if (!t || t.length < 2 || t.length > 120) continue;
+      if (NOISE.test(t)) continue;
+      if (/^\d+([.,]\d+)?\s*(hrs?|hours?|h)?( on record)?$/i.test(t)) continue; // bare playtime lines
+      if (/^achievements?\b/i.test(t)) continue;                                 // "Achievements 12/34" lines
+      if (/^[\d.,:\/\s%-]+$/.test(t)) continue;                                // bare numbers/dates
+      const k = t.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(t);
+      if (out.length >= 300) break;
+    }
+    return out;
+  }
   $("pasteGo").onclick = () => {
-    const titles = $("pasteInput").value.split("\n").map(s=>s.trim()).filter(Boolean);
-    if (!titles.length) { toast("Type at least one game"); return; }
-    const seen = new Set();
-    const clean = titles.filter(t=>{const k=t.toLowerCase(); if(seen.has(k))return false; seen.add(k); return true;});
+    const titles = parsePastedList($("pasteInput").value);
+    if (!titles.length) { toast("Couldn't find any game names in that"); return; }
     addModal.classList.remove("show");
-    runMatch(clean);
+    runMatch(titles);
   };
   $("reviewCancel").onclick = () => reviewModal.classList.remove("show");
   reviewModal.onclick = e => { if (e.target===reviewModal) reviewModal.classList.remove("show"); };
@@ -2620,20 +2629,29 @@
   };
 
   async function runMatch(titles) {
-    $("reviewHint").innerHTML = `Matching ${titles.length} titles to Steam <span class="spin"></span>`;
     $("reviewResults").innerHTML = "";
     reviewModal.classList.add("show");
-    matches = [];
-    for (const title of titles) {
-      let options = [];
-      try {
-        const r = await fetch("/api/search?q="+encodeURIComponent(title));
-        const d = await r.json(); options = d.results||[];
-      } catch {}
-      options = rankOptions(title, options);   // best match first, extras/DLC pushed down
-      const chosen = options[0]||null;
-      matches.push({ title, options, chosen, include: !!chosen && !hasGame(chosen.appid) });
-    }
+    matches = titles.map(title => ({ title, options: [], chosen: null, include: false }));
+    let done = 0;
+    const tick = () => $("reviewHint").innerHTML =
+      `Matching ${done}/${titles.length} titles to Steam <span class="spin"></span>`;
+    tick();
+    // 4 matchers working through the queue keeps big pastes fast without
+    // hammering the store search endpoint
+    const queue = [...matches];
+    await Promise.all(Array.from({ length: 4 }, async () => {
+      while (queue.length) {
+        const m = queue.shift();
+        try {
+          const r = await fetch("/api/search?q=" + encodeURIComponent(m.title));
+          const d = await r.json();
+          m.options = rankOptions(m.title, d.results || []); // best first, DLC pushed down
+        } catch { m.options = []; }
+        m.chosen = m.options[0] || null;
+        m.include = !!m.chosen && !hasGame(m.chosen.appid);
+        done++; tick();
+      }
+    }));
     renderReview();
   }
   function renderReview() {
@@ -2690,11 +2708,9 @@
     $("pName").textContent = me?.name || me?.username || "Player";
     const bits = [`${games.length} games across ${data.lists.length} list${data.lists.length===1?"":"s"}`];
     if (me?.username) bits.unshift("@" + me.username);
-    if (me && !me.steamId) bits.push("Steam not linked");
     $("pSub").textContent = bits.join(" · ");
 
     updateVisRow();
-    $("linkSteamBtn").style.display = me && !me.steamId ? "block" : "none";
 
     const cells = [
       { v: games.length, k: "games tracked" },
@@ -2715,7 +2731,7 @@
   }
 
     function showProfile(show) {
-    $("profileView").style.display = show ? "block" : "none";
+    $("profileView").classList.toggle("show", show);
     $("listView").style.display = show ? "none" : "block";
     $("dock").style.display = show ? "none" : "flex";
     if (show) renderProfile();
@@ -3024,7 +3040,6 @@
     }
   }
   $("avatarBtn").onclick = () => showProfile(true);
-  $("linkSteamBtn").onclick = () => { location.href = "/api/auth/login?link=1"; };
   function updateVisRow() { $("visRow").style.display = (me && me.steamId) ? "flex" : "none"; }
   $("backBtn").onclick = () => showProfile(false);
 
@@ -3046,7 +3061,7 @@
     completedList();
     if (JSON.stringify(data.lists.map(x=>x.id)) !== before) { persist(); syncUp(); }
   }
-  async function scanCompleted(progress) {
+  async function scanCompleted(progress, quiet) {
     try {
       const r = await fetch("/api/library");
       const d = await r.json();
@@ -3099,7 +3114,7 @@
         }
         if (!ok) failedChunks++;
       }
-      if (failedChunks > 0) toast(`Note: ${failedChunks * 50} games couldn't be checked — run the scan again to cover them`);
+      if (failedChunks > 0 && !quiet) toast(`Note: ${failedChunks * 50} games couldn't be checked — run the scan again to cover them`);
 
       const finished = candidates.filter(g => {
         const s = stats[g.appid];
@@ -3108,7 +3123,7 @@
       localStorage.setItem(HDSYNC_KEY, String(Date.now()));
 
       if (!finished.length) {
-        toast("No new 100% completed games found");
+        if (!quiet) toast("No new 100% completed games found");
       } else {
         const l = completedList();
         const have = new Set(l.games.map(g => g.appid));
@@ -3120,7 +3135,7 @@
         toast(`Added ${added} game${added===1?"":"s"} to 100%`);
       }
     } catch (e) {
-      toast("Couldn't scan: " + esc(e.message));
+      if (!quiet) toast("Couldn't scan: " + esc(e.message));
     }
   }
 
@@ -3155,7 +3170,7 @@
     }
     return l;
   }
-  async function syncWishlist(progress) {
+  async function syncWishlist(progress, quiet) {
     try {
       progress("Reading your Steam wishlist…");
       delete data.noWl; // explicit sync means they want the list back
@@ -3164,6 +3179,11 @@
       if (d.error) throw new Error(d.error);
       const items = d.games || [];
       const l = wishlistList();
+
+      // Refresh price data for everything the store returned (badges + Deals sort)
+      for (const g of items) if ("price" in g) {
+        stats[g.appid] = { ...(stats[g.appid] || {}), wlPrice: g.price || null };
+      }
 
       // Mirror removals: drop games no longer wishlisted on Steam. Uses the
       // complete appid list (independent of name-lookup failures) so games
@@ -3186,7 +3206,7 @@
         fresh.push(g);
       }
 
-      if (!items.length && !removed) { toast(esc(d.note || "Your Steam wishlist is empty")); return; }
+      if (!items.length && !removed) { if (!quiet) toast(esc(d.note || "Your Steam wishlist is empty")); return; }
       localStorage.setItem(WLSYNC_KEY, String(Date.now()));
       persist(); syncUp(); renderListbar(); renderGames();
       const need = fresh.filter(g => !stats[g.appid]);
@@ -3194,9 +3214,10 @@
       const bits = [];
       if (fresh.length) bits.push(`${fresh.length} added`);
       if (removed) bits.push(`${removed} removed`);
-      toast(bits.length ? `Wishlist synced — ${bits.join(", ")}` : "Wishlist is already up to date");
+      if (bits.length) toast(`Wishlist synced — ${bits.join(", ")}`);
+      else if (!quiet) toast("Wishlist is already up to date");
     } catch (e) {
-      toast("Couldn't sync wishlist: " + esc(e.message));
+      if (!quiet) toast("Couldn't sync wishlist: " + esc(e.message));
     }
   }
   $("wlSyncGo").onclick = async () => {
@@ -3208,13 +3229,106 @@
     renderAll();
   };
   $("obWishlist").onclick = async () => {
-    if (me && !me.steamId) { toast("Link Steam first — Profile → Link my Steam account"); return; }
+    if (me && !me.steamId) { toast("Sign in through Steam to use this"); return; }
     toast(`Importing your wishlist <span class="spin"></span>`);
     await syncWishlist(msg => toast(msg + ` <span class="spin"></span>`));
     const wl = data.lists.find(isWishlist);
     if (wl && wl.games.length) { data.activeId = wl.id; persist(); }
     renderAll();
   };
+
+  // ---- settings ----
+  const PREFS_KEY = "backlog.prefs.v1";
+  let prefs = load(PREFS_KEY, {});
+  const PREF_DEFS = [
+    { sec: "Appearance" },
+    { k: "theme", special: "theme", label: "Theme",
+      desc: "Auto follows your device's light or dark setting" },
+    { sec: "Home screen" },
+    { k: "rotateHero",    def: true,  label: "Rotating stats headline",
+      desc: "Cycle through facts about this list at the top of the page" },
+    { k: "showUpNext",    def: true,  label: "Up next suggestions",
+      desc: "Reason-based picks from your active list" },
+    { k: "showRecent",    def: true,  label: "Recently played strip",
+      desc: "Your Steam activity from the last two weeks" },
+    { k: "showVisitFeed", def: true,  label: "Since-last-visit summary",
+      desc: "What changed in your games while you were away" },
+    { sec: "Behaviour" },
+    { k: "autoRefresh",   def: true,  label: "Auto-refresh stats",
+      desc: "Quietly update achievements and hours about once an hour" },
+    { k: "autoSync",      def: true,  label: "Auto-sync lists daily",
+      desc: "Keep the Wishlist and 100% lists mirrored from Steam once a day" },
+    { k: "confirmDelete", def: true,  label: "Confirm before removing games",
+      desc: "Ask first when deleting a game (removals are always undoable)", special: "del" },
+    { k: "reduceMotion",  def: false, label: "Reduce motion",
+      desc: "Minimise animations and moving effects across the app" },
+  ];
+  function pref(k) {
+    const d = PREF_DEFS.find(x => x.k === k);
+    if (d?.special === "del") return load(DEL_CONFIRM_KEY, null) !== "never";
+    return (k in prefs) ? prefs[k] : d.def;
+  }
+  function setPref(k, v) {
+    const d = PREF_DEFS.find(x => x.k === k);
+    if (d?.special === "del") { save(DEL_CONFIRM_KEY, v ? "always" : "never"); return; }
+    prefs[k] = v; save(PREFS_KEY, prefs);
+  }
+  function applyTheme() {
+    const t = prefs.theme || "dark";
+    const light = t === "light" || (t === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+    document.body.classList.toggle("light", light);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = light ? "#f7f4ec" : "#10141c";
+  }
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    if ((prefs.theme || "dark") === "auto") applyTheme();
+  });
+  function applyPrefs() {
+    applyTheme();
+    document.body.classList.toggle("rm", pref("reduceMotion"));
+    if (!pref("showVisitFeed")) $("visitFeed").style.display = "none";
+  }
+  const setModal = $("setModal");
+  $("settingsBtn").onclick = () => { renderSettings(); setModal.classList.add("show"); };
+  $("setClose").onclick = () => setModal.classList.remove("show");
+  setModal.onclick = e => { if (e.target === setModal) setModal.classList.remove("show"); };
+  function renderSettings() {
+    const themeNow = prefs.theme || "dark";
+    $("setBody").innerHTML = PREF_DEFS.map(d => d.sec
+      ? `<div class="setSection">${d.sec}</div>`
+      : d.special === "theme"
+      ? `<div class="setRow">
+          <div class="sl"><b>${d.label}</b><span>${d.desc}</span></div>
+          <div class="tabs" style="margin:0; flex-shrink:0">
+            ${["dark","light","auto"].map(t =>
+              `<button class="${themeNow===t?"on":""}" data-theme="${t}" style="flex:none; padding:8px 12px">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}
+          </div>
+        </div>`
+      : `<div class="setRow">
+          <div class="sl"><b>${d.label}</b><span>${d.desc}</span></div>
+          <button class="sw ${pref(d.k) ? "on" : ""}" data-set="${d.k}" role="switch" aria-checked="${pref(d.k)}" aria-label="${d.label}"></button>
+        </div>`).join("")
+      + `<button class="scanBtn" id="setResync">Re-sync data from cloud</button>`;
+    $("setBody").querySelectorAll("[data-theme]").forEach(b => b.onclick = () => {
+      prefs.theme = b.dataset.theme; save(PREFS_KEY, prefs);
+      applyTheme(); renderSettings();
+    });
+    $("setBody").querySelectorAll("[data-set]").forEach(sw => sw.onclick = () => {
+      const k = sw.dataset.set, v = !pref(k);
+      setPref(k, v);
+      sw.classList.toggle("on", v);
+      sw.setAttribute("aria-checked", v);
+      applyPrefs();
+      renderAll();
+    });
+    const rs = document.getElementById("setResync");
+    if (rs) rs.onclick = async () => {
+      rs.disabled = true; rs.textContent = "Syncing…";
+      await syncDown();
+      rs.disabled = false; rs.textContent = "Re-sync data from cloud";
+      toast("Synced from cloud");
+    };
+  }
 
   $("logoutBtn").onclick = async () => {
     if (!confirm("Log out?")) return;
@@ -3234,12 +3348,12 @@
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const url = `${location.origin}/?s=${d.id}`;
-      if (navigator.share) {
-        await navigator.share({ title: "My game backlog", url }).catch(()=>{});
-        toast("Share link ready");
-      } else {
+      try {
         await navigator.clipboard.writeText(url);
-        toast("Link copied to clipboard");
+        toast("Share link copied to clipboard");
+      } catch {
+        // clipboard blocked (rare) — show the link so it can be copied by hand
+        prompt("Copy this link:", url);
       }
     } catch(e) { toast("Couldn't share: " + esc(e.message)); }
     finally { $("shareBtn").disabled = false; $("shareBtn").textContent = "Share current list"; }
@@ -3269,7 +3383,62 @@
 
   // ============ boot ============
   $("filter").oninput = e => { filterText = e.target.value; renderGames(); };
-  $("heroLine").onclick = refreshAll;
+  $("footTop").onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // ---- refresh: header button + pull-to-refresh ----
+  let refreshing = false;
+  async function doRefresh() {
+    if (refreshing || sharedMode) return;
+    refreshing = true;
+    $("topRefresh").classList.add("going");
+    try {
+      await syncDown();   // latest lists/notes from the cloud
+      refreshAll();       // re-fetch achievements, hours, prices (shows its own toasts)
+      if ($("profileView").classList.contains("show")) renderProfile();
+    } finally {
+      setTimeout(() => { $("topRefresh").classList.remove("going"); refreshing = false; }, 900);
+    }
+  }
+  $("topRefresh").onclick = doRefresh;
+
+  (() => {
+    const el = $("ptr");
+    const TRIGGER = 72, MAX = 96;
+    let y0 = null, pull = 0, active = false;
+    document.addEventListener("touchstart", e => {
+      if (window.scrollY > 2 || sharedMode || refreshing) { active = false; return; }
+      if (document.querySelector(".modal.show") || selectMode) { active = false; return; }
+      y0 = e.touches[0].clientY; pull = 0; active = true;
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+      if (!active || y0 == null) return;
+      const dy = e.touches[0].clientY - y0;
+      if (dy <= 8 || window.scrollY > 2) {
+        if (pull) { pull = 0; el.classList.remove("pull"); el.style.transform = "translate(-50%, -64px)"; }
+        return;
+      }
+      pull = Math.min(dy * 0.45, MAX);
+      el.classList.add("pull");
+      el.style.transform = `translate(-50%, ${pull - 52}px) rotate(${pull * 3}deg)`;
+    }, { passive: true });
+    document.addEventListener("touchend", async () => {
+      if (!active) return;
+      active = false; y0 = null;
+      if (pull >= TRIGGER) {
+        el.classList.add("go");
+        el.style.transform = "translate(-50%, 26px)";
+        await doRefresh();
+        setTimeout(() => {
+          el.classList.remove("go", "pull");
+          el.style.transform = "translate(-50%, -64px)";
+        }, 900);
+      } else if (pull) {
+        el.classList.remove("pull");
+        el.style.transform = "translate(-50%, -64px)";
+      }
+      pull = 0;
+    }, { passive: true });
+  })();
   document.querySelector(".wordmark").onclick = () => {
     if (sharedMode) { location.href = "/"; return; }  // leave a shared snapshot
     showProfile(false);                               // close profile if open
@@ -3290,6 +3459,7 @@
   }
 
   function showVisitDiff() {
+    if (!pref("showVisitFeed")) { takeSnapshot(); return; }
     const prev = load(SNAP_KEY, null);
     if (!prev || !prev.snap) { takeSnapshot(); return; }
     const items = [];
@@ -3330,7 +3500,7 @@
     const last = load(REFRESH_AT_KEY, 0);
     const games = allGames();
     if (!games.length) return;
-    if (Date.now() - last < 60*60*1000) { showVisitDiff(); recordHistoryPoint(); return; }
+    if (!pref("autoRefresh") || Date.now() - last < 60*60*1000) { showVisitDiff(); recordHistoryPoint(); return; }
     const chunks = [];
     for (let i=0;i<games.length;i+=40) chunks.push(games.slice(i,i+40));
     await Promise.all(chunks.map(fetchStats));
@@ -3339,37 +3509,24 @@
     recordHistoryPoint();
   }
 
-  async function localAuth(path) {
-    const username = $("luName").value.trim();
-    const password = $("luPass").value;
-    const msg = $("luMsg");
-    msg.textContent = "…";
-    try {
-      const r = await fetch(path, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-      const d = await r.json();
-      if (d.error) { msg.textContent = d.error; return; }
-      location.href = "/";
-    } catch (e) { msg.textContent = "Couldn't reach the server."; }
+
+  // Once a day, quietly mirror the Wishlist and 100% lists from Steam so
+  // they're simply always right. Only change-toasts surface; errors and
+  // "already up to date" stay silent in the background.
+  const AUTOSYNC_KEY = "backlog.autosync.v1";
+  async function autoSyncDaily() {
+    if (sharedMode || !me || !me.steamId || !pref("autoSync")) return;
+    const last = +localStorage.getItem(AUTOSYNC_KEY) || 0;
+    if (Date.now() - last < 20 * 60 * 60 * 1000) return;
+    localStorage.setItem(AUTOSYNC_KEY, String(Date.now()));
+    try { await syncWishlist(() => {}, true); } catch {}
+    try { await scanCompleted(() => {}, true); } catch {}
+    renderAll();
   }
-  $("luSignIn").onclick = () => localAuth("/api/auth/local-login");
-  $("luCreate").onclick = () => localAuth("/api/auth/register");
-  $("luPass").addEventListener("keydown", e => { if (e.key === "Enter") localAuth("/api/auth/local-login"); });
 
   async function boot() {
     const shareId = new URLSearchParams(location.search).get("s");
     if (shareId) return enterSharedMode(shareId);
-
-    const linkResult = new URLSearchParams(location.search).get("link");
-    if (linkResult) {
-      history.replaceState(null, "", "/");
-      setTimeout(() => toast(
-        linkResult === "ok" ? "Steam account linked!" :
-        linkResult === "conflict" ? "That Steam account is already in use here" :
-        "Steam linking didn't complete"), 600);
-    }
 
     renderAll();
     let user = null;
@@ -3379,12 +3536,13 @@
     $("login").style.display = "none";
     const ab = $("avatarBtn");
     ab.style.display = "block";
+    $("topRefresh").style.display = "flex";
     if (me.avatar) { $("avatarImg").src = me.avatar; }
     else { $("avatarImg").remove(); ab.classList.add("letter"); ab.textContent = (me.name||me.username||"?")[0].toUpperCase(); }
     if (!allGames().length) {
       // first load on this device: show placeholders while the cloud copy arrives
       $("empty").style.display = "none";
-      $("games").classList.remove("grid");
+      $("games").classList.remove("grid", "compact");
       $("games").innerHTML = Array.from({length:5}, () => `<li class="skel"></li>`).join("");
     }
     animateNext = true;
@@ -3392,13 +3550,16 @@
     ensureHundo();
     ensureWishlist();
     renderAll();
-    silentRefresh();
+    silentRefresh().then(autoSyncDaily); // sequential: avoids hammering Steam with both at once
     loadRecent();
     loadVisibility();
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState==="visible") syncDown();
+      // skip if a local edit hasn't reached the cloud yet — pulling the older
+      // server copy at that moment would overwrite the edit
+      if (document.visibilityState==="visible" && !syncPending) syncDown();
     });
   }
+  applyPrefs();
   boot();
 </script>
 </body>
