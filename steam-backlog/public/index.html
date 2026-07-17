@@ -457,6 +457,7 @@
   .sheet .footRow { display: flex; gap: 8px; margin-top: 12px; }
   .sheet .footRow button { flex: 1; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
   .sheet .footRow .go { background: var(--gold); color: #16130a; border-color: var(--gold); }
+  .sheet .footRow .danger { color: var(--danger); }
   /* move sheet options */
   .moveOpts { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
   .moveOpts button { text-align: left; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
@@ -1027,11 +1028,14 @@
     <div class="sheet">
       <div class="gsHead">
         <div class="gsName" id="gsName"></div>
-        <button id="gsMove" aria-label="Move">⇄</button>
-        <button class="gsRm" id="gsRemove" aria-label="Remove">✕</button>
+        <button id="gsMove" aria-label="Move to another list">⇄</button>
+        <button id="gsX" aria-label="Close">✕</button>
       </div>
       <div class="gsBody" id="gsBody"></div>
-      <div class="footRow"><button id="gsClose">Close</button></div>
+      <div class="footRow">
+        <button class="danger" id="gsRemove">Remove from list</button>
+        <button id="gsClose">Close</button>
+      </div>
     </div>
   </div>
 
@@ -1965,6 +1969,7 @@
   const gameModal = $("gameModal");
   let sheetGame = null;
   $("gsClose").onclick = () => { gameModal.classList.remove("show"); sheetGame = null; };
+  $("gsX").onclick = () => { gameModal.classList.remove("show"); sheetGame = null; };
   gameModal.onclick = e => { if (e.target===gameModal) { gameModal.classList.remove("show"); sheetGame = null; } };
   $("gsRemove").onclick = () => {
     if (!sheetGame) return;
