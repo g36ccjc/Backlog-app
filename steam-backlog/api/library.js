@@ -149,98 +149,128 @@ export default async function handler(req, res) {
     const steamId = session.steamId;
     if (!steamId) return res.status(400).json({ error: "Link your Steam account to see recent games." });
     if (!key) return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
-    try {
-      // Ground truth: the "Recent Activity" box on the user's community
-      // profile — the exact games, in the exact order, Steam itself shows.
-      // The recently-played API only decorates with hour counts.
-      const [profR, recentR] = await Promise.allSettled([
-        fetch(`https://steamcommunity.com/profiles/${steamId}/?l=english`, {
+
+    const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+    async function fetchProfile() {
+      try {
+        const r = await fetch(`https://steamcommunity.com/profiles/${steamId}/?l=english&_=${Date.now()}`, {
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+            "User-Agent": UA,
             "Accept": "text/html,application/xhtml+xml",
             "Accept-Language": "en-US,en;q=0.9",
-            // pre-pass Steam's age/content gates so we get the real page
             "Cookie": "birthtime=0; mature_content=1; wants_mature_content=1; Steam_Language=english",
           },
-        }),
-        fetch(
+          redirect: "follow",
+        });
+        if (!r.ok) return { status: String(r.status), html: null };
+        const html = await r.text();
+        // a login page or interstitial means Valve blocked/redirected us
+        if (!/recent_game|profile_content|Recent Activity/i.test(html)) {
+          return { status: "blocked-or-empty", html: null };
+        }
+        return { status: "200", html };
+      } catch (e) {
+        return { status: "error:" + e.message, html: null };
+      }
+    }
+
+    try {
+      // Strategy 1 — ground truth: the profile's own Recent Activity box
+      // (exact games, exact order). Two attempts; Valve sometimes bounces
+      // datacenter traffic on the first try.
+      let prof = await fetchProfile();
+      if (!prof.html) prof = await fetchProfile();
+
+      // API list decorates hours (and is the candidate set for fallbacks)
+      let apiGames = [];
+      try {
+        const r = await fetch(
           `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/` +
           `?key=${key}&steamid=${steamId}&count=10&format=json`
-        ).then((r) => (r.ok ? r.json() : null)),
-      ]);
-
-      const api = new Map();
-      if (recentR.status === "fulfilled" && recentR.value) {
-        for (const g of recentR.value?.response?.games || []) api.set(g.appid, g);
-      }
-
-      let profileStatus = "fetch-failed";
-      let html = null;
-      if (profR.status === "fulfilled") {
-        profileStatus = String(profR.value.status);
-        if (profR.value.ok) html = await profR.value.text();
-      }
-
-      // Locate the Recent Activity section, tolerant of markup variants
-      let section = null;
-      if (html) {
-        let idx = html.indexOf('class="recent_games"');
-        if (idx < 0) idx = html.indexOf("Recent Activity");
-        if (idx < 0) idx = html.indexOf('class="recent_game"');
-        if (idx >= 0) section = html.slice(idx, idx + 25000);
-      }
+        );
+        if (r.ok) apiGames = (await r.json())?.response?.games || [];
+      } catch {}
+      const api = new Map(apiGames.map((g) => [g.appid, g]));
 
       let games = [];
       let ordered = false;
-      if (section) {
-        // unique appids in display order
-        const seen = new Set();
-        for (const m of section.matchAll(/\/app\/(\d+)/g)) {
-          const appid = +m[1];
-          if (seen.has(appid)) continue;
-          seen.add(appid);
-          const seg = section.slice(m.index, m.index + 1500);
-          const nameM = seg.match(/class="game_name">\s*<a[^>]*>([^<]+)</) ||
-                        seg.match(/whiteLink[^>]*>([^<]{2,80})<\/a>/);
-          const lpM = seg.match(/last played on ([^<\n]+)/i);
-          const a = api.get(appid) || {};
-          games.push({
-            appid,
-            name: (nameM ? nameM[1].trim() : null) || a.name || `App ${appid}`,
-            playtime2w: a.playtime_2weeks || 0,
-            playtimeForever: a.playtime_forever || 0,
-            lastPlayed: null,
-            lastPlayedText: lpM ? lpM[1].trim()
-              : (/currently in-game/i.test(seg) ? "In-game now" : null),
-          });
-          if (games.length >= 3) break;
+      let strategy = "api-order";
+
+      if (prof.html) {
+        let idx = prof.html.indexOf('class="recent_games"');
+        if (idx < 0) idx = prof.html.indexOf("Recent Activity");
+        if (idx < 0) idx = prof.html.indexOf('class="recent_game"');
+        const section = idx >= 0 ? prof.html.slice(idx, idx + 25000) : null;
+        if (section) {
+          const seen = new Set();
+          for (const m of section.matchAll(/\/app\/(\d+)/g)) {
+            const appid = +m[1];
+            if (seen.has(appid)) continue;
+            seen.add(appid);
+            const seg = section.slice(m.index, m.index + 1500);
+            const nameM = seg.match(/class="game_name">\s*<a[^>]*>([^<]+)</) ||
+                          seg.match(/whiteLink[^>]*>([^<]{2,80})<\/a>/);
+            const lpM = seg.match(/last played on ([^<\n]+)/i);
+            const a = api.get(appid) || {};
+            games.push({
+              appid,
+              name: (nameM ? nameM[1].trim() : null) || a.name || `App ${appid}`,
+              playtime2w: a.playtime_2weeks || 0,
+              playtimeForever: a.playtime_forever || 0,
+              lastPlayed: null,
+              lastPlayedText: lpM ? lpM[1].trim()
+                : (/currently in-game/i.test(seg) ? "In-game now" : null),
+            });
+            if (games.length >= 3) break;
+          }
+          if (games.length) { ordered = true; strategy = "profile"; }
         }
-        ordered = games.length > 0;
       }
 
-      // Fallback: profile unreadable — API set, API order
-      if (!games.length) {
-        games = [...api.values()].map((g) => ({
+      // Strategy 2 — achievement recency: the API's 2-week list is ordered
+      // by HOURS (that was the whole bug); each game's newest achievement
+      // unlock time is an official, unblockable last-played signal. Rank by
+      // it; games without achievements keep their hours rank below.
+      if (!games.length && apiGames.length) {
+        const withUnlocks = await Promise.all(
+          apiGames.map(async (g, i) => {
+            let latest = 0;
+            try {
+              const r = await fetch(
+                `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/` +
+                `?appid=${g.appid}&key=${key}&steamid=${steamId}`
+              );
+              if (r.ok) {
+                const d = await r.json();
+                for (const a of d?.playerstats?.achievements || []) {
+                  if (a.achieved === 1 && a.unlocktime > latest) latest = a.unlocktime;
+                }
+              }
+            } catch {}
+            return { g, i, latest };
+          })
+        );
+        withUnlocks.sort((x, y) => (y.latest - x.latest) || (x.i - y.i));
+        games = withUnlocks.map(({ g, latest }) => ({
           appid: g.appid,
           name: g.name,
           playtime2w: g.playtime_2weeks || 0,
           playtimeForever: g.playtime_forever || 0,
-          lastPlayed: null,
+          lastPlayed: latest || null,
           lastPlayedText: null,
         }));
+        strategy = "achievement-recency";
       }
 
-      // ?recent=1&debug=1 — shows what Steam gave us, for troubleshooting
       if (req.query?.debug === "1") {
         return res.status(200).json({
-          profileStatus,
-          sectionFound: !!section,
-          parsedFromProfile: ordered,
+          profileStatus: prof.status,
+          strategy,
+          ordered,
+          apiSetSize: apiGames.length,
           games,
         });
       }
-
       return res.status(200).json({ games, ordered });
     } catch (err) {
       return res.status(502).json({ error: err.message });
