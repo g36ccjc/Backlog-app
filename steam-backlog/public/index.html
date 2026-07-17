@@ -224,8 +224,17 @@
   .nums { display: flex; flex-wrap: wrap; gap: 4px 13px; margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
   .nums .played { color: var(--ink); }
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
+  .hundoBanner { display: none; margin: 2px 0 12px; padding: 18px 16px 20px; text-align: center; border-radius: 16px; position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(228,184,92,0.10), rgba(228,184,92,0.02) 60%), var(--surface); border: 1px solid rgba(228,184,92,0.35); }
+  .hundoBanner.show { display: block; }
+  .hundoBanner::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .hbNum { font-family: var(--display); font-weight: 800; font-size: 46px; line-height: 1; background: linear-gradient(180deg, #f2cd76, var(--gold) 75%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hbLabel { font-family: var(--display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-dim); margin-top: 7px; }
+  body.light .hundoBanner { border-color: rgba(168,124,21,0.4); background: linear-gradient(180deg, rgba(168,124,21,0.08), rgba(168,124,21,0.02) 60%), #ffffff; }
   .wprice { font-family: var(--display); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
   .wprice.deal { background: #2ea36b; color: #fff; }
+  .games.arrange li { cursor: grab; }
+  .games.arrange li, .games.arrange li * { -webkit-touch-callout: none; }
+  li.preLift { transform: scale(0.975); transition: transform 130ms ease; }
   .dragGhost { box-shadow: 0 20px 48px rgba(0,0,0,0.55); opacity: 0.97; transition: none; }
   .dragGhost * { pointer-events: none; }
   li.dragSlot { opacity: 0.3; }
@@ -885,6 +894,11 @@
 
     <div class="visitFeed" id="visitFeed" style="display:none"></div>
 
+    <div class="hundoBanner" id="hundoBanner">
+      <div class="hbNum" id="hbNum">0</div>
+      <div class="hbLabel" id="hbLabel">games 100% completed</div>
+    </div>
+
     <div class="featWrap" id="recentWrap" style="display:none">
       <div class="featHead"><span class="featTitle">Recently played</span></div>
       <div class="feat" id="recent"></div>
@@ -1537,9 +1551,12 @@
       if (d.error || !Array.isArray(d.games)) return;
       // best-known recency per game: Steam's timestamp when provided, else
       // the moment we observed its playtime increase
-      const rec = (g) => Math.max((g.lastPlayed || 0) * 1000, stats[g.appid]?.lastActive || 0);
       recentGames = d.games.slice();
-      if (recentGames.some((g) => rec(g) > 0)) recentGames.sort((a, b) => rec(b) - rec(a));
+      if (!d.ordered) {
+        // server order not authoritative — use best-known recency signals
+        const rec = (g) => Math.max((g.lastPlayed || 0) * 1000, stats[g.appid]?.lastActive || 0);
+        if (recentGames.some((g) => rec(g) > 0)) recentGames.sort((a, b) => rec(b) - rec(a));
+      }
       recentGames = recentGames.slice(0, 3);
       // make sure achievement data exists for them (tracked or not)
       const need = recentGames.filter(g => !stats[g.appid]);
@@ -1549,6 +1566,15 @@
   }
   function renderRecent() {
     const wrap = $("recentWrap");
+    // the 100% list swaps the strip for a completion-count banner
+    const hundoHere = !sharedMode && isHundo(activeList());
+    const n = hundoHere ? activeList().games.length : 0;
+    $("hundoBanner").classList.toggle("show", hundoHere && n > 0);
+    if (hundoHere && n > 0) {
+      $("hbNum").textContent = n;
+      $("hbLabel").textContent = n === 1 ? "game 100% completed" : "games 100% completed";
+    }
+    if (hundoHere) { wrap.style.display = "none"; return; }
     if (!recentGames || !recentGames.length || sharedMode || !pref("showRecent")) { wrap.style.display = "none"; return; }
     wrap.style.display = "block";
     $("recent").innerHTML = recentGames.map(g => {
@@ -1558,7 +1584,9 @@
       const h2w = g.playtime2w / 60 >= 10 ? Math.round(g.playtime2w / 60) : Math.round(g.playtime2w / 6) / 10;
       const ts = g.lastPlayed ? g.lastPlayed * 1000 : (stats[g.appid]?.lastActive || null);
       const days = ts ? Math.floor((Date.now() - ts) / 86400000) : null;
-      const when = days == null ? null : days <= 0 ? "Today" : days === 1 ? "Yesterday" : days + "d ago";
+      const when = g.lastPlayedText
+        ? (/^in-game/i.test(g.lastPlayedText) ? g.lastPlayedText : "Played " + g.lastPlayedText)
+        : days == null ? null : days <= 0 ? "Today" : days === 1 ? "Yesterday" : days + "d ago";
       return `<div class="fcard" data-recent="${g.appid}">
         <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
         <div class="fbody">
@@ -1729,6 +1757,7 @@
       $("obAlt").style.display = alt ? "block" : "none";
       if (alt) { $("obAltTitle").textContent = alt.t; $("obAltSub").textContent = alt.s; }
     }
+    $("games").classList.toggle("arrange", dragActive());
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
@@ -1903,11 +1932,25 @@
     if (dragWired) return;
     dragWired = true;
     const cont = $("games");
-    const HOLD = 260, SLOP = 10;
-    let li = null, ghost = null, lifted = false, sx = 0, sy = 0, holdT = null, pid = null, offX = 0, offY = 0;
+    const HOLD = 230, SLOP = 12;
+    let li = null, ghost = null, lifted = false, pid = null;
+    let sx = 0, sy = 0, px = 0, py = 0, offX = 0, offY = 0;
+    let holdT = null, hintT = null, raf = null;
+    let slots = [], lastInsertAt = 0;
 
+    // slot geometry cached in PAGE coordinates: stable under scrolling,
+    // refreshed only when the order actually changes — no reading of
+    // mid-animation positions, no jitter feedback loops
+    function buildSlots() {
+      slots = [...cont.children].map(el => {
+        const r = el.getBoundingClientRect();
+        return { el, top: r.top + scrollY, left: r.left + scrollX, w: r.width, h: r.height };
+      });
+    }
     function lift(x, y) {
       lifted = true;
+      clearTimeout(hintT); hintT = null;
+      li.classList.remove("preLift");
       const r = li.getBoundingClientRect();
       offX = x - r.left; offY = y - r.top;
       ghost = li.cloneNode(true);
@@ -1917,13 +1960,44 @@
       Object.assign(ghost.style, {
         position: "fixed", left: "0", top: "0", margin: "0", zIndex: "70",
         width: r.width + "px", height: r.height + "px",
-        transform: `translate(${r.left}px, ${r.top}px)`,
+        transform: `translate(${r.left}px, ${r.top}px) scale(1.03)`,
         pointerEvents: "none",
       });
       document.body.appendChild(ghost);
       li.classList.add("dragSlot");
       cont.classList.add("draggingNow");
+      buildSlots();
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+      raf = requestAnimationFrame(frame);
+    }
+    // per-frame loop: ghost tracking, ramped edge auto-scroll (works even
+    // with the finger held perfectly still), and reorder checks
+    function frame() {
+      if (!lifted) { raf = null; return; }
+      const m = 110;
+      if (py < m) window.scrollBy(0, -(Math.ceil((m - py) / 8) + 2));
+      else if (py > innerHeight - m) window.scrollBy(0, Math.ceil((py - (innerHeight - m)) / 8) + 2);
+      ghost.style.transform = `translate(${px - offX}px, ${py - offY}px) scale(1.03)`;
+      maybeReorder();
+      raf = requestAnimationFrame(frame);
+    }
+    function maybeReorder() {
+      if (Date.now() - lastInsertAt < 90) return; // hysteresis: no flip-flopping
+      const gx = px + scrollX, gy = py + scrollY;
+      let best = null, bestD = Infinity;
+      for (const s2 of slots) {
+        const cx = s2.left + s2.w / 2, cy = s2.top + s2.h / 2;
+        const d = (gx - cx) ** 2 + (gy - cy) ** 2;
+        if (d < bestD) { bestD = d; best = s2; }
+      }
+      if (!best || best.el === li) return;
+      const cy = best.top + best.h / 2, cx = best.left + best.w / 2;
+      const before = gy < cy || (gy < best.top + best.h && Math.abs(gy - cy) <= best.h / 2 && gx < cx);
+      const target = before ? best.el : best.el.nextSibling;
+      if (target === li || target === li.nextSibling) return;
+      lastInsertAt = Date.now();
+      flipReorder(target);
+      buildSlots();
     }
     function flipReorder(target) {
       const others = [...cont.children].filter(el => el !== li);
@@ -1936,42 +2010,24 @@
           el.style.transition = "none";
           el.style.transform = `translate(${dx}px, ${dy}px)`;
           requestAnimationFrame(() => {
-            el.style.transition = "transform 170ms ease";
+            el.style.transition = "transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)";
             el.style.transform = "";
-            setTimeout(() => { el.style.transition = ""; }, 200);
+            setTimeout(() => { el.style.transition = ""; }, 210);
           });
         }
       }
     }
-    function moveTo(x, y) {
-      ghost.style.transform = `translate(${x - offX}px, ${y - offY}px)`;
-      if (y < 110) window.scrollBy(0, -10);
-      else if (y > innerHeight - 110) window.scrollBy(0, 10);
-      const sibs = [...cont.children].filter(el => el !== li);
-      let best = null, bestD = Infinity, before = true;
-      for (const el of sibs) {
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-        const d = (x - cx) ** 2 + (y - cy) ** 2;
-        if (d < bestD) {
-          bestD = d; best = el;
-          before = y < r.top + r.height / 2 || (y < r.bottom && x < cx);
-        }
-      }
-      if (!best) return;
-      const target = before ? best : best.nextSibling;
-      if (target === li || target === li.nextSibling) return;
-      flipReorder(target);
-    }
     function end(commit) {
       clearTimeout(holdT); holdT = null;
+      clearTimeout(hintT); hintT = null;
+      if (li && !lifted) li.classList.remove("preLift");
       if (lifted) {
+        if (raf) { cancelAnimationFrame(raf); raf = null; }
         const r = li.getBoundingClientRect();
-        const g = ghost;
-        g.style.transition = "transform 150ms ease";
-        g.style.transform = `translate(${r.left}px, ${r.top}px)`;
-        setTimeout(() => g.remove(), 170);
-        li.classList.remove("dragSlot");
+        const g = ghost, slotEl = li;
+        g.style.transition = "transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+        g.style.transform = `translate(${r.left}px, ${r.top}px) scale(1)`;
+        setTimeout(() => { g.remove(); slotEl.classList.remove("dragSlot"); }, 175);
         cont.classList.remove("draggingNow");
         if (commit) commitCustomOrder();
         justDragged = Date.now();
@@ -1982,27 +2038,34 @@
     cont.addEventListener("pointerdown", (e) => {
       if (!dragActive() || e.button > 0 || li) return;
       const t = e.target.closest("li[data-card], li[data-tile]");
-      if (!t) return;
-      if (e.target.closest("button")) return; // info / move / remove buttons keep working
-      li = t; sx = e.clientX; sy = e.clientY; pid = e.pointerId;
-      if (e.pointerType === "mouse") e.preventDefault(); // stops text-select & native image drag
-      if (e.pointerType !== "mouse") {
-        holdT = setTimeout(() => { if (li && !lifted) lift(sx, sy); }, HOLD);
+      if (!t || e.target.closest("button")) return;
+      li = t; sx = px = e.clientX; sy = py = e.clientY; pid = e.pointerId;
+      if (e.pointerType === "mouse") {
+        e.preventDefault(); // stops text-select & native image drag
+      } else {
+        hintT = setTimeout(() => { if (li && !lifted) li.classList.add("preLift"); }, 110);
+        holdT = setTimeout(() => { if (li && !lifted) lift(px, py); }, HOLD);
       }
     });
-    cont.addEventListener("pointermove", (e) => {
+    // move/up/cancel on the document: dragging above the header or past the
+    // list edge keeps tracking instead of freezing
+    document.addEventListener("pointermove", (e) => {
       if (!li || e.pointerId !== pid) return;
-      const dist = Math.hypot(e.clientX - sx, e.clientY - sy);
+      px = e.clientX; py = e.clientY;
       if (!lifted) {
-        if (e.pointerType === "mouse") {
-          if (dist > 6) lift(e.clientX, e.clientY);
-        } else if (dist > SLOP) { clearTimeout(holdT); li = null; return; } // it was a scroll/swipe
+        const dist = Math.hypot(px - sx, py - sy);
+        if (e.pointerType === "mouse") { if (dist > 5) lift(px, py); }
+        else if (dist > SLOP) { // moved before the hold: it's a scroll
+          clearTimeout(holdT); holdT = null;
+          clearTimeout(hintT); hintT = null;
+          li.classList.remove("preLift"); li = null;
+        }
       }
-      if (lifted) moveTo(e.clientX, e.clientY);
     });
-    cont.addEventListener("pointerup", (e) => { if (li && e.pointerId === pid) end(true); });
-    cont.addEventListener("pointercancel", () => { if (li) end(!!lifted); });
-    // while a game is lifted, the page must not scroll under the drag
+    document.addEventListener("pointerup", (e) => { if (li && e.pointerId === pid) end(true); });
+    document.addEventListener("pointercancel", (e) => { if (li && e.pointerId === pid) end(lifted); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && li) end(lifted); });
+    cont.addEventListener("contextmenu", (e) => { if (dragActive() && li) e.preventDefault(); });
     document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
   }
   function commitCustomOrder() {
@@ -3656,6 +3719,7 @@
     try {
       await syncDown();   // latest lists/notes from the cloud
       refreshAll();       // re-fetch achievements, hours, prices (shows its own toasts)
+      loadRecent();       // recently played updates too, not just at boot
       if ($("profileView").classList.contains("show")) renderProfile();
     } finally {
       setTimeout(() => { $("topRefresh").classList.remove("going"); refreshing = false; }, 900);

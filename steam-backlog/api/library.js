@@ -150,37 +150,98 @@ export default async function handler(req, res) {
     if (!steamId) return res.status(400).json({ error: "Link your Steam account to see recent games." });
     if (!key) return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
     try {
-      const [recentR, ownedR] = await Promise.allSettled([
+      // Ground truth: the "Recent Activity" box on the user's community
+      // profile — the exact games, in the exact order, Steam itself shows.
+      // The recently-played API only decorates with hour counts.
+      const [profR, recentR] = await Promise.allSettled([
+        fetch(`https://steamcommunity.com/profiles/${steamId}/?l=english`, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "en-US,en;q=0.9",
+            // pre-pass Steam's age/content gates so we get the real page
+            "Cookie": "birthtime=0; mature_content=1; wants_mature_content=1; Steam_Language=english",
+          },
+        }),
         fetch(
           `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/` +
           `?key=${key}&steamid=${steamId}&count=10&format=json`
         ).then((r) => (r.ok ? r.json() : null)),
-        fetch(
-          `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/` +
-          `?key=${key}&steamid=${steamId}&include_played_free_games=true&format=json`
-        ).then((r) => (r.ok ? r.json() : null)),
       ]);
-      const recent = recentR.status === "fulfilled" ? recentR.value?.response?.games || [] : [];
-      const rtimes = new Map();
-      if (ownedR.status === "fulfilled") {
-        for (const g of ownedR.value?.response?.games || []) {
-          if (g.rtime_last_played) rtimes.set(g.appid, g.rtime_last_played);
+
+      const api = new Map();
+      if (recentR.status === "fulfilled" && recentR.value) {
+        for (const g of recentR.value?.response?.games || []) api.set(g.appid, g);
+      }
+
+      let profileStatus = "fetch-failed";
+      let html = null;
+      if (profR.status === "fulfilled") {
+        profileStatus = String(profR.value.status);
+        if (profR.value.ok) html = await profR.value.text();
+      }
+
+      // Locate the Recent Activity section, tolerant of markup variants
+      let section = null;
+      if (html) {
+        let idx = html.indexOf('class="recent_games"');
+        if (idx < 0) idx = html.indexOf("Recent Activity");
+        if (idx < 0) idx = html.indexOf('class="recent_game"');
+        if (idx >= 0) section = html.slice(idx, idx + 25000);
+      }
+
+      let games = [];
+      let ordered = false;
+      if (section) {
+        // unique appids in display order
+        const seen = new Set();
+        for (const m of section.matchAll(/\/app\/(\d+)/g)) {
+          const appid = +m[1];
+          if (seen.has(appid)) continue;
+          seen.add(appid);
+          const seg = section.slice(m.index, m.index + 1500);
+          const nameM = seg.match(/class="game_name">\s*<a[^>]*>([^<]+)</) ||
+                        seg.match(/whiteLink[^>]*>([^<]{2,80})<\/a>/);
+          const lpM = seg.match(/last played on ([^<\n]+)/i);
+          const a = api.get(appid) || {};
+          games.push({
+            appid,
+            name: (nameM ? nameM[1].trim() : null) || a.name || `App ${appid}`,
+            playtime2w: a.playtime_2weeks || 0,
+            playtimeForever: a.playtime_forever || 0,
+            lastPlayed: null,
+            lastPlayedText: lpM ? lpM[1].trim()
+              : (/currently in-game/i.test(seg) ? "In-game now" : null),
+          });
+          if (games.length >= 3) break;
         }
+        ordered = games.length > 0;
       }
-      const games = recent.map((g) => ({
-        appid: g.appid,
-        name: g.name,
-        playtime2w: g.playtime_2weeks || 0,
-        playtimeForever: g.playtime_forever || 0,
-        lastPlayed: rtimes.get(g.appid) || null,
-      }));
-      // Only sort by timestamps when EVERY game has one — a partial set
-      // would rank the stamped games and unfairly sink the rest (often the
-      // newest). Otherwise keep Steam's own recently-played order.
-      if (games.length && games.every((g) => g.lastPlayed)) {
-        games.sort((a, b) => b.lastPlayed - a.lastPlayed);
+
+      // Fallback: profile unreadable — API set, API order
+      if (!games.length) {
+        games = [...api.values()].map((g) => ({
+          appid: g.appid,
+          name: g.name,
+          playtime2w: g.playtime_2weeks || 0,
+          playtimeForever: g.playtime_forever || 0,
+          lastPlayed: null,
+          lastPlayedText: null,
+        }));
       }
-      return res.status(200).json({ games });
+
+      // ?recent=1&debug=1 — shows what Steam gave us, for troubleshooting
+      if (req.query?.debug === "1") {
+        return res.status(200).json({
+          profileStatus,
+          sectionFound: !!section,
+          parsedFromProfile: ordered,
+          games,
+        });
+      }
+
+      return res.status(200).json({ games, ordered });
     } catch (err) {
       return res.status(502).json({ error: err.message });
     }
