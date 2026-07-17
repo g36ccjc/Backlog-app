@@ -228,6 +228,8 @@
   .wprice.deal { background: #2ea36b; color: #fff; }
   .dragH { display: flex; align-items: center; justify-content: center; width: 30px; align-self: stretch; flex-shrink: 0; color: var(--ink-dim); font-size: 16px; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
   .dragH:active { cursor: grabbing; color: var(--gold); }
+  .tile .dragH.tileH { position: absolute; top: 6px; left: 6px; z-index: 3; width: 30px; height: 30px; align-self: auto; background: rgba(13,17,26,0.85); border: 1px solid var(--line-strong); border-radius: 9px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--ink); }
+  body.light .tile .dragH.tileH { background: rgba(255,255,255,0.88); }
   li.dragging { opacity: 0.88; position: relative; z-index: 5; }
   li.dragging > div { border-color: var(--gold); }
   .games.customsort { display: flex !important; flex-direction: column; }
@@ -1725,8 +1727,8 @@
       $("obAlt").style.display = alt ? "block" : "none";
       if (alt) { $("obAltTitle").textContent = alt.t; $("obAltSub").textContent = alt.s; }
     }
-    const dragMode = sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim() && view !== "grid";
-    $("games").classList.toggle("customsort", dragMode);
+    const dragMode = sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim();
+    $("games").classList.toggle("customsort", dragMode && view !== "grid");
     $("games").classList.toggle("grid", view === "grid");
     $("games").classList.toggle("compact", view === "compact");
     $("viewList").classList.toggle("on", view === "list");
@@ -1745,6 +1747,7 @@
           ? `<div class="mscore ${s.metaScore>=75?"hi":s.metaScore>=50?"mid":""}">${s.metaScore}</div>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           ${msBadge}
+          ${dragMode ? `<span class="dragH tileH" data-drag="${g.appid}" aria-label="Drag to reorder">≡</span>` : ""}
           <div class="coverBox">
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
             <img class="cover" src="${portrait(g)}" loading="lazy" alt=""
@@ -1767,6 +1770,7 @@
         });
       animateNext = false;
       renderHero(); renderListbar();
+      wireDrag();
       return;
     }
 
@@ -1796,6 +1800,7 @@
       }
       animateNext = false;
       renderHero(); renderListbar();
+      wireDrag();
       return;
     }
 
@@ -1898,8 +1903,10 @@
       toast("Drag the ≡ handle to set your play order");
     }
     handles.forEach(h => {
+      h.onclick = (e) => { e.preventDefault(); e.stopPropagation(); };
       h.onpointerdown = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const li = h.closest("li");
         if (!li) return;
         li.classList.add("dragging");
@@ -1908,13 +1915,20 @@
           // keep the page scrolling when dragging near the edges
           if (ev.clientY < 100) window.scrollBy(0, -9);
           else if (ev.clientY > innerHeight - 100) window.scrollBy(0, 9);
+          // nearest-centre insertion: correct in vertical lists AND grids
           const siblings = [...$("games").children].filter(x => x !== li);
-          let placed = false;
+          let best = null, bestD = Infinity, before = true;
           for (const el of siblings) {
             const r = el.getBoundingClientRect();
-            if (ev.clientY < r.top + r.height / 2) { $("games").insertBefore(li, el); placed = true; break; }
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            const d = (ev.clientX - cx) ** 2 + (ev.clientY - cy) ** 2;
+            if (d < bestD) {
+              bestD = d; best = el;
+              before = ev.clientY < r.top + r.height / 2
+                || (ev.clientY < r.bottom && ev.clientX < cx);
+            }
           }
-          if (!placed) $("games").appendChild(li);
+          if (best) $("games").insertBefore(li, before ? best : best.nextSibling);
         };
         h.onpointerup = h.onpointercancel = () => {
           h.onpointermove = h.onpointerup = h.onpointercancel = null;
@@ -2035,6 +2049,7 @@
     $("games").querySelectorAll("[data-card]").forEach(card => {
       let x0 = 0, y0 = 0, dx = 0, active = false, decided = false;
       card.addEventListener("touchstart", e => {
+        if (e.target.closest(".dragH")) { active = false; return; } // reorder drag, not a swipe
         x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
         dx = 0; active = true; decided = false;
       }, { passive: true });
