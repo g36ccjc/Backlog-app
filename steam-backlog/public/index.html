@@ -1551,14 +1551,49 @@
       if (d.error || !Array.isArray(d.games)) return;
       // best-known recency per game: Steam's timestamp when provided, else
       // the moment we observed its playtime increase
-      recentGames = d.games.slice();
-      if (!d.ordered) {
-        // server order not authoritative — use best-known recency signals
-        const rec = (g) => Math.max((g.lastPlayed || 0) * 1000, stats[g.appid]?.lastActive || 0);
-        if (recentGames.some((g) => rec(g) > 0)) recentGames.sort((a, b) => rec(b) - rec(a));
+      // Candidate pool: what the server found PLUS any tracked game with a
+      // fresh recency signal. Family-shared games never appear in Steam's
+      // ownership APIs, but if they're in a list here, their achievement
+      // unlock times and observed playtime changes tell us they were played.
+      const fortnight = Date.now() - 14 * 86400000;
+      const rec = (g) => {
+        const st = stats[g.appid] || {};
+        return Math.max((g.lastPlayed || 0) * 1000, (st.lastUnlock || 0) * 1000, st.lastActive || 0);
+      };
+      const cand = new Map(d.games.map(g => [g.appid, g]));
+      for (const g of allGames()) {
+        if (cand.has(g.appid)) continue;
+        const st = stats[g.appid] || {};
+        const ts = Math.max((st.lastUnlock || 0) * 1000, st.lastActive || 0);
+        if (ts >= fortnight) {
+          cand.set(g.appid, { appid: g.appid, name: g.name, playtime2w: 0,
+            playtimeForever: st.playtimeMinutes || 0, lastPlayed: null, lastPlayedText: null });
+        }
+      }
+      recentGames = [...cand.values()];
+      if (!d.ordered && recentGames.some((g) => rec(g) > 0)) {
+        recentGames.sort((a, b) => rec(b) - rec(a));
       }
       recentGames = recentGames.slice(0, 3);
-      // make sure achievement data exists for them (tracked or not)
+      // Recently played but not tracked anywhere? Import it into the
+      // Backlog automatically — it gets full stats like any other game,
+      // and (crucially, for family-shared titles Steam's ownership APIs
+      // hide) becomes permanently trackable through its achievements.
+      if (pref("autoAddRecent")) {
+        const main = data.lists.find(x => x.id === "main") || data.lists[0];
+        let added = 0;
+        for (const g of recentGames) {
+          if (!allGames().some(x => x.appid === g.appid)) {
+            main.games.push({ appid: g.appid, name: g.name, icon: null });
+            added++;
+          }
+        }
+        if (added) {
+          persist(); syncUp(); renderListbar(); renderGames();
+          toast(`Added ${added} recently played game${added === 1 ? "" : "s"} to Backlog`);
+        }
+      }
+      // make sure full stats exist for them (tracked or not)
       const need = recentGames.filter(g => !stats[g.appid]);
       if (need.length) fetchStats(need);
       renderRecent();
@@ -1582,7 +1617,8 @@
       const pct = a && !a.none ? Math.round(a.pct * 100) : null;
       const full = a && !a.none && a.pct === 1;
       const h2w = g.playtime2w / 60 >= 10 ? Math.round(g.playtime2w / 60) : Math.round(g.playtime2w / 6) / 10;
-      const ts = g.lastPlayed ? g.lastPlayed * 1000 : (stats[g.appid]?.lastActive || null);
+      const st = stats[g.appid] || {};
+      const ts = Math.max((g.lastPlayed || 0) * 1000, (st.lastUnlock || 0) * 1000, st.lastActive || 0) || null;
       const days = ts ? Math.floor((Date.now() - ts) / 86400000) : null;
       const when = g.lastPlayedText
         ? (/^in-game/i.test(g.lastPlayedText) ? g.lastPlayedText : "Played " + g.lastPlayedText)
@@ -3569,6 +3605,8 @@
       desc: "Quietly update achievements and hours about once an hour" },
     { k: "autoSync",      def: true,  label: "Auto-sync lists daily",
       desc: "Keep the Wishlist and 100% lists mirrored from Steam once a day" },
+    { k: "autoAddRecent", def: true,  label: "Auto-add recently played",
+      desc: "Games you've played recently get added to your Backlog automatically" },
     { k: "confirmDelete", def: true,  label: "Confirm before removing games",
       desc: "Ask first when deleting a game (removals are always undoable)", special: "del" },
     { k: "reduceMotion",  def: false, label: "Reduce motion",

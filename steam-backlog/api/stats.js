@@ -25,12 +25,21 @@ async function steamAchievements(appid, key, steamId) {
     const d = await getJson(url);
     const list = d?.playerstats?.achievements;
     if (Array.isArray(list) && list.length) {
+      let lastUnlock = 0;
+      let unlocked = 0;
+      for (const a of list) {
+        if (a.achieved === 1) {
+          unlocked++;
+          if (a.unlocktime > lastUnlock) lastUnlock = a.unlocktime;
+        }
+      }
       return {
         achTotal: list.length,
-        achUnlocked: list.filter((a) => a.achieved === 1).length,
+        achUnlocked: unlocked,
+        lastUnlock: lastUnlock || null, // newest unlock = last-played signal
       };
     }
-    return { achTotal: 0, achUnlocked: 0 };
+    return { achTotal: 0, achUnlocked: 0, lastUnlock: null };
   } catch {
     return { achTotal: null, achUnlocked: null };
   }
