@@ -1528,9 +1528,7 @@
       const r = await fetch("/api/library?recent=1");
       const d = await r.json();
       if (d.error || !Array.isArray(d.games)) return;
-      recentGames = d.games
-        .sort((x, y) => y.playtime2w - x.playtime2w)
-        .slice(0, 3);
+      recentGames = d.games.slice(0, 3); // backend orders by actual last-played
       // make sure achievement data exists for them (tracked or not)
       const need = recentGames.filter(g => !stats[g.appid]);
       if (need.length) fetchStats(need);
@@ -1546,12 +1544,14 @@
       const pct = a && !a.none ? Math.round(a.pct * 100) : null;
       const full = a && !a.none && a.pct === 1;
       const h2w = g.playtime2w / 60 >= 10 ? Math.round(g.playtime2w / 60) : Math.round(g.playtime2w / 6) / 10;
+      const days = g.lastPlayed ? Math.floor((Date.now() / 1000 - g.lastPlayed) / 86400) : null;
+      const when = days == null ? null : days <= 0 ? "Today" : days === 1 ? "Yesterday" : days + "d ago";
       return `<div class="fcard" data-recent="${g.appid}">
         <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
         <div class="fbody">
           <div class="fwhy ${full ? "teal" : ""}">${pct != null ? pct + "% complete" : "Playing"}</div>
           <div class="fname">${esc(g.name)}</div>
-          <div class="fsub">${h2w}h past 2 weeks</div>
+          <div class="fsub">${when ? `${when}${h2w > 0 ? ` · ${h2w}h in 2w` : ""}` : `${h2w}h past 2 weeks`}</div>
           ${pct != null ? `<div class="fbar ${full ? "full" : ""}"><i style="width:${pct}%"></i></div>` : ""}
         </div>
       </div>`;

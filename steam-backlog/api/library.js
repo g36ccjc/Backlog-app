@@ -137,7 +137,10 @@ export default async function handler(req, res) {
     }
   }
 
-  // ?recent=1 -> games played in the last two weeks (Steam recency data)
+  // ?recent=1 -> games played in the last two weeks, ordered by when they
+  // were actually last launched. GetRecentlyPlayedGames has no last-played
+  // timestamp (only 2-week hour totals), so we use GetOwnedGames, which
+  // includes rtime_last_played, and sort by that.
   if (req.query?.recent === "1") {
     const key = process.env.STEAM_API_KEY;
     const steamId = session.steamId;
@@ -145,17 +148,23 @@ export default async function handler(req, res) {
     if (!key) return res.status(500).json({ error: "Server missing STEAM_API_KEY." });
     try {
       const r = await fetch(
-        `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/` +
-        `?key=${key}&steamid=${steamId}&count=10&format=json`
+        `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/` +
+        `?key=${key}&steamid=${steamId}&include_appinfo=true&include_played_free_games=true&format=json`
       );
       if (!r.ok) throw new Error(`Steam responded ${r.status}`);
       const d = await r.json();
-      const games = (d?.response?.games || []).map((g) => ({
-        appid: g.appid,
-        name: g.name,
-        playtime2w: g.playtime_2weeks || 0,
-        playtimeForever: g.playtime_forever || 0,
-      }));
+      const twoWeeksAgo = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60;
+      const games = (d?.response?.games || [])
+        .filter((g) => (g.rtime_last_played || 0) >= twoWeeksAgo)
+        .sort((a, b) => (b.rtime_last_played || 0) - (a.rtime_last_played || 0))
+        .slice(0, 10)
+        .map((g) => ({
+          appid: g.appid,
+          name: g.name,
+          playtime2w: g.playtime_2weeks || 0,
+          playtimeForever: g.playtime_forever || 0,
+          lastPlayed: g.rtime_last_played || null,
+        }));
       return res.status(200).json({ games });
     } catch (err) {
       return res.status(502).json({ error: err.message });
