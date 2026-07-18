@@ -221,10 +221,10 @@ async function hltbToken() {
         const r = await fetch("https://howlongtobeat.com" + src, { headers: { "User-Agent": HLTB_UA } });
         if (!r.ok) continue;
         const js = await r.text();
-        const pathM = js.match(/\/api\/(search|seek|find)\//);
+        const pathM = js.match(/"\/api\/([a-z]+)\/"/);
         if (!pathM) continue;
         const keyM = js.match(
-          /\/api\/(?:search|seek|find)\/"\.concat\("([^"]+)"\)(?:\.concat\("([^"]+)"\))?/
+          /\/api\/[a-z]+\/"\s*\.concat\(\s*"([^"]+)"\s*\)(?:\s*\.concat\(\s*"([^"]+)"\s*\))?/
         );
         if (keyM) {
           hltbTok = { v: { path: pathM[1], key: (keyM[1] || "") + (keyM[2] || "") }, at: Date.now() };
@@ -288,6 +288,36 @@ async function hltbSearch(name) {
   }
 }
 
+// Last-ditch: find the HLTB game page via DuckDuckGo's HTML endpoint and
+// read the times straight off the page. Survives HLTB API/key changes.
+async function hltbViaWebSearch(name) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(
+      "https://html.duckduckgo.com/html/?q=" +
+        encodeURIComponent("site:howlongtobeat.com " + name.replace(/[\u2122\u00ae\u00a9]/g, "")),
+      {
+        signal: controller.signal,
+        headers: { "User-Agent": HLTB_UA, "Accept": "text/html" },
+      }
+    );
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const html = await r.text();
+    const ids = [...new Set(
+      [...html.matchAll(/howlongtobeat\.com\/game\/(\d+)/g)].map((m) => +m[1])
+    )].slice(0, 2);
+    for (const id of ids) {
+      const t = await hltbPage(id);
+      if (t) return t;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function hltbTimes(appid, name) {
   try {
     const d = await getJson(`${HLTB_BASE}/${appid}`);
@@ -319,16 +349,23 @@ async function hltbTimes(appid, name) {
         }
       }
     }
-    // Last resort: the mapping service doesn't know this game at all —
-    // search HowLongToBeat by name directly.
+    // Last resorts: the mapping service doesn't know this game at all —
+    // search HowLongToBeat by name, then via web search to their game page.
     if (name) {
       const t = await hltbSearch(name);
       if (t) return t;
+      const t2 = await hltbViaWebSearch(name);
+      if (t2) return t2;
     }
     return { mainStory: null, completionist: null };
   } catch {
     if (name) {
-      try { const t = await hltbSearch(name); if (t) return t; } catch { /* give up */ }
+      try {
+        const t = await hltbSearch(name);
+        if (t) return t;
+        const t2 = await hltbViaWebSearch(name);
+        if (t2) return t2;
+      } catch { /* give up */ }
     }
     return { mainStory: null, completionist: null };
   }
