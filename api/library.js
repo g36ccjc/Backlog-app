@@ -6,6 +6,22 @@
 import { getSession } from "./_session.js";
 
 const STEAM_API = "https://api.steampowered.com";
+const REST_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const REST_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+async function redis(command) {
+  if (!REST_URL || !REST_TOKEN) return null;
+  try {
+    const r = await fetch(REST_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${REST_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify(command),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.error ? null : d.result;
+  } catch { return null; }
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -175,13 +191,17 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Strategy 1 — ground truth: the profile's own Recent Activity box
-      // (exact games, exact order). Two attempts; Valve sometimes bounces
-      // datacenter traffic on the first try.
-      let prof = await fetchProfile();
-      if (!prof.html) prof = await fetchProfile();
+      // Cache: profile reads are rate-limited (429) from shared server IPs,
+      // so every successful read is stored and served for hours. One polite
+      // attempt per cache window, a single delayed retry only on 429 —
+      // instead of hammering Valve on every page load.
+      const cacheKey = `backlog:recentprof:${steamId}`;
+      let cached = null;
+      try { const raw = await redis(["GET", cacheKey]); if (raw) cached = JSON.parse(raw); } catch {}
+      const cacheFresh = cached && Date.now() - cached.at < 12 * 60 * 1000;   // reuse, don't refetch
+      const cacheUsable = cached && Date.now() - cached.at < 8 * 60 * 60 * 1000; // stale ok when 429'd
 
-      // API list decorates hours (and is the candidate set for fallbacks)
+      // API list decorates hours (and is the fallback candidate set)
       let apiGames = [];
       try {
         const r = await fetch(
@@ -191,46 +211,64 @@ export default async function handler(req, res) {
         if (r.ok) apiGames = (await r.json())?.response?.games || [];
       } catch {}
       const api = new Map(apiGames.map((g) => [g.appid, g]));
+      const decorate = (g) => ({ ...g,
+        playtime2w: api.get(g.appid)?.playtime_2weeks ?? g.playtime2w ?? 0,
+        playtimeForever: api.get(g.appid)?.playtime_forever ?? g.playtimeForever ?? 0,
+      });
 
       let games = [];
       let ordered = false;
       let strategy = "api-order";
+      let prof = { status: "cache", html: null };
 
-      if (prof.html) {
-        let idx = prof.html.indexOf('class="recent_games"');
-        if (idx < 0) idx = prof.html.indexOf("Recent Activity");
-        if (idx < 0) idx = prof.html.indexOf('class="recent_game"');
-        const section = idx >= 0 ? prof.html.slice(idx, idx + 25000) : null;
-        if (section) {
-          const seen = new Set();
-          for (const m of section.matchAll(/\/app\/(\d+)/g)) {
-            const appid = +m[1];
-            if (seen.has(appid)) continue;
-            seen.add(appid);
-            const seg = section.slice(m.index, m.index + 1500);
-            const nameM = seg.match(/class="game_name">\s*<a[^>]*>([^<]+)</) ||
-                          seg.match(/whiteLink[^>]*>([^<]{2,80})<\/a>/);
-            const lpM = seg.match(/last played on ([^<\n]+)/i);
-            const a = api.get(appid) || {};
-            games.push({
-              appid,
-              name: (nameM ? nameM[1].trim() : null) || a.name || `App ${appid}`,
-              playtime2w: a.playtime_2weeks || 0,
-              playtimeForever: a.playtime_forever || 0,
-              lastPlayed: null,
-              lastPlayedText: lpM ? lpM[1].trim()
-                : (/currently in-game/i.test(seg) ? "In-game now" : null),
-            });
-            if (games.length >= 3) break;
+      if (cacheFresh) {
+        games = (cached.games || []).map(decorate);
+        ordered = true;
+        strategy = "profile-cached";
+      } else {
+        prof = await fetchProfile();
+        if (!prof.html && /^429/.test(prof.status)) { await sleep(1500); prof = await fetchProfile(); }
+        if (prof.html) {
+          let idx = prof.html.indexOf('class="recent_games"');
+          if (idx < 0) idx = prof.html.indexOf("Recent Activity");
+          if (idx < 0) idx = prof.html.indexOf('class="recent_game"');
+          const section = idx >= 0 ? prof.html.slice(idx, idx + 25000) : null;
+          if (section) {
+            const seen = new Set();
+            for (const m of section.matchAll(/\/app\/(\d+)/g)) {
+              const appid = +m[1];
+              if (seen.has(appid)) continue;
+              seen.add(appid);
+              const seg = section.slice(m.index, m.index + 1500);
+              const nameM = seg.match(/class="game_name">\s*<a[^>]*>([^<]+)</) ||
+                            seg.match(/whiteLink[^>]*>([^<]{2,80})<\/a>/);
+              const lpM = seg.match(/last played on ([^<\n]+)/i);
+              games.push({
+                appid,
+                name: (nameM ? nameM[1].trim() : null) || api.get(appid)?.name || `App ${appid}`,
+                lastPlayed: null,
+                lastPlayedText: lpM ? lpM[1].trim()
+                  : (/currently in-game/i.test(seg) ? "In-game now" : null),
+              });
+              if (games.length >= 3) break;
+            }
+            if (games.length) {
+              ordered = true;
+              strategy = "profile";
+              games = games.map(decorate);
+              try { await redis(["SET", cacheKey, JSON.stringify({ at: Date.now(), games }), "EX", String(9 * 60 * 60) ]); } catch {}
+            }
           }
-          if (games.length) { ordered = true; strategy = "profile"; }
+        }
+        // rate-limited and nothing parsed — serve the last good read
+        if (!games.length && cacheUsable) {
+          games = (cached.games || []).map(decorate);
+          ordered = true;
+          strategy = "profile-stale";
         }
       }
 
-      // Strategy 2 — achievement recency: the API's 2-week list is ordered
-      // by HOURS (that was the whole bug); each game's newest achievement
-      // unlock time is an official, unblockable last-played signal. Rank by
-      // it; games without achievements keep their hours rank below.
+      // Final fallback: achievement recency over the API set
       if (!games.length && apiGames.length) {
         const withUnlocks = await Promise.all(
           apiGames.map(async (g, i) => {
@@ -267,6 +305,7 @@ export default async function handler(req, res) {
           profileStatus: prof.status,
           strategy,
           ordered,
+          cacheAgeMin: cached ? Math.round((Date.now() - cached.at) / 60000) : null,
           apiSetSize: apiGames.length,
           games,
         });
