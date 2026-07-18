@@ -150,7 +150,7 @@ function hasTimes(t) { return t.mainStory != null || t.completionist != null; }
 // Next.js site: each game page embeds its stats as JSON (comp_main /
 // comp_100, in seconds). This is the same source community scrapers use,
 // and far more reliable than undocumented middleman routes.
-async function hltbPage(hltbId) {
+async function hltbPage(hltbId, expectName) {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
@@ -174,6 +174,8 @@ async function hltbPage(hltbId) {
         const nd = JSON.parse(m[1]);
         const g = nd?.props?.pageProps?.game?.data?.game?.[0];
         if (g) {
+          // when we arrived via a search guess, confirm it's the right game
+          if (expectName && g.game_name && similarity(expectName, g.game_name) < 0.35) return null;
           const t = secsToTimes(g.comp_main, g.comp_100);
           if (hasTimes(t)) return t;
         }
@@ -239,83 +241,96 @@ async function hltbToken() {
 async function hltbSearch(name) {
   const tok = await hltbToken();
   if (!tok) return null;
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const r = await fetch(`https://howlongtobeat.com/api/${tok.path}/${tok.key}`, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": HLTB_UA,
-        "Referer": "https://howlongtobeat.com/",
-        "Origin": "https://howlongtobeat.com",
-      },
-      body: JSON.stringify({
-        searchType: "games",
-        searchTerms: String(name).replace(/[\u2122\u00ae\u00a9]/g, "").split(/\s+/).filter(Boolean),
-        searchPage: 1,
-        size: 5,
-        searchOptions: {
-          games: {
-            userId: 0, platform: "", sortCategory: "popular", rangeCategory: "main",
-            rangeTime: { min: null, max: null },
-            gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
-            rangeYear: { min: "", max: "" }, modifier: "",
-          },
-          users: { sortCategory: "postcount" },
-          lists: { sortCategory: "follows" },
-          filter: "", sort: 0, randomizer: 0,
+  const base = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").trim();
+  const noDots = base.replace(/\.(?=\S)/g, "");            // S.T.A.L.K.E.R. -> STALKER
+  const mainTitle = noDots.split(":")[0].trim();             // drop the subtitle
+  const attempts = [...new Set([base, noDots, mainTitle])].filter((s) => s.length >= 2);
+
+  async function searchOnce(q) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      const r = await fetch(`https://howlongtobeat.com/api/${tok.path}/${tok.key}`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": HLTB_UA,
+          "Referer": "https://howlongtobeat.com/",
+          "Origin": "https://howlongtobeat.com",
         },
-        useCache: true,
-      }),
-    });
-    clearTimeout(timer);
-    if (!r.ok) return null;
-    const d = await r.json();
-    const list = Array.isArray(d?.data) ? d.data : [];
-    if (!list.length) return null;
+        body: JSON.stringify({
+          searchType: "games",
+          searchTerms: q.replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean),
+          searchPage: 1,
+          size: 5,
+          searchOptions: {
+            games: {
+              userId: 0, platform: "", sortCategory: "popular", rangeCategory: "main",
+              rangeTime: { min: null, max: null },
+              gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
+              rangeYear: { min: "", max: "" }, modifier: "",
+            },
+            users: { sortCategory: "postcount" },
+            lists: { sortCategory: "follows" },
+            filter: "", sort: 0, randomizer: 0,
+          },
+          useCache: true,
+        }),
+      });
+      clearTimeout(timer);
+      if (!r.ok) return null;
+      const d = await r.json();
+      return Array.isArray(d?.data) ? d.data : [];
+    } catch { return null; }
+  }
+
+  for (const q of attempts) {
+    const list = await searchOnce(q);
+    if (!list || !list.length) continue;
     const best = list
-      .map((e) => ({ e, s: similarity(name, e.game_name || "") }))
+      .map((e) => ({ e, s: Math.max(similarity(base, e.game_name || ""), similarity(noDots, e.game_name || "")) }))
       .sort((a, b) => b.s - a.s)[0];
-    if (!best || best.s < 0.4) return null;
+    if (!best || best.s < 0.4) continue;
     const t = secsToTimes(best.e.comp_main, best.e.comp_100);
     if (hasTimes(t)) return t;
-    if (best.e.game_id != null) return await hltbPage(best.e.game_id);
-    return null;
-  } catch {
-    return null;
+    if (best.e.game_id != null) {
+      const t2 = await hltbPage(best.e.game_id, base);
+      if (t2) return t2;
+    }
   }
+  return null;
 }
 
 // Last-ditch: find the HLTB game page via DuckDuckGo's HTML endpoint and
 // read the times straight off the page. Survives HLTB API/key changes.
 async function hltbViaWebSearch(name) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const r = await fetch(
-      "https://html.duckduckgo.com/html/?q=" +
-        encodeURIComponent("site:howlongtobeat.com " + name.replace(/[\u2122\u00ae\u00a9]/g, "")),
-      {
+  const clean = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\.(?=\S)/g, "").trim();
+  const engines = [
+    "https://html.duckduckgo.com/html/?q=",
+    "https://www.bing.com/search?q=",
+  ];
+  for (const base of engines) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      const r = await fetch(base + encodeURIComponent("site:howlongtobeat.com " + clean), {
         signal: controller.signal,
-        headers: { "User-Agent": HLTB_UA, "Accept": "text/html" },
+        headers: { "User-Agent": HLTB_UA, "Accept": "text/html", "Accept-Language": "en" },
+      });
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const html = await r.text();
+      const ids = [...new Set(
+        [...html.matchAll(/howlongtobeat\.com\/game\/(\d+)/g)].map((mm) => +mm[1])
+      )].slice(0, 3);
+      for (const id of ids) {
+        const t = await hltbPage(id, clean); // identity-checked: wrong game rejected
+        if (t) return t;
       }
-    );
-    clearTimeout(timer);
-    if (!r.ok) return null;
-    const html = await r.text();
-    const ids = [...new Set(
-      [...html.matchAll(/howlongtobeat\.com\/game\/(\d+)/g)].map((m) => +m[1])
-    )].slice(0, 2);
-    for (const id of ids) {
-      const t = await hltbPage(id);
-      if (t) return t;
-    }
-    return null;
-  } catch {
-    return null;
+    } catch { /* next engine */ }
   }
+  return null;
 }
 
 async function hltbTimes(appid, name) {
