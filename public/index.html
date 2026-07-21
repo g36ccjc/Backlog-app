@@ -1931,6 +1931,7 @@
 
   let animateNext = false;
   function renderGames() {
+    if (dragBusy && !document.querySelector(".dragGhost")) dragBusy = false; // self-heal a stuck flag
     if (dragBusy) return; // never rebuild the DOM under an active drag
     const rows = sortedGames();
     const games = activeList().games;
@@ -2194,9 +2195,22 @@
       raf = requestAnimationFrame(frame);
     }
     function lift(x, y) {
+      try {
       lifted = true; dragBusy = true;
       clearTimeout(hintT); hintT = null;
       li.classList.remove("preLift");
+      // snap every card out of any in-flight animation (list-switch entry
+      // stagger, landing pops) BEFORE measuring — grabbing a card during
+      // those animations froze mid-flight positions into the drag map
+      for (const el of cont.children) {
+        el.classList.remove("enter", "landed");
+        el.style.animation = "none";
+        el.style.transition = "none";
+        el.style.transform = "";
+        el.style.opacity = "";
+      }
+      void cont.offsetHeight; // flush layout to true resting positions
+      for (const el of cont.children) { el.style.animation = ""; el.style.transition = ""; }
       measure();
       origIdx = items.indexOf(li); curIdx = origIdx;
       const r = li.getBoundingClientRect();
@@ -2218,6 +2232,14 @@
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
       prevPx = px; rot = 0;
       raf = requestAnimationFrame(frame);
+      } catch (e) {
+        // abort cleanly: no ghost, no hidden card, no stuck state
+        if (ghost) { try { ghost.remove(); } catch {} }
+        if (li) li.style.visibility = "";
+        cont.classList.remove("draggingNow");
+        document.body.classList.remove("dragCursor");
+        lifted = false; dragBusy = false; ghost = null;
+      }
     }
     function finish(commit) {
       clearTimeout(holdT); holdT = null;
@@ -2232,6 +2254,7 @@
         cont.classList.remove("draggingNow");
         document.body.classList.remove("dragCursor");
         setTimeout(() => {
+          try {
           // one real reorder, then a single FLIP settle from the virtual
           // arrangement into true layout (handles uneven card heights)
           const pre = new Map(its.map(it => [it, it.getBoundingClientRect()]));
@@ -2256,9 +2279,12 @@
           el.classList.add("landed");
           setTimeout(() => el.classList.remove("landed"), 230);
           g.remove();
-          dragBusy = false;
           if (commit && ci !== oi) commitCustomOrder();
           justDragged = Date.now();
+          } finally {
+            dragBusy = false; // whatever happens, rendering must come back
+            try { el.style.visibility = ""; } catch {}
+          }
         }, 165);
       }
       lifted = false; li = null; ghost = null; pid = null;
@@ -2803,19 +2829,24 @@
           body: JSON.stringify({ lists: data.lists, stats, notes, history, showcase })
         });
       } catch {}
-      // push any joint list whose contents changed since last push
+      // push any joint list whose contents changed since last push. The
+      // hash is only recorded AFTER the server confirms — a failed push
+      // used to be marked "done", letting the next poll revert the change.
+      let jointRetry = false;
       for (const jl of jointLists) {
         if (jl.pending) continue; // invitee hasn't accepted yet — server refuses edits anyway
         const h = JSON.stringify([jl.name, jl.games]);
         if (jointHashes[jl.id] === h) continue;
-        jointHashes[jl.id] = h;
         try {
-          await fetch("/api/joint?a=save", {
+          const r = await fetch("/api/joint?a=save", {
             method:"POST", headers:{"Content-Type":"application/json"},
             body: JSON.stringify({ id: jl.id, name: jl.name, games: jl.games })
           });
-        } catch {}
+          if (r.ok) jointHashes[jl.id] = h;
+          else jointRetry = true;
+        } catch { jointRetry = true; }
       }
+      if (jointRetry) setTimeout(syncUp, 4000); // unsent edits try again shortly
       syncPending = false;
     }, 600);
   }
