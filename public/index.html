@@ -1334,9 +1334,12 @@
     const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}`;
     const ak = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}`;
     return [
+      // capsule_231x87 is what the library cards use and it loads reliably —
+      // lead with it. header.jpg 404s for many store titles, so it's a fallback.
+      `${cf}/capsule_231x87.jpg`,
       ...provided,
-      `${cf}/header.jpg`, `${cf}/capsule_616x353.jpg`, `${cf}/capsule_231x87.jpg`,
-      `${ak}/header.jpg`, `${ak}/capsule_616x353.jpg`, `${cf}/library_600x900.jpg`,
+      `${cf}/capsule_616x353.jpg`, `${cf}/header.jpg`,
+      `${ak}/capsule_231x87.jpg`, `${ak}/header.jpg`, `${cf}/library_600x900.jpg`,
     ];
   }
   // inline onerror handler that walks the chain then hides
