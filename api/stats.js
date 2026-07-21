@@ -207,139 +207,115 @@ const HLTB_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 let hltbTok = { v: null, at: 0 };
 
-async function hltbToken() {
-  if (hltbTok.v && Date.now() - hltbTok.at < 60 * 60 * 1000) return hltbTok.v;
+// HLTB's current auth model (mirroring the actively-maintained
+// howlongtobeatpy library): discover the POST search path from their
+// bundle, call /api/{path}/init for a token + key/value pair, then send
+// those as x-auth-token / x-hp-key / x-hp-val headers on the search.
+async function getHltbAuth() {
+  if (hltbTok.v && hltbTok.v.token && Date.now() - hltbTok.at < 55 * 60 * 1000) return hltbTok.v;
+  const headers = {
+    "User-Agent": HLTB_UA,
+    "Accept": "text/html",
+    "Referer": "https://howlongtobeat.com/",
+    "Origin": "https://howlongtobeat.com",
+  };
   try {
-    const home = await fetch("https://howlongtobeat.com/", {
-      headers: { "User-Agent": HLTB_UA, "Accept": "text/html" },
-    });
-    if (!home.ok) return null;
+    const home = await fetch("https://howlongtobeat.com/", { headers });
+    if (!home.ok) return { path: "s", token: null, initStatus: "home:" + home.status };
     const html = await home.text();
-    const chunkSrcs = [...html.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)].map((m) => m[1]);
-    chunkSrcs.sort((a, b) => (b.includes("_app") ? 1 : 0) - (a.includes("_app") ? 1 : 0));
-    const sources = [html]; // inline scripts can carry it too
-    for (const src of chunkSrcs.slice(0, 12)) {
+    const all = [...html.matchAll(/src="([^"]+\.js)"/g)].map((m) => m[1]).filter((s) => s.startsWith("/_next/"));
+    const ordered = [...all.filter((s) => s.includes("_app-")), ...all.filter((s) => !s.includes("_app-"))];
+    let path = null;
+    for (const src of ordered.slice(0, 15)) {
       try {
         const r = await fetch("https://howlongtobeat.com" + src, { headers: { "User-Agent": HLTB_UA } });
-        if (r.ok) sources.push(await r.text());
+        if (!r.ok) continue;
+        const js = await r.text();
+        const m = js.match(/fetch\s*\(\s*["']\/api\/([a-zA-Z0-9_\/]+)[^"']*["']\s*,\s*\{[^}]*method:\s*["']POST["']/is);
+        if (m) { path = m[1].split("/")[0]; break; }
       } catch { /* next chunk */ }
     }
-    for (const js of sources) {
-      const tok = extractHltbKey(js);
-      if (tok) { hltbTok = { v: tok, at: Date.now() }; return tok; }
+    if (!path) path = "s"; // the library's static fallback
+    const initR = await fetch(`https://howlongtobeat.com/api/${path}/init?t=${Date.now()}`, { headers });
+    if (!initR.ok) return { path, token: null, initStatus: initR.status };
+    const j = await initR.json();
+    let token = j.token ?? null, key = null, val = null;
+    for (const [k2, v2] of Object.entries(j)) {
+      const lk = k2.toLowerCase();
+      if (/key/.test(lk)) key = v2;
+      else if (/val/.test(lk)) val = v2;
     }
-  } catch { /* fall through */ }
-  return null;
-}
-
-// The search key is assembled in HLTB's bundle next to an "/api/<seg>/"
-// string. They keep changing HOW it's assembled, so this recognises the
-// three shapes seen in the wild: literal concat chains, variable concat
-// chains (resolved from assignments elsewhere in the file), and plain
-// "+"-joined variables.
-function extractHltbKey(js) {
-  const resolveVar = (v) => {
-    const rx = new RegExp(v.replace(/\$/g, "\\$") + '\\s*=\\s*"([A-Za-z0-9]+)"');
-    const mm = js.match(rx);
-    return mm ? mm[1] : null;
-  };
-  for (const m of js.matchAll(/"\/api\/([A-Za-z0-9_]+)\/"/g)) {
-    const path = m[1];
-    if (["user", "game", "login", "logout"].includes(path)) continue;
-    const win = js.slice(m.index, m.index + 400);
-    // A) "/api/x/".concat("a").concat("b") — also concat("a","b")
-    const lits = [...win.matchAll(/\.concat\(\s*((?:"[A-Za-z0-9]+"\s*,?\s*)+)\)/g)]
-      .flatMap((c) => [...c[1].matchAll(/"([A-Za-z0-9]+)"/g)].map((x) => x[1]));
-    if (lits.length) {
-      const key = lits.join("");
-      if (key.length >= 8) return { path, key };
-    }
-    // B) .concat(a).concat(b) / .concat(a, b) with a = "literal" elsewhere
-    const varsUsed = [...win.matchAll(/\.concat\(\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\)/g)]
-      .flatMap((c) => [c[1], c[2]].filter(Boolean));
-    if (varsUsed.length) {
-      const parts = varsUsed.map(resolveVar);
-      if (parts.length && parts.every(Boolean)) {
-        const key = parts.join("");
-        if (key.length >= 8) return { path, key };
-      }
-    }
-    // C) "/api/x/" + a + b
-    const plus = win.match(/"\s*\+\s*([A-Za-z_$][\w$]*)\s*(?:\+\s*([A-Za-z_$][\w$]*))?/);
-    if (plus) {
-      const parts = [plus[1], plus[2]].filter(Boolean).map(resolveVar);
-      if (parts.length && parts.every(Boolean)) {
-        const key = parts.join("");
-        if (key.length >= 8) return { path, key };
-      }
-    }
+    const v = { path, token, key, val, initStatus: 200 };
+    if (token) { hltbTok = { v, at: Date.now() }; }
+    return v;
+  } catch (e) {
+    return { path: "s", token: null, initStatus: "ERR" };
   }
-  return null;
 }
 
 async function hltbSearch(name, tr) {
-  const tok = await hltbToken(); // may be null; keyless endpoints still tried
-  if (tr) tr.push(tok ? "key:ok" : "key:FAIL");
+  const auth = await getHltbAuth();
+  if (tr) tr.push(auth && auth.token ? `key:ok(${auth.path})` : `init:${auth ? auth.initStatus : "ERR"}`);
   const base = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").trim();
-  const noDots = base.replace(/\.(?=\S)/g, "");            // S.T.A.L.K.E.R. -> STALKER
-  const mainTitle = noDots.split(":")[0].trim();             // drop the subtitle
+  const noDots = base.replace(/\.(?=\S)/g, "");
+  const mainTitle = noDots.split(":")[0].trim();
   const noEdition = noDots.replace(
     /\b(remastered|remaster|definitive edition|definitive|enhanced edition|enhanced|complete edition|deluxe edition|deluxe|ultimate edition|gold edition|premium edition|goty(?: edition)?|game of the year(?: edition)?|director'?s cut|anniversary edition|legendary edition|redux|hd)\b/gi,
     ""
   ).replace(/\s{2,}/g, " ").replace(/[:\-]\s*$/, "").trim();
   const attempts = [...new Set([base, noDots, noEdition, mainTitle])].filter((s) => s.length >= 2);
 
-  async function searchOnce(q, endpoint) {
+  async function searchOnce(q) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 6000);
-      const r = await fetch(`https://howlongtobeat.com/api/${endpoint}`, {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": HLTB_UA,
-          "Referer": "https://howlongtobeat.com/",
-          "Origin": "https://howlongtobeat.com",
-        },
-        body: JSON.stringify({
-          searchType: "games",
-          searchTerms: q.replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean),
-          searchPage: 1,
-          size: 5,
-          searchOptions: {
-            games: {
-              userId: 0, platform: "", sortCategory: "popular", rangeCategory: "main",
-              rangeTime: { min: null, max: null },
-              gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
-              rangeYear: { min: "", max: "" }, modifier: "",
-            },
-            users: { sortCategory: "postcount" },
-            lists: { sortCategory: "follows" },
-            filter: "", sort: 0, randomizer: 0,
+      const payload = {
+        searchType: "games",
+        searchTerms: q.replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean),
+        searchPage: 1,
+        size: 20,
+        searchOptions: {
+          games: {
+            userId: 0, platform: "", sortCategory: "popular", rangeCategory: "main",
+            rangeTime: { min: 0, max: 0 },
+            gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
+            rangeYear: { max: "", min: "" },
+            modifier: "",
           },
-          useCache: true,
-        }),
+          users: { sortCategory: "postcount" },
+          lists: { sortCategory: "follows" },
+          filter: "", sort: 0, randomizer: 0,
+        },
+        useCache: true,
+      };
+      if (auth && auth.key != null) payload[auth.key] = auth.val;
+      const h = {
+        "content-type": "application/json",
+        "accept": "*/*",
+        "User-Agent": HLTB_UA,
+        "Referer": "https://howlongtobeat.com/",
+        "Origin": "https://howlongtobeat.com",
+      };
+      if (auth && auth.token) {
+        h["x-auth-token"] = String(auth.token);
+        h["x-hp-key"] = String(auth.key);
+        h["x-hp-val"] = String(auth.val);
+      }
+      const r = await fetch(`https://howlongtobeat.com/api/${(auth && auth.path) || "s"}/`, {
+        method: "POST", signal: controller.signal, headers: h, body: JSON.stringify(payload),
       });
       clearTimeout(timer);
-      if (!r.ok) return null;
+      if (!r.ok) return { err: r.status };
       const d = await r.json();
       return Array.isArray(d?.data) ? d.data : [];
     } catch { return null; }
   }
 
-  // endpoints: the extracted keyed one first, then keyless legacy paths —
-  // if HLTB's key rotation breaks extraction, these sometimes still answer
-  const endpoints = [...new Set([tok ? `${tok.path}/${tok.key}` : null, "search", "seek"].filter(Boolean))];
   const apiNotes = [];
   for (const q of attempts) {
-    let list = null;
-    for (const ep of endpoints) {
-      list = await searchOnce(q, ep);
-      if (list && list.length) break;
-    }
-    apiNotes.push(list ? list.length : "x");
-    if (!list || !list.length) continue;
+    const list = await searchOnce(q);
+    apiNotes.push(list == null ? "x" : list.err ? "e" + list.err : list.length);
+    if (!list || list.err || !list.length) continue;
     const best = list
       .map((e) => ({ e, s: Math.max(similarity(base, e.game_name || ""), similarity(noDots, e.game_name || "")) }))
       .sort((a, b) => b.s - a.s)[0];
@@ -481,8 +457,10 @@ export default async function handler(req, res) {
         trace.mappingResult = Array.isArray(d) ? d.length + " candidates" : d && (d.hltbId || d.title) ? "single entry" : "empty";
       }
     } catch (e) { trace.mappingService = "error: " + e.message; }
-    const tok = await hltbToken();
-    trace.searchKey = tok ? `${tok.path}/ (key ${tok.key.length} chars)` : "EXTRACTION FAILED";
+    const tok = await getHltbAuth();
+    trace.searchKey = tok && tok.token
+      ? `/api/${tok.path}/ (token ok)`
+      : `NO TOKEN (path:${tok ? tok.path : "?"} init:${tok ? tok.initStatus : "?"})`;
     trace.apiSearch = (await hltbSearch(name)) || "no result";
     trace.webSearch = trace.apiSearch === "no result" ? ((await hltbViaWebSearch(name)) || "no result") : "skipped";
     trace.finalAnswer = await hltbTimes(appid, name);
