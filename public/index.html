@@ -28,8 +28,8 @@
     --teal: #47c69f;
     --danger: #d96a61;
     --r: 18px;
-    --display: "Chakra Petch", -apple-system, sans-serif;
-    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --display: "Chakra Petch", -apple-system, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -250,7 +250,7 @@
   body.light .hundoBanner { border-color: rgba(168,124,21,0.4); background: linear-gradient(180deg, rgba(168,124,21,0.08), rgba(168,124,21,0.02) 60%), #ffffff; }
   .wprice { font-family: var(--display); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
   .wprice.deal { background: #2ea36b; color: #fff; }
-  .games.arrange li { cursor: grab; touch-action: none; }
+  .games.arrange li { cursor: grab; }
   .games.arrange li, .games.arrange li * { -webkit-touch-callout: none; }
   li.preLift { transform: scale(0.975); transition: transform 130ms ease; }
   .dragGhost { box-shadow: 0 20px 48px rgba(0,0,0,0.55); opacity: 0.97; transition: none; animation: ghostIn 150ms ease; will-change: transform; }
@@ -1270,6 +1270,8 @@
 
   // ============ derived ============
   function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
+  // cut a name to N characters without ever splitting an emoji in half
+  function nameSlice(v, n = 40) { return [...String(v || "").trim()].slice(0, n).join(""); }
   // two-person icon marking joint lists
   const JICON = `<svg class="jicon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="Joint list"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
   function priceBadge(appid){
@@ -1319,7 +1321,7 @@
     });
   }
   function createListNamed(raw) {
-    const name = (raw || "").trim().slice(0, 40);
+    const name = nameSlice(raw);
     if (!name) return false;
     const id = "l" + Date.now().toString(36);
     data.lists.push({ id, name, games: [] });
@@ -1335,7 +1337,7 @@
     if (initial) inp.value = initial;
     inp.className = cls;
     inp.placeholder = "List name";
-    inp.maxLength = 40;
+    inp.maxLength = 60;
     inp.autocapitalize = "words";
     inp.setAttribute("aria-label", "New list name");
     replaceEl.replaceWith(inp);
@@ -1396,7 +1398,7 @@
       if (!jl) return;
       const nameEl = b.closest(".listRow").querySelector(".lname");
       inlineNameInput(nameEl, "lnew", (v) => {
-        const nm = (v || "").trim().slice(0, 40);
+        const nm = nameSlice(v);
         if (nm && nm !== jl.name) {
           jl.name = nm;
           persist(); syncUp(); // pushes the rename; friend sees it next poll
@@ -1929,6 +1931,7 @@
 
   let animateNext = false;
   function renderGames() {
+    if (dragBusy) return; // never rebuild the DOM under an active drag
     const rows = sortedGames();
     const games = activeList().games;
     // Sync bar: visible on the Wishlist and 100% lists for Steam-linked users
@@ -2127,61 +2130,79 @@
   function dragActive() {
     return sort.id === "custom" && !sharedMode && !selectMode && !filterText.trim();
   }
+  let dragBusy = false;
   function wireDrag() {
     if (dragWired) return;
     dragWired = true;
     const cont = $("games");
-    const HOLD = 200, SLOP = 12;
-    let li = null, ghost = null, lifted = false, pid = null;
+    const HOLD = 240, SLOP = 12;
+    let li = null, pid = null, ghost = null, lifted = false;
     let sx = 0, sy = 0, px = 0, py = 0, offX = 0, offY = 0;
     let holdT = null, hintT = null, raf = null;
-    let slots = [], lastInsertAt = 0;
-    let rot = 0, rotT = 0, prevPx = 0;
-    let scrollMode = false, lastY = 0, vel = 0, flingRaf = null, allowDrag = true;
+    let items = [], slots = [], origIdx = 0, curIdx = 0;
+    let rot = 0, prevPx = 0;
 
-    // finish any leftover slide/land animations instantly so lift geometry
-    // is never read mid-animation (fast consecutive drags glitched here)
-    function settleAll() {
-      for (const el of cont.children) {
-        el.style.transition = "none";
-        el.style.transform = "";
-        el.style.animation = "none";
-        el.classList.remove("landed");
-        void el.offsetHeight; // flush
-        el.style.animation = ""; el.style.transition = "";
-      }
-    }
-    // flick-to-scroll with momentum: native scrolling is disabled on cards
-    // in arrange mode (that conflict WAS the glitch), so we provide our own
-    function startFling() {
-      cancelAnimationFrame(flingRaf);
-      const step = () => {
-        if (Math.abs(vel) < 0.5) { flingRaf = null; return; }
-        window.scrollBy(0, vel);
-        vel *= 0.94;
-        flingRaf = requestAnimationFrame(step);
-      };
-      flingRaf = requestAnimationFrame(step);
-    }
-
-    // slot geometry cached in PAGE coordinates: stable under scrolling,
-    // refreshed only when the order actually changes — no reading of
-    // mid-animation positions, no jitter feedback loops
-    function buildSlots() {
-      slots = [...cont.children].map(el => {
+    // Measured ONCE at lift, in page coordinates, and never again — the DOM
+    // does not change during a drag, so this map cannot go stale. That
+    // single property eliminates every geometry bug the old engine had.
+    function measure() {
+      items = [...cont.children];
+      slots = items.map(el => {
         const r = el.getBoundingClientRect();
-        return { el, top: r.top + scrollY, left: r.left + scrollX, w: r.width, h: r.height };
+        return { top: r.top + scrollY, left: r.left + scrollX, w: r.width, h: r.height };
       });
     }
+    // where would the pointer drop the card? (insertion over original slots)
+    function computeCur() {
+      const gx = px + scrollX, gy = py + scrollY;
+      let k = slots.length;
+      for (let i = 0; i < slots.length; i++) {
+        const s2 = slots[i], cy = s2.top + s2.h / 2, cx = s2.left + s2.w / 2;
+        if (gy < cy - 0.001 || (Math.abs(gy - cy) <= s2.h / 2 && gx < cx)) { k = i; break; }
+      }
+      const t = k > origIdx ? k - 1 : k;
+      return Math.max(0, Math.min(items.length - 1, t));
+    }
+    // shift the other cards (transform-only) into the virtual arrangement
+    function applyShift() {
+      for (let i = 0; i < items.length; i++) {
+        const el = items[i];
+        if (el === li) continue;
+        let disp = i;
+        if (origIdx < curIdx && i > origIdx && i <= curIdx) disp = i - 1;
+        else if (origIdx > curIdx && i >= curIdx && i < origIdx) disp = i + 1;
+        const from = slots[i], to = slots[disp];
+        const dx = to.left - from.left, dy = to.top - from.top;
+        el.style.transition = "transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+        el.style.transform = (dx || dy) ? `translate(${dx}px, ${dy}px)` : "";
+      }
+    }
+    function frame() {
+      if (!lifted) { raf = null; return; }
+      const m = 130;
+      if (py < m) window.scrollBy(0, -(Math.ceil((m - py) / 6) + 2));
+      else if (py > innerHeight - m) window.scrollBy(0, Math.ceil((py - (innerHeight - m)) / 6) + 2);
+      const rotT = Math.max(-7, Math.min(7, (px - prevPx) * 0.55));
+      rot += (rotT - rot) * 0.22; prevPx = px;
+      ghost.style.transform = `translate(${px - offX}px, ${py - offY}px) scale(1.04) rotate(${rot.toFixed(2)}deg)`;
+      const t = computeCur();
+      if (t !== curIdx) {
+        curIdx = t;
+        applyShift();
+        if (navigator.vibrate) { try { navigator.vibrate(5); } catch {} }
+      }
+      raf = requestAnimationFrame(frame);
+    }
     function lift(x, y) {
-      lifted = true;
+      lifted = true; dragBusy = true;
       clearTimeout(hintT); hintT = null;
       li.classList.remove("preLift");
-      settleAll();
+      measure();
+      origIdx = items.indexOf(li); curIdx = origIdx;
       const r = li.getBoundingClientRect();
       offX = x - r.left; offY = y - r.top;
       ghost = li.cloneNode(true);
-      ghost.classList.remove("enter", "selon");
+      ghost.classList.remove("enter", "selon", "preLift");
       ghost.style.animation = "none";
       ghost.classList.add("dragGhost");
       Object.assign(ghost.style, {
@@ -2191,105 +2212,64 @@
         pointerEvents: "none",
       });
       document.body.appendChild(ghost);
-      li.classList.add("dragSlot");
+      li.style.visibility = "hidden"; // its slot stays in the flow
       cont.classList.add("draggingNow");
       document.body.classList.add("dragCursor");
-      buildSlots();
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+      prevPx = px; rot = 0;
       raf = requestAnimationFrame(frame);
     }
-    // per-frame loop: ghost tracking, ramped edge auto-scroll (works even
-    // with the finger held perfectly still), and reorder checks
-    function frame() {
-      if (!lifted) { raf = null; return; }
-      const m = 130;
-      if (py < m) window.scrollBy(0, -(Math.ceil((m - py) / 6) + 2));
-      else if (py > innerHeight - m) window.scrollBy(0, Math.ceil((py - (innerHeight - m)) / 6) + 2);
-      // slight tilt following horizontal motion, springing back to level
-      rotT = Math.max(-7, Math.min(7, (px - prevPx) * 0.55));
-      rot += (rotT - rot) * 0.22;
-      prevPx = px;
-      ghost.style.transform = `translate(${px - offX}px, ${py - offY}px) scale(1.04) rotate(${rot.toFixed(2)}deg)`;
-      maybeReorder();
-      raf = requestAnimationFrame(frame);
-    }
-    function maybeReorder() {
-      const gx = px + scrollX, gy = py + scrollY;
-      // insertion index: the first slot whose centre the pointer hasn't passed
-      let idx = slots.length;
-      for (let i = 0; i < slots.length; i++) {
-        const s2 = slots[i];
-        const cy = s2.top + s2.h / 2, cx = s2.left + s2.w / 2;
-        if (gy < cy - 0.001 || (Math.abs(gy - cy) <= s2.h / 2 && gx < cx)) { idx = i; break; }
-      }
-      const cur = slots.findIndex(s2 => s2.el === li);
-      if (idx === cur || idx === cur + 1) return; // already there
-      // damp only adjacent back-and-forth; long throws reorder instantly
-      if (Date.now() - lastInsertAt < 70 && Math.abs(idx - (cur < 0 ? idx : cur)) <= 1) return;
-      if (idx >= slots.length && cur === slots.length - 1) return; // already last
-      lastInsertAt = Date.now();
-      const target = idx >= slots.length ? null : slots[idx].el;
-      if (target === li) return;
-      flipReorder(target); // also refreshes the slot map from clean geometry
-      if (navigator.vibrate) { try { navigator.vibrate(5); } catch {} } // tick per swap
-    }
-    function flipReorder(target) {
-      const others = [...cont.children].filter(el => el !== li);
-      const first = new Map(others.map(el => [el, el.getBoundingClientRect()]));
-      cont.insertBefore(li, target);
-      // Rebuild the slot map HERE, from post-insert rects read before any
-      // animation transform is applied — the only instant the geometry is
-      // truthful. (Reading it later, mid-animation, fed the targeting
-      // corrupted positions and cascaded everything to the front.)
-      const newSlots = [];
-      for (const el of cont.children) {
-        const n = el.getBoundingClientRect(); // final layout for this el
-        newSlots.push({ el, top: n.top + scrollY, left: n.left + scrollX, w: n.width, h: n.height });
-        if (el === li) continue;
-        const f = first.get(el);
-        const dx = f.left - n.left, dy = f.top - n.top;
-        if (dx || dy) {
-          el.style.transition = "none";
-          el.style.transform = `translate(${dx}px, ${dy}px)`;
-          requestAnimationFrame(() => {
-            el.style.transition = "transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)";
-            el.style.transform = "";
-            setTimeout(() => { el.style.transition = ""; }, 210);
-          });
-        }
-      }
-      slots = newSlots;
-    }
-    function end(commit) {
+    function finish(commit) {
       clearTimeout(holdT); holdT = null;
       clearTimeout(hintT); hintT = null;
       if (li && !lifted) li.classList.remove("preLift");
       if (lifted) {
-        if (raf) { cancelAnimationFrame(raf); raf = null; }
-        const r = li.getBoundingClientRect();
-        const g = ghost, slotEl = li;
-        g.style.transition = "transform 170ms cubic-bezier(0.2, 0.8, 0.2, 1)";
-        g.style.transform = `translate(${r.left}px, ${r.top}px) scale(1) rotate(0deg)`;
-        setTimeout(() => {
-          g.remove();
-          slotEl.classList.remove("dragSlot");
-          slotEl.classList.add("landed");
-          setTimeout(() => slotEl.classList.remove("landed"), 220);
-        }, 175);
+        cancelAnimationFrame(raf); raf = null;
+        const dest = slots[curIdx];
+        const g = ghost, el = li, its = items, oi = origIdx, ci = curIdx;
+        g.style.transition = "transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+        g.style.transform = `translate(${dest.left - scrollX}px, ${dest.top - scrollY}px) scale(1) rotate(0deg)`;
         cont.classList.remove("draggingNow");
         document.body.classList.remove("dragCursor");
-        if (commit) commitCustomOrder();
-        justDragged = Date.now();
+        setTimeout(() => {
+          // one real reorder, then a single FLIP settle from the virtual
+          // arrangement into true layout (handles uneven card heights)
+          const pre = new Map(its.map(it => [it, it.getBoundingClientRect()]));
+          for (const it of its) { it.style.transition = "none"; it.style.transform = ""; }
+          if (ci !== oi) {
+            const rem = its.filter(x => x !== el);
+            cont.insertBefore(el, rem[ci] || null);
+          }
+          el.style.visibility = "";
+          for (const it of its) {
+            const a = pre.get(it), b = it.getBoundingClientRect();
+            const dx = a.left - b.left, dy = a.top - b.top;
+            if (dx || dy) {
+              it.style.transform = `translate(${dx}px, ${dy}px)`;
+              requestAnimationFrame(() => {
+                it.style.transition = "transform 150ms ease";
+                it.style.transform = "";
+                setTimeout(() => { it.style.transition = ""; }, 175);
+              });
+            }
+          }
+          el.classList.add("landed");
+          setTimeout(() => el.classList.remove("landed"), 230);
+          g.remove();
+          dragBusy = false;
+          if (commit && ci !== oi) commitCustomOrder();
+          justDragged = Date.now();
+        }, 165);
       }
       lifted = false; li = null; ghost = null; pid = null;
     }
 
     cont.addEventListener("pointerdown", (e) => {
-      if (!dragActive() || e.button > 0 || li) return;
+      if (!dragActive() || e.button > 0 || li || dragBusy) return;
       const t = e.target.closest("li[data-card], li[data-tile]");
       if (!t || e.target.closest("button")) return;
       li = t; sx = px = e.clientX; sy = py = e.clientY; pid = e.pointerId;
-      prevPx = px; rot = 0; rotT = 0;
+      prevPx = px; rot = 0;
       if (e.pointerType === "mouse") {
         e.preventDefault(); // stops text-select & native image drag
       } else {
@@ -2297,43 +2277,22 @@
         holdT = setTimeout(() => { if (li && !lifted) lift(px, py); }, HOLD);
       }
     });
-    // move/up/cancel on the document: dragging above the header or past the
-    // list edge keeps tracking instead of freezing
     document.addEventListener("pointermove", (e) => {
       if (!li || e.pointerId !== pid) return;
       px = e.clientX; py = e.clientY;
-      if (scrollMode) {
-        // our scrolling: 1:1 with the finger, velocity tracked for the fling
-        const dy = lastY - py;
-        window.scrollBy(0, dy);
-        vel = vel * 0.75 + dy * 0.55;
-        lastY = py;
-        return;
-      }
       if (!lifted) {
         const dist = Math.hypot(px - sx, py - sy);
-        if (e.pointerType === "mouse") {
-          if (allowDrag && dist > 5) lift(px, py);
-        } else if (dist > SLOP) { // moved before the hold: it's a scroll gesture
+        if (e.pointerType === "mouse") { if (dist > 5) lift(px, py); }
+        else if (dist > SLOP) { // it's a scroll — hand the gesture back to the browser
           clearTimeout(holdT); holdT = null;
           clearTimeout(hintT); hintT = null;
-          if (li) li.classList.remove("preLift");
-          scrollMode = true;
-          lastY = py; vel = 0;
+          li.classList.remove("preLift"); li = null;
         }
       }
     });
-    document.addEventListener("pointerup", (e) => {
-      if (!li || e.pointerId !== pid) return;
-      if (scrollMode) { startFling(); scrollMode = false; li = null; pid = null; return; }
-      end(true);
-    });
-    document.addEventListener("pointercancel", (e) => {
-      if (!li || e.pointerId !== pid) return;
-      if (scrollMode) { scrollMode = false; li = null; pid = null; return; }
-      end(lifted);
-    });
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && li) end(lifted); });
+    document.addEventListener("pointerup", (e) => { if (li && e.pointerId === pid) finish(true); });
+    document.addEventListener("pointercancel", (e) => { if (li && e.pointerId === pid) finish(lifted); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && li) finish(lifted); });
     cont.addEventListener("contextmenu", (e) => { if (dragActive() && li) e.preventDefault(); });
     document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
   }
@@ -3572,7 +3531,7 @@
   function renderFvJointForm() {
     const box = $("fvJointBox");
     box.innerHTML = `
-      <input class="lnew lnewWide" id="fvJName" maxlength="40" placeholder="Name your joint list…" autocapitalize="words" aria-label="Joint list name">
+      <input class="lnew lnewWide" id="fvJName" maxlength="60" placeholder="Name your joint list…" autocapitalize="words" aria-label="Joint list name">
       <div class="footRow" style="margin-top:0">
         <button id="fvJCancel">Cancel</button>
         <button class="go" id="fvJSend">Send invite</button>
@@ -3580,7 +3539,7 @@
     const inp = document.getElementById("fvJName");
     inp.focus();
     const send = async () => {
-      const name = inp.value.trim();
+      const name = nameSlice(inp.value);
       if (!name) { toast("Give the list a name first"); inp.focus(); return; }
       const btn = document.getElementById("fvJSend");
       btn.disabled = true; btn.textContent = "Sending…";

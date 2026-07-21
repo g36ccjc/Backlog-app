@@ -100,7 +100,7 @@ export default async function handler(req, res) {
       const id = "j_" + crypto.randomBytes(5).toString("base64url");
       const rec = {
         id,
-        name: String(body?.name || "Joint list").trim().slice(0, 40) || "Joint list",
+        name: Array.from(String(body?.name || "Joint list").trim()).slice(0, 40).join("") || "Joint list",
         members: [uid, fuid],
         pending: fuid, // invitee must accept before the list reaches them
         updatedAt: Date.now(),
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
       if (!rec.members?.includes(uid)) return res.status(403).json({ error: "Not your list." });
       if (rec.pending === uid) return res.status(403).json({ error: "Accept the invite first." });
       rec.games = sanitizeGames(body?.games);
-      if (typeof body?.name === "string" && body.name.trim()) rec.name = body.name.trim().slice(0, 40);
+      if (typeof body?.name === "string" && body.name.trim()) rec.name = Array.from(body.name.trim()).slice(0, 40).join("");
       rec.updatedAt = Date.now();
       const serialized = JSON.stringify(rec);
       if (serialized.length > 1_000_000) return res.status(413).json({ error: "List too large." });
