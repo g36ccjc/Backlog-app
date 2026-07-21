@@ -2153,13 +2153,42 @@
         return { top: r.top + scrollY, left: r.left + scrollX, w: r.width, h: r.height };
       });
     }
-    // where would the pointer drop the card? (insertion over original slots)
+    // Where would the pointer drop the card? Two-stage: resolve the ROW by
+    // the pointer's vertical band, then the position within that row by x.
+    // (The old single-pass scan matched "above this card's centre" against
+    // the row's leftmost card, flinging the gap to the row start, and made
+    // end-of-row positions unreachable.)
     function computeCur() {
       const gx = px + scrollX, gy = py + scrollY;
-      let k = slots.length;
+      if (!slots.length) return origIdx;
+      const rows = [];
       for (let i = 0; i < slots.length; i++) {
-        const s2 = slots[i], cy = s2.top + s2.h / 2, cx = s2.left + s2.w / 2;
-        if (gy < cy - 0.001 || (Math.abs(gy - cy) <= s2.h / 2 && gx < cx)) { k = i; break; }
+        const s2 = slots[i];
+        const last = rows[rows.length - 1];
+        if (last && Math.abs(s2.top - last.top) < Math.min(s2.h, slots[last.items[0]].h) * 0.5) {
+          last.items.push(i);
+          last.bottom = Math.max(last.bottom, s2.top + s2.h);
+        } else {
+          rows.push({ top: s2.top, bottom: s2.top + s2.h, items: [i] });
+        }
+      }
+      let row = null;
+      if (gy < rows[0].top) row = rows[0];
+      else for (const r of rows) { if (gy <= r.bottom) { row = r; break; } }
+      let k;
+      if (!row) {
+        k = slots.length; // below everything: end of list
+      } else if (row.items.length === 1) {
+        // single-column row (list view): above/below its midpoint
+        const i = row.items[0];
+        k = gy < slots[i].top + slots[i].h / 2 ? i : i + 1;
+      } else {
+        // grid row: first card whose centre the pointer is left of —
+        // otherwise the end of THIS row (now a real droppable position)
+        k = row.items[row.items.length - 1] + 1;
+        for (const i of row.items) {
+          if (gx < slots[i].left + slots[i].w / 2) { k = i; break; }
+        }
       }
       const t = k > origIdx ? k - 1 : k;
       return Math.max(0, Math.min(items.length - 1, t));
