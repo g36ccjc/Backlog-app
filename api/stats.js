@@ -211,8 +211,15 @@ let hltbTok = { v: null, at: 0 };
 // howlongtobeatpy library): discover the POST search path from their
 // bundle, call /api/{path}/init for a token + key/value pair, then send
 // those as x-auth-token / x-hp-key / x-hp-val headers on the search.
+let hltbAuthInflight = null;
 async function getHltbAuth() {
   if (hltbTok.v && hltbTok.v.token && Date.now() - hltbTok.at < 55 * 60 * 1000) return hltbTok.v;
+  if (hltbAuthInflight) return hltbAuthInflight; // 40 games share ONE handshake
+  hltbAuthInflight = getHltbAuthInner();
+  try { return await hltbAuthInflight; }
+  finally { hltbAuthInflight = null; }
+}
+async function getHltbAuthInner() {
   const headers = {
     "User-Agent": HLTB_UA,
     "Accept": "text/html",
@@ -301,9 +308,15 @@ async function hltbSearch(name, tr) {
         h["x-hp-key"] = String(auth.key);
         h["x-hp-val"] = String(auth.val);
       }
-      const r = await fetch(`https://howlongtobeat.com/api/${(auth && auth.path) || "s"}/`, {
+      let r = await fetch(`https://howlongtobeat.com/api/${(auth && auth.path) || "s"}/`, {
         method: "POST", signal: controller.signal, headers: h, body: JSON.stringify(payload),
       });
+      if (r.status === 429 || r.status === 403) {
+        await new Promise((res) => setTimeout(res, 900));
+        r = await fetch(`https://howlongtobeat.com/api/${(auth && auth.path) || "s"}/`, {
+          method: "POST", headers: h, body: JSON.stringify(payload),
+        });
+      }
       clearTimeout(timer);
       if (!r.ok) return { err: r.status };
       const d = await r.json();
@@ -383,7 +396,23 @@ async function hltbViaWebSearch(name, tr) {
   return null;
 }
 
+// A 40-game chunk used to fire 40 simultaneous HLTB lookups — a burst
+// their rate limiting punishes (single lookups worked; bulk went blank).
+// This lane keeps at most 3 in flight.
+let hltbActive = 0;
+const hltbWaiters = [];
 async function hltbTimes(appid, name) {
+  if (hltbActive >= 3) await new Promise((res) => hltbWaiters.push(res));
+  hltbActive++;
+  try {
+    return await hltbTimesInner(appid, name);
+  } finally {
+    hltbActive--;
+    const next = hltbWaiters.shift();
+    if (next) next();
+  }
+}
+async function hltbTimesInner(appid, name) {
   const tr = [];
   try {
     let d = null;

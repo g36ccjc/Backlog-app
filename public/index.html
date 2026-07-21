@@ -4308,14 +4308,28 @@
     localStorage.setItem(AUTOSYNC_KEY, String(Date.now()));
     try { await syncWishlist(() => {}, true); } catch {}
     try { await scanCompleted(() => {}, true); } catch {}
-    // retry games whose hour estimates are still blank — each pass runs
-    // them through the (ever-improving) lookup chain again
+    await retryBlankHours(true);
+    renderAll();
+  }
+  // Re-runs blank-hours games through the lookup chain. Runs automatically
+  // shortly after open (at most hourly) — nobody should have to tap a
+  // diagnostic to make numbers appear.
+  const HLTBRETRY_KEY = "backlog.hltbretry.v1";
+  async function retryBlankHours(force) {
+    if (sharedMode || !me) return;
+    if (!force) {
+      const last = +localStorage.getItem(HLTBRETRY_KEY) || 0;
+      if (Date.now() - last < 60 * 60 * 1000) return;
+    }
+    localStorage.setItem(HLTBRETRY_KEY, String(Date.now()));
     const blank = allGames().filter(g => {
       const st = stats[g.appid];
       return st && st.mainStory == null && st.completionist == null;
     });
-    for (let i = 0; i < blank.length; i += 40) await fetchStats(blank.slice(i, i + 40));
-    renderAll();
+    for (let i = 0; i < blank.length; i += 40) {
+      await fetchStats(blank.slice(i, i + 40));
+      await new Promise(r => setTimeout(r, 1200)); // gentle pacing between chunks
+    }
   }
 
   async function boot() {
@@ -4345,7 +4359,7 @@
     ensureHundo();
     ensureWishlist();
     renderAll();
-    silentRefresh().then(autoSyncDaily); // sequential: avoids hammering Steam with both at once
+    silentRefresh().then(autoSyncDaily).then(() => retryBlankHours(false)); // sequential; blanks self-fill each open
     loadRecent();
     loadVisibility();
     document.addEventListener("visibilitychange", () => {
