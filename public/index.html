@@ -53,12 +53,13 @@
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(41,50,67,0.5);
   }
-  .wordmark { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.3px; margin-right: auto; user-select: none; cursor: pointer; }
+  .wordmark { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.3px; margin-right: auto; user-select: none; cursor: pointer; }
   .wordmark b { color: var(--gold); font-weight: 700; }
   .topExplore { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink-dim); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: color 0.15s ease, border-color 0.15s ease; }
   .topExplore svg { display: block; }
   .topExplore:active { color: var(--gold); }
   @media (hover:hover) { .topExplore:hover { color: var(--gold); border-color: var(--gold); } }
+  .topExplore.navon { color: var(--gold); border-color: var(--gold); background: rgba(228,184,92,0.12); }
   .exHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .exTitle { font-family: var(--display); font-weight: 800; font-size: 22px; }
   .exClose { font-family: var(--display); font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid); cursor: pointer; }
@@ -929,7 +930,8 @@
   <div class="ptr" id="ptr" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></div>
 
   <div class="top">
-    <div class="wordmark">Back<b>log</b></div>
+    <div class="wordmark" id="wordmark" role="button" title="Explore">Back<b>log</b></div>
+    <button class="topExplore" id="topExploreBtn" style="display:none" aria-label="Explore"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></button>
     <button class="topExplore" id="topHome" style="display:none" aria-label="My lists"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
     <button class="topRefresh" id="topRefresh" aria-label="Refresh data"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></button>
     <button class="avatarBtn" id="avatarBtn" style="display:none" aria-label="Profile"><img id="avatarImg" src="" alt=""></button>
@@ -2412,9 +2414,9 @@
     $("profileView").classList.toggle("show", which === "profile");
     if (which === "profile") renderProfile();
     if (which === "explore") { if (!exFeeds[exActive] && !exCat) loadExplore(exActive); }
-    // header button reflects where you can go next
-    const hb = $("topHome");
-    if (hb) hb.setAttribute("aria-label", which === "explore" ? "My lists" : "Explore");
+    const eb = $("topExploreBtn"), lb = $("topHome");
+    if (eb) eb.classList.toggle("navon", which === "explore");
+    if (lb) lb.classList.toggle("navon", which === "lists");
     window.scrollTo({ top: 0 });
   }
   function showExplore(show) { showView(show ? "explore" : "lists"); }
@@ -3966,11 +3968,9 @@
     }
   }
   $("avatarBtn").onclick = () => showView("profile");
-  $("topHome").onclick = () => {
-    // toggle between Explore (home) and your Lists; from profile, go to lists
-    const onExplore = $("exploreView").style.display !== "none";
-    showView(onExplore ? "lists" : "explore");
-  };
+  $("topExploreBtn").onclick = () => showView("explore");
+  $("topHome").onclick = () => showView("lists");
+  $("wordmark").onclick = () => showView("explore");
   $("exToLists").onclick = () => showView("lists");
   $("exTabs").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => loadExplore(b.dataset.ex));
   $("exSearch").oninput = e => { exQuery = e.target.value.trim(); renderExplore(); };
@@ -4530,6 +4530,7 @@
     ab.style.display = "block";
     $("topRefresh").style.display = "flex";
     $("topHome").style.display = "flex";
+    $("topExploreBtn").style.display = "flex";
     if (me.avatar) { $("avatarImg").src = me.avatar; }
     else { $("avatarImg").remove(); ab.classList.add("letter"); ab.textContent = (me.name||me.username||"?")[0].toUpperCase(); }
     if (!allGames().length) {
