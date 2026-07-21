@@ -238,8 +238,9 @@ async function hltbToken() {
   return null;
 }
 
-async function hltbSearch(name) {
+async function hltbSearch(name, tr) {
   const tok = await hltbToken(); // may be null; keyless endpoints still tried
+  if (tr) tr.push(tok ? "key:ok" : "key:FAIL");
   const base = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").trim();
   const noDots = base.replace(/\.(?=\S)/g, "");            // S.T.A.L.K.E.R. -> STALKER
   const mainTitle = noDots.split(":")[0].trim();             // drop the subtitle
@@ -291,12 +292,14 @@ async function hltbSearch(name) {
   // endpoints: the extracted keyed one first, then keyless legacy paths —
   // if HLTB's key rotation breaks extraction, these sometimes still answer
   const endpoints = [...new Set([tok ? `${tok.path}/${tok.key}` : null, "search", "seek"].filter(Boolean))];
+  const apiNotes = [];
   for (const q of attempts) {
     let list = null;
     for (const ep of endpoints) {
       list = await searchOnce(q, ep);
       if (list && list.length) break;
     }
+    apiNotes.push(list ? list.length : "x");
     if (!list || !list.length) continue;
     const best = list
       .map((e) => ({ e, s: Math.max(similarity(base, e.game_name || ""), similarity(noDots, e.game_name || "")) }))
@@ -307,14 +310,16 @@ async function hltbSearch(name) {
     if (best.e.game_id != null) {
       const t2 = await hltbPage(best.e.game_id, base);
       if (t2) return t2;
+      apiNotes[apiNotes.length - 1] += "+pageX";
     }
   }
+  if (tr) tr.push("api:" + apiNotes.join("/"));
   return null;
 }
 
 // Last-ditch: find the HLTB game page via DuckDuckGo's HTML endpoint and
 // read the times straight off the page. Survives HLTB API/key changes.
-async function hltbViaWebSearch(name) {
+async function hltbViaWebSearch(name, tr) {
   const clean = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\.(?=\S)/g, "").trim();
   // first: HLTB's own search page sometimes embeds game links server-side
   try {
@@ -328,12 +333,13 @@ async function hltbViaWebSearch(name) {
     if (r0.ok) {
       const h0 = await r0.text();
       const ids0 = [...new Set([...h0.matchAll(/\/game\/(\d+)/g)].map((mm) => +mm[1]))].slice(0, 3);
+      if (tr) tr.push("self:" + r0.status + ":" + ids0.length);
       for (const id of ids0) {
         const tt = await hltbPage(id, clean);
         if (tt) return tt;
       }
-    }
-  } catch { /* fall through to engines */ }
+    } else if (tr) tr.push("self:" + r0.status);
+  } catch (e0) { if (tr) tr.push("self:ERR"); }
   const engines = [
     "https://html.duckduckgo.com/html/?q=",
     "https://www.bing.com/search?q=",
@@ -347,21 +353,23 @@ async function hltbViaWebSearch(name) {
         headers: { "User-Agent": HLTB_UA, "Accept": "text/html", "Accept-Language": "en" },
       });
       clearTimeout(timer);
-      if (!r.ok) continue;
+      if (!r.ok) { if (tr) tr.push(base.includes("bing") ? "bing:" + r.status : "ddg:" + r.status); continue; }
       const html = await r.text();
       const ids = [...new Set(
         [...html.matchAll(/howlongtobeat\.com\/game\/(\d+)/g)].map((mm) => +mm[1])
       )].slice(0, 3);
+      if (tr) tr.push((base.includes("bing") ? "bing:" : "ddg:") + r.status + ":" + ids.length);
       for (const id of ids) {
         const t = await hltbPage(id, clean); // identity-checked: wrong game rejected
         if (t) return t;
       }
-    } catch { /* next engine */ }
+    } catch { if (tr) tr.push(base.includes("bing") ? "bing:ERR" : "ddg:ERR"); }
   }
   return null;
 }
 
 async function hltbTimes(appid, name) {
+  const tr = [];
   try {
     const d = await getJson(`${HLTB_BASE}/${appid}`);
     // Populated single entry (object, or one-element array per the docs)
@@ -385,32 +393,33 @@ async function hltbTimes(appid, name) {
         .slice(0, 2); // at most two page fetches per game
       for (const { e } of scored) {
         const direct = readTimes(e);
-        if (hasTimes(direct)) return direct;
+        if (hasTimes(direct)) return { ...direct, hltbTrace: null };
         if (e.hltbId != null) {
           const t = await hltbPage(e.hltbId);
-          if (t) return t;
+          if (t) return { ...t, hltbTrace: null };
         }
       }
     }
     // Last resorts: the mapping service doesn't know this game at all —
     // search HowLongToBeat by name, then via web search to their game page.
     if (name) {
-      const t = await hltbSearch(name);
-      if (t) return t;
-      const t2 = await hltbViaWebSearch(name);
-      if (t2) return t2;
+      const t = await hltbSearch(name, tr);
+      if (t) return { ...t, hltbTrace: null };
+      const t2 = await hltbViaWebSearch(name, tr);
+      if (t2) return { ...t2, hltbTrace: null };
     }
-    return { mainStory: null, completionist: null };
-  } catch {
+    return { mainStory: null, completionist: null, hltbTrace: tr.join(" · ").slice(0, 180) };
+  } catch (eTop) {
+    tr.push("top:" + (eTop.message || "ERR").slice(0, 30));
     if (name) {
       try {
-        const t = await hltbSearch(name);
-        if (t) return t;
-        const t2 = await hltbViaWebSearch(name);
-        if (t2) return t2;
+        const t = await hltbSearch(name, tr);
+        if (t) return { ...t, hltbTrace: null };
+        const t2 = await hltbViaWebSearch(name, tr);
+        if (t2) return { ...t2, hltbTrace: null };
       } catch { /* give up */ }
     }
-    return { mainStory: null, completionist: null };
+    return { mainStory: null, completionist: null, hltbTrace: tr.join(" · ").slice(0, 180) };
   }
 }
 
@@ -421,6 +430,7 @@ export default async function handler(req, res) {
     const trace = { name, appid };
     try {
       const r = await fetch(`https://hltbapi.codepotatoes.de/steam/${appid}`);
+    tr.push("map:" + r.status);
       trace.mappingService = r.status;
       if (r.ok) {
         const d = await r.json();

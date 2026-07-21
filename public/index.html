@@ -216,6 +216,7 @@
   .gsGrid .cell { padding: 11px 10px; }
   .gsGrid .cell .v { font-size: 17px; }
   .gsGrid .cell .k { font-size: 10px; }
+  .hltbTr { margin: -6px 0 14px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; line-height: 1.5; color: var(--ink-dim); word-break: break-all; }
   .gsLinks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
   .gsLinks .gsLink:nth-child(5) { grid-column: 1 / -1; }
   .gsLink { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 13px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); text-decoration: none; font-family: var(--display); font-weight: 600; font-size: 13px; transition: border-color 0.15s ease, background 0.15s ease; cursor: pointer; }
@@ -2635,7 +2636,9 @@
       { v: a && !a.none ? Math.round(a.pct*100)+`<span class="u">%</span>` : "—", k: "completion", cls: achCls },
     ];
     const gridHtml = `<div class="gsGrid">` + cells.map(x =>
-      `<div class="cell ${x.cls||""}"${x.why?` data-hltbwhy="1" role="button"`:""}><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
+      `<div class="cell ${x.cls||""}"${x.why?` data-hltbwhy="1" role="button"`:""}><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>` +
+      (m==null && c==null && s.hltbTrace
+        ? `<div class="hltbTr">hours lookup: ${esc(s.hltbTrace)}</div>` : "");
 
     // external links: reviews + a picker for 100% guides.
     // Steam: the community reviews hub is a dedicated page (the old store
