@@ -239,18 +239,21 @@ async function hltbToken() {
 }
 
 async function hltbSearch(name) {
-  const tok = await hltbToken();
-  if (!tok) return null;
+  const tok = await hltbToken(); // may be null; keyless endpoints still tried
   const base = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").trim();
   const noDots = base.replace(/\.(?=\S)/g, "");            // S.T.A.L.K.E.R. -> STALKER
   const mainTitle = noDots.split(":")[0].trim();             // drop the subtitle
-  const attempts = [...new Set([base, noDots, mainTitle])].filter((s) => s.length >= 2);
+  const noEdition = noDots.replace(
+    /\b(remastered|remaster|definitive edition|definitive|enhanced edition|enhanced|complete edition|goty(?: edition)?|game of the year(?: edition)?|director'?s cut|anniversary edition|legendary edition|hd)\b/gi,
+    ""
+  ).replace(/\s{2,}/g, " ").replace(/[:\-]\s*$/, "").trim();
+  const attempts = [...new Set([base, noDots, noEdition, mainTitle])].filter((s) => s.length >= 2);
 
-  async function searchOnce(q) {
+  async function searchOnce(q, endpoint) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 6000);
-      const r = await fetch(`https://howlongtobeat.com/api/${tok.path}/${tok.key}`, {
+      const r = await fetch(`https://howlongtobeat.com/api/${endpoint}`, {
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -285,8 +288,15 @@ async function hltbSearch(name) {
     } catch { return null; }
   }
 
+  // endpoints: the extracted keyed one first, then keyless legacy paths —
+  // if HLTB's key rotation breaks extraction, these sometimes still answer
+  const endpoints = [...new Set([tok ? `${tok.path}/${tok.key}` : null, "search", "seek"].filter(Boolean))];
   for (const q of attempts) {
-    const list = await searchOnce(q);
+    let list = null;
+    for (const ep of endpoints) {
+      list = await searchOnce(q, ep);
+      if (list && list.length) break;
+    }
     if (!list || !list.length) continue;
     const best = list
       .map((e) => ({ e, s: Math.max(similarity(base, e.game_name || ""), similarity(noDots, e.game_name || "")) }))
@@ -387,6 +397,25 @@ async function hltbTimes(appid, name) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === "GET" && req.query?.hltbdebug === "1") {
+    const name = String(req.query.name || "");
+    const appid = +req.query.appid || 0;
+    const trace = { name, appid };
+    try {
+      const r = await fetch(`https://hltbapi.codepotatoes.de/steam/${appid}`);
+      trace.mappingService = r.status;
+      if (r.ok) {
+        const d = await r.json();
+        trace.mappingResult = Array.isArray(d) ? d.length + " candidates" : d && (d.hltbId || d.title) ? "single entry" : "empty";
+      }
+    } catch (e) { trace.mappingService = "error: " + e.message; }
+    const tok = await hltbToken();
+    trace.searchKey = tok ? `${tok.path}/ (key ${tok.key.length} chars)` : "EXTRACTION FAILED";
+    trace.apiSearch = (await hltbSearch(name)) || "no result";
+    trace.webSearch = trace.apiSearch === "no result" ? ((await hltbViaWebSearch(name)) || "no result") : "skipped";
+    trace.finalAnswer = await hltbTimes(appid, name);
+    return res.status(200).json(trace);
+  }
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
 

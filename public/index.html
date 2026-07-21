@@ -83,6 +83,8 @@
   .listbar button.joint::before { content: "& "; color: var(--gold); font-weight: 800; }
   .listRow.joint .lname { color: var(--ink); }
   .listbar button.joint.pend { opacity: 0.7; }
+  .fvJointBox { flex-direction: column; gap: 9px; margin-top: 12px; }
+  .fvJointBox .footRow { margin-top: 0; }
   .jinvIcon { font-family: var(--display); font-weight: 800; font-size: 40px; color: var(--gold); text-align: center; margin: 6px 0 10px; }
   .jinvText { text-align: center; font-size: 14.5px; line-height: 1.5; }
   .jinvText b { color: var(--gold); }
@@ -1036,7 +1038,8 @@
       <div class="fvSub" id="fvSub"></div>
       <div class="fvTabs" id="fvTabs" style="display:none"></div>
       <div class="gsBody" id="fvBody"></div>
-      <div class="footRow"><span id="fvJointWrap" style="flex:1; display:none"><button id="fvJoint" style="width:100%">Start a joint list</button></span><button id="fvClose">Close</button></div>
+      <div class="fvJointBox" id="fvJointBox" style="display:none"></div>
+      <div class="footRow"><button id="fvClose">Close</button></div>
     </div>
   </div>
 
@@ -1325,8 +1328,9 @@
   }
   // "+ New list" morphs into an inline name field — type, Enter to create,
   // Escape (or leaving it empty) to back out. No browser prompt box.
-  function inlineNameInput(replaceEl, cls, onDone) {
+  function inlineNameInput(replaceEl, cls, onDone, initial) {
     const inp = document.createElement("input");
+    if (initial) inp.value = initial;
     inp.className = cls;
     inp.placeholder = "List name";
     inp.maxLength = 40;
@@ -1381,8 +1385,24 @@
       </div>`;
     }).join("") + jointLists.map(l => `<div class="listRow joint">
         <div class="lname">& ${esc(l.name)} <span class="cnt">· ${l.pending ? "waiting for them to accept" : l.games.length + " · joint"}</span></div>
+        <button data-jren="${l.id}" aria-label="Rename">Rename</button>
         <button class="ldel" data-jleave="${l.id}" aria-label="${l.pending ? "Cancel invite" : "Leave"}">${l.pending ? "Cancel" : "Leave"}</button>
       </div>`).join("");
+
+    $("listRows").querySelectorAll("[data-jren]").forEach(b => b.onclick = () => {
+      const jl = jointLists.find(x => x.id === b.dataset.jren);
+      if (!jl) return;
+      const nameEl = b.closest(".listRow").querySelector(".lname");
+      inlineNameInput(nameEl, "lnew", (v) => {
+        const nm = (v || "").trim().slice(0, 40);
+        if (nm && nm !== jl.name) {
+          jl.name = nm;
+          persist(); syncUp(); // pushes the rename; friend sees it next poll
+          toast("Renamed");
+        }
+        renderListEditor(); renderListbar();
+      }, jl.name);
+    });
 
     $("listRows").querySelectorAll("[data-jleave]").forEach(b => b.onclick = async () => {
       if (!confirm("Leave this joint list? Your friend keeps their copy.")) return;
@@ -3496,13 +3516,26 @@
   let fvData = null, fvTab = null;
 
   let fvId = null;
-  function wireFvJoint() {
-    const btn = document.getElementById("fvJoint");
-    if (!btn) return;
-    btn.onclick = () => inlineNameInput(btn, "lnew lnewWide", async (value) => {
-      const name = (value || "").trim();
-      const restore = () => { $("fvJointWrap").innerHTML = `<button id="fvJoint" style="width:100%">Start a joint list</button>`; wireFvJoint(); };
-      if (!name) { restore(); return; }
+  function renderFvJointDefault() {
+    const box = $("fvJointBox");
+    box.innerHTML = `<div class="footRow" style="margin-top:0"><button id="fvJoint">Start a joint list</button></div>`;
+    document.getElementById("fvJoint").onclick = renderFvJointForm;
+  }
+  function renderFvJointForm() {
+    const box = $("fvJointBox");
+    box.innerHTML = `
+      <input class="lnew lnewWide" id="fvJName" maxlength="40" placeholder="Name your joint list…" autocapitalize="words" aria-label="Joint list name">
+      <div class="footRow" style="margin-top:0">
+        <button id="fvJCancel">Cancel</button>
+        <button class="go" id="fvJSend">Send invite</button>
+      </div>`;
+    const inp = document.getElementById("fvJName");
+    inp.focus();
+    const send = async () => {
+      const name = inp.value.trim();
+      if (!name) { toast("Give the list a name first"); inp.focus(); return; }
+      const btn = document.getElementById("fvJSend");
+      btn.disabled = true; btn.textContent = "Sending…";
       try {
         const r = await fetch("/api/joint?a=create", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -3519,15 +3552,21 @@
         renderAll();
         toast(`Invite sent — "${esc(rec.name)}" is yours to fill while they decide`);
       } catch (e) {
-        toast("Couldn't create joint list: " + esc(e.message));
-        restore();
+        toast("Couldn't send invite: " + esc(e.message));
+        btn.disabled = false; btn.textContent = "Send invite";
       }
+    };
+    document.getElementById("fvJSend").onclick = send;
+    document.getElementById("fvJCancel").onclick = renderFvJointDefault;
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") send();
+      else if (e.key === "Escape") renderFvJointDefault();
     });
   }
   async function openFriendView(friendId) {
     fvId = friendId;
-    $("fvJointWrap").style.display = "block";
-    wireFvJoint();
+    $("fvJointBox").style.display = "flex";
+    renderFvJointDefault();
     fvData = null; fvTab = null;
     $("fvName").textContent = "Loading…";
     $("fvSub").textContent = "";
