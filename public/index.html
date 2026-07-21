@@ -79,6 +79,9 @@
   }
   .listbar button.on { color: var(--ink); border-color: var(--gold); background: var(--surface-2); }
   .listbar button.new { color: var(--gold); border-style: dashed; }
+  .listbar button.joint { border-color: rgba(228,184,92,0.4); }
+  .listbar button.joint::before { content: "& "; color: var(--gold); font-weight: 800; }
+  .listRow.joint .lname { color: var(--ink); }
   .listbar input.lnew { font-family: var(--display); font-weight: 700; font-size: 12.5px; color: var(--ink); background: var(--surface-2); border: 1px dashed var(--gold); border-radius: 10px; padding: 8px 14px; outline: none; width: 130px; flex-shrink: 0; }
   .listRow input.lnew { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink); background: var(--surface-2); border: 1px dashed var(--gold); border-radius: 10px; padding: 10px 12px; outline: none; }
 
@@ -241,7 +244,11 @@
   .games.arrange li { cursor: grab; }
   .games.arrange li, .games.arrange li * { -webkit-touch-callout: none; }
   li.preLift { transform: scale(0.975); transition: transform 130ms ease; }
-  .dragGhost { box-shadow: 0 20px 48px rgba(0,0,0,0.55); opacity: 0.97; transition: none; }
+  .dragGhost { box-shadow: 0 20px 48px rgba(0,0,0,0.55); opacity: 0.97; transition: none; animation: ghostIn 150ms ease; }
+  @keyframes ghostIn { from { opacity: 0.5; box-shadow: 0 6px 16px rgba(0,0,0,0.25); } }
+  li.landed { animation: landPop 200ms ease; }
+  @keyframes landPop { 0% { transform: scale(1); } 45% { transform: scale(1.015); } 100% { transform: scale(1); } }
+  body.dragCursor, body.dragCursor * { cursor: grabbing !important; }
   .dragGhost * { pointer-events: none; }
   li.dragSlot { opacity: 0.3; }
   li.dragSlot > div { border-style: dashed !important; border-color: var(--gold) !important; }
@@ -356,12 +363,7 @@
   .pHead img { width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--line-solid); }
   .pHead .n { font-family: var(--display); font-weight: 700; font-size: 20px; }
   .pHead .s { color: var(--ink-dim); font-size: 12.5px; margin-top: 2px; }
-  .insignia { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: radial-gradient(circle at 50% 42%, rgba(232,182,76,0.13), transparent 72%), var(--surface-2); border: 1px solid var(--line-solid); }
-  .rankName { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 0.2px; }
-  .rankName .lvlTag { color: var(--ink-dim); font-size: 12px; font-weight: 600; margin-left: 6px; }
-  .lvlBarWrap { flex: 1; min-width: 0; }
   .lvlBarWrap .xp { margin-top: 6px; }
-  .lvlNums { font-family: var(--display); font-weight: 600; font-size: 11.5px; color: var(--ink-dim); }
   .friendRow .lv { font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
   .friendRow .lv svg { display: block; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -388,19 +390,13 @@
   .mpRow .nm { flex: 1; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mpRow .hh { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
   .mpRow:first-of-type .hh { color: var(--gold); }
-  .tHero { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
-  .tArt { flex-shrink: 0; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35)) drop-shadow(0 0 16px rgba(232,182,76,0.16)); }
-  .tEmpty { width: 62px; height: 62px; border-radius: 14px; border: 1.5px dashed var(--line-strong); }
   .tTitle { font-family: var(--display); font-weight: 700; font-size: 17px; }
   .tSub { font-size: 12px; color: var(--ink); margin-top: 2px; }
   .tSub.dim { color: var(--ink-dim); }
-  .tRoad { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 7px; }
-  .tMini { background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 8px 4px 7px; text-align: center; }
-  .tMini svg { display: block; margin: 0 auto; }
-  .tMini:not(.got) { opacity: 0.32; filter: grayscale(0.85); }
-  .tMini.got { border-color: var(--line-strong); }
-  .tmn { font-family: var(--display); font-weight: 700; font-size: 9.5px; margin-top: 3px; }
-  .tmk { font-size: 8.5px; color: var(--ink-dim); margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .tmini { background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 8px 4px 7px; text-align: center; }
+  .tmini svg { display: block; margin: 0 auto; }
+  .tmini:not(.got) { opacity: 0.32; filter: grayscale(0.85); }
+  .tmini.got { border-color: var(--line-strong); }
   .trophyRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line-solid); }
   .trophyRow:first-of-type { border-top: none; }
   .trophyRow img { width: 36px; height: 36px; border-radius: 7px; }
@@ -523,7 +519,7 @@
     background: var(--line-solid); margin: -4px auto 14px; flex-shrink: 0;
   }
   /* gold elements: gradient + soft glow */
-  .dock .primary, .steamBtn, .lvlChip, .sorts button.on, .tabs button.on, .addAll,
+  .dock .primary, .steamBtn, .sorts button.on, .tabs button.on, .addAll,
   .res button.addOne, .sheet .footRow .go, .pActions .share {
     background: linear-gradient(180deg, #f0c25c 0%, #dfa93c 100%);
     box-shadow: 0 3px 14px -6px rgba(232,182,76,0.55);
@@ -649,7 +645,6 @@
   /* profile */
   .chartBox { background: var(--surface); border-radius: var(--r); padding: 15px 16px; }
   .cell { border-radius: 14px; }
-  .insignia { border-radius: 13px; }
   .pActions button { border-radius: 13px; transition: border-color 0.15s ease; }
 
   /* toast */
@@ -671,7 +666,7 @@
     background-attachment: fixed;
   }
   .card, .tile, .chartBox, .fcard, .sheet { background: #171d2a; }
-  .tMini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
+  .tmini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
 
   /* topbar: borderless fade + signature gold hairline */
   .top { border-bottom: none; background: linear-gradient(180deg, rgba(9,11,15,0.92) 55%, rgba(9,11,15,0)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -781,7 +776,7 @@
   }
   body.light .top { background: linear-gradient(180deg, rgba(247,244,236,0.94) 55%, rgba(247,244,236,0)); }
   body.light .card, body.light .tile, body.light .chartBox, body.light .fcard,
-  body.light .visitFeed, body.light .sharedBanner, body.light .cell, body.light .tMini {
+  body.light .visitFeed, body.light .sharedBanner, body.light .cell, body.light .tmini {
     background: #ffffff;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 8px 20px -14px rgba(40,45,60,0.28);
   }
@@ -1034,7 +1029,7 @@
       <div class="fvSub" id="fvSub"></div>
       <div class="fvTabs" id="fvTabs" style="display:none"></div>
       <div class="gsBody" id="fvBody"></div>
-      <div class="footRow"><button id="fvClose">Close</button></div>
+      <div class="footRow"><span id="fvJointWrap" style="flex:1; display:none"><button id="fvJoint" style="width:100%">Start a joint list</button></span><button id="fvClose">Close</button></div>
     </div>
   </div>
 
@@ -1234,10 +1229,13 @@
   }
   const $ = id => document.getElementById(id);
 
-  function activeList(){ return data.lists.find(l=>l.id===data.activeId) || data.lists[0]; }
+  let jointLists = load("backlog.joint.v1", []);
+  const jointHashes = {};
+  function allLists(){ return [...data.lists, ...jointLists]; }
+  function activeList(){ return allLists().find(l=>l.id===data.activeId) || data.lists[0]; }
   function allGames(){ // deduped union across lists (for profile + stats fetch)
     const seen = new Set(); const out = [];
-    for (const l of data.lists) for (const g of l.games)
+    for (const l of allLists()) for (const g of l.games)
       if (!seen.has(g.appid)) { seen.add(g.appid); out.push(g); }
     return out;
   }
@@ -1280,8 +1278,8 @@
   // ============ list bar ============
   function renderListbar() {
     if (sharedMode) { $("listbar").style.display="none"; return; }
-    $("listbar").innerHTML = data.lists.map(l =>
-      `<button class="${l.id===data.activeId?"on":""}" data-l="${l.id}">${esc(l.name)} · ${l.games.length}</button>`
+    $("listbar").innerHTML = allLists().map(l =>
+      `<button class="${l.id===data.activeId?"on":""}${l.joint?" joint":""}" data-l="${l.id}">${esc(l.name)} · ${l.games.length}</button>`
     ).join("") + `<button class="new" data-new="1">+ New list</button><button class="new" data-edit="1">Edit</button>`;
     $("listbar").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (b.dataset.new) return startNewList(b);
@@ -1358,7 +1356,20 @@
         <button data-lren="${i}" ${isHundo(l) || isWishlist(l) ? "disabled" : ""} aria-label="Rename">Rename</button>
         <button class="ldel" data-ldel="${i}" ${locked ? "disabled" : ""} aria-label="Delete">✕</button>
       </div>`;
-    }).join("");
+    }).join("") + jointLists.map(l => `<div class="listRow joint">
+        <div class="lname">& ${esc(l.name)} <span class="cnt">· ${l.games.length} · joint</span></div>
+        <button class="ldel" data-jleave="${l.id}" aria-label="Leave">Leave</button>
+      </div>`).join("");
+
+    $("listRows").querySelectorAll("[data-jleave]").forEach(b => b.onclick = async () => {
+      if (!confirm("Leave this joint list? Your friend keeps their copy.")) return;
+      const id = b.dataset.jleave;
+      try { await fetch("/api/joint?a=leave", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) }); } catch {}
+      jointLists = jointLists.filter(l => l.id !== id);
+      if (data.activeId === id) data.activeId = "main";
+      persist(); renderListbar(); renderListEditor(); renderAll();
+      toast("Left the joint list");
+    });
 
     const commit = () => { persist(); syncUp(); renderListbar(); renderListEditor(); };
     $("listRows").querySelectorAll("[data-lup]").forEach(b => b.onclick = () => {
@@ -1621,7 +1632,6 @@
   }
   // One-tap diagnostics: what the server did, whether the deployed backend
   // files are current, and every candidate's recency signals — copyable.
-  const diagModal2 = () => $("diagModal");
   async function runRecentDiag() {
     const out = [];
     const day = (ts) => ts ? new Date(ts).toISOString().slice(0, 10) : "—";
@@ -2076,11 +2086,12 @@
     if (dragWired) return;
     dragWired = true;
     const cont = $("games");
-    const HOLD = 230, SLOP = 12;
+    const HOLD = 200, SLOP = 12;
     let li = null, ghost = null, lifted = false, pid = null;
     let sx = 0, sy = 0, px = 0, py = 0, offX = 0, offY = 0;
     let holdT = null, hintT = null, raf = null;
     let slots = [], lastInsertAt = 0;
+    let rot = 0, rotT = 0, prevPx = 0;
 
     // slot geometry cached in PAGE coordinates: stable under scrolling,
     // refreshed only when the order actually changes — no reading of
@@ -2104,12 +2115,13 @@
       Object.assign(ghost.style, {
         position: "fixed", left: "0", top: "0", margin: "0", zIndex: "70",
         width: r.width + "px", height: r.height + "px",
-        transform: `translate(${r.left}px, ${r.top}px) scale(1.03)`,
+        transform: `translate(${r.left}px, ${r.top}px) scale(1.04)`,
         pointerEvents: "none",
       });
       document.body.appendChild(ghost);
       li.classList.add("dragSlot");
       cont.classList.add("draggingNow");
+      document.body.classList.add("dragCursor");
       buildSlots();
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
       raf = requestAnimationFrame(frame);
@@ -2118,30 +2130,36 @@
     // with the finger held perfectly still), and reorder checks
     function frame() {
       if (!lifted) { raf = null; return; }
-      const m = 110;
-      if (py < m) window.scrollBy(0, -(Math.ceil((m - py) / 8) + 2));
-      else if (py > innerHeight - m) window.scrollBy(0, Math.ceil((py - (innerHeight - m)) / 8) + 2);
-      ghost.style.transform = `translate(${px - offX}px, ${py - offY}px) scale(1.03)`;
+      const m = 130;
+      if (py < m) window.scrollBy(0, -(Math.ceil((m - py) / 6) + 2));
+      else if (py > innerHeight - m) window.scrollBy(0, Math.ceil((py - (innerHeight - m)) / 6) + 2);
+      // slight tilt following horizontal motion, springing back to level
+      rotT = Math.max(-7, Math.min(7, (px - prevPx) * 0.55));
+      rot += (rotT - rot) * 0.22;
+      prevPx = px;
+      ghost.style.transform = `translate(${px - offX}px, ${py - offY}px) scale(1.04) rotate(${rot.toFixed(2)}deg)`;
       maybeReorder();
       raf = requestAnimationFrame(frame);
     }
     function maybeReorder() {
-      if (Date.now() - lastInsertAt < 90) return; // hysteresis: no flip-flopping
       const gx = px + scrollX, gy = py + scrollY;
-      let best = null, bestD = Infinity;
-      for (const s2 of slots) {
-        const cx = s2.left + s2.w / 2, cy = s2.top + s2.h / 2;
-        const d = (gx - cx) ** 2 + (gy - cy) ** 2;
-        if (d < bestD) { bestD = d; best = s2; }
+      // insertion index: the first slot whose centre the pointer hasn't passed
+      let idx = slots.length;
+      for (let i = 0; i < slots.length; i++) {
+        const s2 = slots[i];
+        const cy = s2.top + s2.h / 2, cx = s2.left + s2.w / 2;
+        if (gy < cy - 0.001 || (Math.abs(gy - cy) <= s2.h / 2 && gx < cx)) { idx = i; break; }
       }
-      if (!best || best.el === li) return;
-      const cy = best.top + best.h / 2, cx = best.left + best.w / 2;
-      const before = gy < cy || (gy < best.top + best.h && Math.abs(gy - cy) <= best.h / 2 && gx < cx);
-      const target = before ? best.el : best.el.nextSibling;
-      if (target === li || target === li.nextSibling) return;
+      const cur = slots.findIndex(s2 => s2.el === li);
+      if (idx === cur || idx === cur + 1) return; // already there
+      // damp only adjacent back-and-forth; long throws reorder instantly
+      if (Date.now() - lastInsertAt < 70 && Math.abs(idx - (cur < 0 ? idx : cur)) <= 1) return;
       lastInsertAt = Date.now();
+      const target = idx >= slots.length ? null : slots[idx].el;
+      if (target === li) return;
       flipReorder(target);
       buildSlots();
+      if (navigator.vibrate) { try { navigator.vibrate(5); } catch {} } // tick per swap
     }
     function flipReorder(target) {
       const others = [...cont.children].filter(el => el !== li);
@@ -2169,10 +2187,16 @@
         if (raf) { cancelAnimationFrame(raf); raf = null; }
         const r = li.getBoundingClientRect();
         const g = ghost, slotEl = li;
-        g.style.transition = "transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)";
-        g.style.transform = `translate(${r.left}px, ${r.top}px) scale(1)`;
-        setTimeout(() => { g.remove(); slotEl.classList.remove("dragSlot"); }, 175);
+        g.style.transition = "transform 170ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+        g.style.transform = `translate(${r.left}px, ${r.top}px) scale(1) rotate(0deg)`;
+        setTimeout(() => {
+          g.remove();
+          slotEl.classList.remove("dragSlot");
+          slotEl.classList.add("landed");
+          setTimeout(() => slotEl.classList.remove("landed"), 220);
+        }, 175);
         cont.classList.remove("draggingNow");
+        document.body.classList.remove("dragCursor");
         if (commit) commitCustomOrder();
         justDragged = Date.now();
       }
@@ -2184,6 +2208,7 @@
       const t = e.target.closest("li[data-card], li[data-tile]");
       if (!t || e.target.closest("button")) return;
       li = t; sx = px = e.clientX; sy = py = e.clientY; pid = e.pointerId;
+      prevPx = px; rot = 0; rotT = 0;
       if (e.pointerType === "mouse") {
         e.preventDefault(); // stops text-select & native image drag
       } else {
@@ -2285,13 +2310,13 @@
     if (!selected.size) return;
     const ids = new Set(selected);
     $("moveTitle").textContent = `Move ${ids.size} game${ids.size>1?"s":""} to…`;
-    $("moveOpts").innerHTML = data.lists
+    $("moveOpts").innerHTML = allLists()
       .filter(l=>l.id!==data.activeId)
-      .map(l=>`<button data-to="${l.id}">${esc(l.name)} · ${l.games.length} games</button>`).join("");
+      .map(l=>`<button data-to="${l.id}">${l.joint?"& ":""}${esc(l.name)} · ${l.games.length} games</button>`).join("");
     $("moveOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
       const from = activeList();
       const fromId = from.id;
-      const to = data.lists.find(l=>l.id===b.dataset.to);
+      const to = allLists().find(l=>l.id===b.dataset.to);
       if (!to) return;
       const moved = [];
       from.games.forEach((g, idx) => { if (ids.has(g.appid)) moved.push({ g, idx }); });
@@ -2529,7 +2554,7 @@
     const rTxt = myNote.rating ? `<span class="rNow">${myNote.rating}<span class="rOf">/10</span></span>` : `<span class="rNone">Not rated</span>`;
     const reviewHtml = sharedMode ? "" :
       `<div class="gsSection">Your rating ${rTxt}</div>
-       <div class="score10" id="gsScore">${scoreHtml}</div>
+       <div class="score10">${scoreHtml}</div>
        <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
@@ -2684,9 +2709,9 @@
     const g = activeList().games.find(x=>x.appid===appid);
     if (!g) return;
     $("moveTitle").textContent = `Move "${g.name}" to…`;
-    $("moveOpts").innerHTML = data.lists
+    $("moveOpts").innerHTML = allLists()
       .filter(l=>l.id!==data.activeId)
-      .map(l=>`<button data-to="${l.id}">${esc(l.name)} · ${l.games.length} games</button>`).join("");
+      .map(l=>`<button data-to="${l.id}">${l.joint?"& ":""}${esc(l.name)} · ${l.games.length} games</button>`).join("");
     $("moveOpts").querySelectorAll("button").forEach(b => b.onclick = () => {
       moveGame(appid, b.dataset.to);
       moveModal.classList.remove("show");
@@ -2695,7 +2720,7 @@
   }
   function moveGame(appid, toId) {
     const from = activeList();
-    const to = data.lists.find(l=>l.id===toId);
+    const to = allLists().find(l=>l.id===toId);
     if (!to) return;
     const i = from.games.findIndex(g=>g.appid===appid);
     if (i<0) return;
@@ -2719,8 +2744,38 @@
           body: JSON.stringify({ lists: data.lists, stats, notes, history, showcase })
         });
       } catch {}
+      // push any joint list whose contents changed since last push
+      for (const jl of jointLists) {
+        const h = JSON.stringify([jl.name, jl.games]);
+        if (jointHashes[jl.id] === h) continue;
+        jointHashes[jl.id] = h;
+        try {
+          await fetch("/api/joint?a=save", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ id: jl.id, name: jl.name, games: jl.games })
+          });
+        } catch {}
+      }
       syncPending = false;
     }, 600);
+  }
+  async function loadJoint() {
+    if (sharedMode || !me) return;
+    try {
+      const r = await fetch("/api/joint");
+      if (!r.ok) return;
+      const d = await r.json();
+      const fresh = (d.lists || []).map(l => ({ ...l, joint: true }));
+      const activeBefore = JSON.stringify(allLists().find(l => l.id === data.activeId)?.games || null);
+      jointLists = fresh;
+      for (const jl of jointLists) jointHashes[jl.id] = JSON.stringify([jl.name, jl.games]);
+      save("backlog.joint.v1", jointLists);
+      renderListbar();
+      const activeAfter = JSON.stringify(allLists().find(l => l.id === data.activeId)?.games || null);
+      if (activeBefore !== activeAfter) renderGames();
+      const missing = jointLists.flatMap(l => l.games).filter(g => !stats[g.appid]);
+      for (let i = 0; i < missing.length; i += 40) fetchStats(missing.slice(i, i + 40));
+    } catch {}
   }
   async function syncDown() {
     if (sharedMode) return;
@@ -3357,7 +3412,39 @@
   fvModal.onclick = e => { if (e.target === fvModal) fvModal.classList.remove("show"); };
   let fvData = null, fvTab = null;
 
+  let fvId = null;
+  function wireFvJoint() {
+    const btn = document.getElementById("fvJoint");
+    if (!btn) return;
+    btn.onclick = () => inlineNameInput(btn, "lnew", async (value) => {
+      const name = (value || "").trim();
+      const restore = () => { $("fvJointWrap").innerHTML = `<button id="fvJoint" style="width:100%">Start a joint list</button>`; wireFvJoint(); };
+      if (!name) { restore(); return; }
+      try {
+        const r = await fetch("/api/joint?a=create", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ friendId: fvId, name })
+        });
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        const rec = { ...d.list, joint: true };
+        jointLists.push(rec);
+        jointHashes[rec.id] = JSON.stringify([rec.name, rec.games]);
+        data.activeId = rec.id;
+        persist();
+        fvModal.classList.remove("show");
+        renderAll();
+        toast(`Joint list "${esc(rec.name)}" created — you both have it now`);
+      } catch (e) {
+        toast("Couldn't create joint list: " + esc(e.message));
+        restore();
+      }
+    });
+  }
   async function openFriendView(friendId) {
+    fvId = friendId;
+    $("fvJointWrap").style.display = "block";
+    wireFvJoint();
     fvData = null; fvTab = null;
     $("fvName").textContent = "Loading…";
     $("fvSub").textContent = "";
@@ -3875,6 +3962,7 @@
       await syncDown();   // latest lists/notes from the cloud
       refreshAll();       // re-fetch achievements, hours, prices (shows its own toasts)
       loadRecent();       // recently played updates too, not just at boot
+      loadJoint();        // joint lists pick up your friend's edits
       if ($("profileView").classList.contains("show")) renderProfile();
     } finally {
       setTimeout(() => { $("topRefresh").classList.remove("going"); refreshing = false; }, 900);
@@ -4028,6 +4116,7 @@
     }
     animateNext = true;
     await syncDown();
+    loadJoint();
     ensureHundo();
     ensureWishlist();
     renderAll();
