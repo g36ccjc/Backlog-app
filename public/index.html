@@ -82,8 +82,15 @@
   .listbar button.joint { border-color: rgba(228,184,92,0.4); }
   .listbar button.joint::before { content: "& "; color: var(--gold); font-weight: 800; }
   .listRow.joint .lname { color: var(--ink); }
+  .listbar button.joint.pend { opacity: 0.7; }
+  .jinvIcon { font-family: var(--display); font-weight: 800; font-size: 40px; color: var(--gold); text-align: center; margin: 6px 0 10px; }
+  .jinvText { text-align: center; font-size: 14.5px; line-height: 1.5; }
+  .jinvText b { color: var(--gold); }
+  .jinvSub { text-align: center; font-size: 12px; color: var(--ink-dim); line-height: 1.55; margin-top: 10px; }
   .listbar input.lnew { font-family: var(--display); font-weight: 700; font-size: 12.5px; color: var(--ink); background: var(--surface-2); border: 1px dashed var(--gold); border-radius: 10px; padding: 8px 14px; outline: none; width: 130px; flex-shrink: 0; }
   .listRow input.lnew { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink); background: var(--surface-2); border: 1px dashed var(--gold); border-radius: 10px; padding: 10px 12px; outline: none; }
+  input.lnewWide { width: 100%; flex: 1; font-size: 14px; text-align: center; border-radius: 13px; padding: 13px 14px; caret-color: var(--gold); }
+  input.lnewWide::placeholder { color: var(--ink-dim); }
 
   .hero { margin: 12px 0 6px; }
   .hero .line { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink-dim); }
@@ -1113,6 +1120,22 @@
     </div>
   </div>
 
+  <!-- joint list invite -->
+  <div class="modal" id="jinvModal">
+    <div class="sheet">
+      <h2>Joint list invite</h2>
+      <div class="gsBody">
+        <div class="jinvIcon">&amp;</div>
+        <div class="jinvText" id="jinvText"></div>
+        <div class="jinvSub">Joint lists are shared — you can both add, remove and reorder games, and each of you sees your own progress on them.</div>
+      </div>
+      <div class="footRow">
+        <button id="jinvDecline">Decline</button>
+        <button class="go" id="jinvAccept">Accept</button>
+      </div>
+    </div>
+  </div>
+
   <!-- settings sheet -->
   <div class="modal" id="setModal">
     <div class="sheet">
@@ -1279,7 +1302,7 @@
   function renderListbar() {
     if (sharedMode) { $("listbar").style.display="none"; return; }
     $("listbar").innerHTML = allLists().map(l =>
-      `<button class="${l.id===data.activeId?"on":""}${l.joint?" joint":""}" data-l="${l.id}">${esc(l.name)} · ${l.games.length}</button>`
+      `<button class="${l.id===data.activeId?"on":""}${l.joint?" joint":""}${l.pending?" pend":""}" data-l="${l.id}">${esc(l.name)} · ${l.pending ? "invited" : l.games.length}</button>`
     ).join("") + `<button class="new" data-new="1">+ New list</button><button class="new" data-edit="1">Edit</button>`;
     $("listbar").querySelectorAll("button").forEach(b => b.onclick = () => {
       if (b.dataset.new) return startNewList(b);
@@ -1357,8 +1380,8 @@
         <button class="ldel" data-ldel="${i}" ${locked ? "disabled" : ""} aria-label="Delete">✕</button>
       </div>`;
     }).join("") + jointLists.map(l => `<div class="listRow joint">
-        <div class="lname">& ${esc(l.name)} <span class="cnt">· ${l.games.length} · joint</span></div>
-        <button class="ldel" data-jleave="${l.id}" aria-label="Leave">Leave</button>
+        <div class="lname">& ${esc(l.name)} <span class="cnt">· ${l.pending ? "waiting for them to accept" : l.games.length + " · joint"}</span></div>
+        <button class="ldel" data-jleave="${l.id}" aria-label="${l.pending ? "Cancel invite" : "Leave"}">${l.pending ? "Cancel" : "Leave"}</button>
       </div>`).join("");
 
     $("listRows").querySelectorAll("[data-jleave]").forEach(b => b.onclick = async () => {
@@ -2154,19 +2177,27 @@
       if (idx === cur || idx === cur + 1) return; // already there
       // damp only adjacent back-and-forth; long throws reorder instantly
       if (Date.now() - lastInsertAt < 70 && Math.abs(idx - (cur < 0 ? idx : cur)) <= 1) return;
+      if (idx >= slots.length && cur === slots.length - 1) return; // already last
       lastInsertAt = Date.now();
       const target = idx >= slots.length ? null : slots[idx].el;
       if (target === li) return;
-      flipReorder(target);
-      buildSlots();
+      flipReorder(target); // also refreshes the slot map from clean geometry
       if (navigator.vibrate) { try { navigator.vibrate(5); } catch {} } // tick per swap
     }
     function flipReorder(target) {
       const others = [...cont.children].filter(el => el !== li);
       const first = new Map(others.map(el => [el, el.getBoundingClientRect()]));
       cont.insertBefore(li, target);
-      for (const el of others) {
-        const f = first.get(el), n = el.getBoundingClientRect();
+      // Rebuild the slot map HERE, from post-insert rects read before any
+      // animation transform is applied — the only instant the geometry is
+      // truthful. (Reading it later, mid-animation, fed the targeting
+      // corrupted positions and cascaded everything to the front.)
+      const newSlots = [];
+      for (const el of cont.children) {
+        const n = el.getBoundingClientRect(); // final layout for this el
+        newSlots.push({ el, top: n.top + scrollY, left: n.left + scrollX, w: n.width, h: n.height });
+        if (el === li) continue;
+        const f = first.get(el);
         const dx = f.left - n.left, dy = f.top - n.top;
         if (dx || dy) {
           el.style.transition = "none";
@@ -2178,6 +2209,7 @@
           });
         }
       }
+      slots = newSlots;
     }
     function end(commit) {
       clearTimeout(holdT); holdT = null;
@@ -2746,6 +2778,7 @@
       } catch {}
       // push any joint list whose contents changed since last push
       for (const jl of jointLists) {
+        if (jl.pending) continue; // invitee hasn't accepted yet — server refuses edits anyway
         const h = JSON.stringify([jl.name, jl.games]);
         if (jointHashes[jl.id] === h) continue;
         jointHashes[jl.id] = h;
@@ -2759,24 +2792,74 @@
       syncPending = false;
     }, 600);
   }
+  let jointInvites = [];
   async function loadJoint() {
     if (sharedMode || !me) return;
     try {
       const r = await fetch("/api/joint");
       if (!r.ok) return;
       const d = await r.json();
-      const fresh = (d.lists || []).map(l => ({ ...l, joint: true }));
       const activeBefore = JSON.stringify(allLists().find(l => l.id === data.activeId)?.games || null);
-      jointLists = fresh;
-      for (const jl of jointLists) jointHashes[jl.id] = JSON.stringify([jl.name, jl.games]);
+      // a pending list of ours vanishing server-side means the invite was declined
+      for (const old of jointLists) {
+        if (old.pending && !(d.lists || []).some(l => l.id === old.id)) {
+          toast(`Your invite for "${esc(old.name)}" was declined`);
+          if (data.activeId === old.id) data.activeId = "main";
+        }
+      }
+      jointLists = (d.lists || []).map(fresh => {
+        const local = jointLists.find(l => l.id === fresh.id);
+        const localH = local ? JSON.stringify([local.name, local.games]) : null;
+        // keep local copy if it has edits that haven't pushed yet — our
+        // pending save will win; the next poll converges both sides
+        if (local && localH !== jointHashes[fresh.id]) return local;
+        jointHashes[fresh.id] = JSON.stringify([fresh.name, fresh.games]);
+        return { ...fresh, joint: true };
+      });
       save("backlog.joint.v1", jointLists);
       renderListbar();
       const activeAfter = JSON.stringify(allLists().find(l => l.id === data.activeId)?.games || null);
       if (activeBefore !== activeAfter) renderGames();
       const missing = jointLists.flatMap(l => l.games).filter(g => !stats[g.appid]);
       for (let i = 0; i < missing.length; i += 40) fetchStats(missing.slice(i, i + 40));
+      jointInvites = d.invites || [];
+      showNextInvite();
     } catch {}
   }
+  function showNextInvite() {
+    if (!jointInvites.length || $("jinvModal").classList.contains("show")) return;
+    const inv = jointInvites[0];
+    $("jinvText").innerHTML = `<b>${esc(inv.fromName || "A Steam friend")}</b> wants to start the joint list <b>"${esc(inv.name)}"</b> with you.`;
+    $("jinvModal").classList.add("show");
+    $("jinvAccept").onclick = async () => {
+      $("jinvAccept").disabled = true;
+      try {
+        const r = await fetch("/api/joint?a=accept", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) });
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        const rec = { ...d.list, joint: true };
+        jointLists.push(rec);
+        jointHashes[rec.id] = JSON.stringify([rec.name, rec.games]);
+        persist(); renderListbar();
+        toast(`Joined "${esc(rec.name)}"`);
+      } catch (e) { toast("Couldn't accept: " + esc(e.message)); }
+      $("jinvAccept").disabled = false;
+      jointInvites.shift();
+      $("jinvModal").classList.remove("show");
+      setTimeout(showNextInvite, 350);
+    };
+    $("jinvDecline").onclick = async () => {
+      try { await fetch("/api/joint?a=decline", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) }); } catch {}
+      jointInvites.shift();
+      $("jinvModal").classList.remove("show");
+      toast("Invite declined");
+      setTimeout(showNextInvite, 350);
+    };
+  }
+  setInterval(() => {
+    if (!sharedMode && me && (jointLists.length || jointInvites.length) &&
+        document.visibilityState === "visible" && !syncPending) loadJoint();
+  }, 20000);
   async function syncDown() {
     if (sharedMode) return;
     try {
@@ -3416,7 +3499,7 @@
   function wireFvJoint() {
     const btn = document.getElementById("fvJoint");
     if (!btn) return;
-    btn.onclick = () => inlineNameInput(btn, "lnew", async (value) => {
+    btn.onclick = () => inlineNameInput(btn, "lnew lnewWide", async (value) => {
       const name = (value || "").trim();
       const restore = () => { $("fvJointWrap").innerHTML = `<button id="fvJoint" style="width:100%">Start a joint list</button>`; wireFvJoint(); };
       if (!name) { restore(); return; }
@@ -3434,7 +3517,7 @@
         persist();
         fvModal.classList.remove("show");
         renderAll();
-        toast(`Joint list "${esc(rec.name)}" created — you both have it now`);
+        toast(`Invite sent — "${esc(rec.name)}" is yours to fill while they decide`);
       } catch (e) {
         toast("Couldn't create joint list: " + esc(e.message));
         restore();

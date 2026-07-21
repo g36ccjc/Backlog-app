@@ -65,7 +65,28 @@ export default async function handler(req, res) {
         if (!Array.isArray(rec.members) || !rec.members.includes(uid)) continue;
         lists.push(rec);
       }
-      return res.status(200).json({ lists });
+      const invIds = (await redis(["SMEMBERS", `backlog:jinv:${uid}`])) || [];
+      const invites = [];
+      for (const id of invIds.slice(0, 10)) {
+        const raw = await redis(["GET", `backlog:joint:${id}`]);
+        if (!raw) { await redis(["SREM", `backlog:jinv:${uid}`, id]); continue; }
+        const rec = JSON.parse(raw);
+        if (rec.pending !== uid) { await redis(["SREM", `backlog:jinv:${uid}`, id]); continue; }
+        let fromName = null;
+        const creator = (rec.members || []).find((m) => m !== uid);
+        const key = process.env.STEAM_API_KEY;
+        if (key && /^\d{17}$/.test(creator || "")) {
+          try {
+            const r = await fetch(
+              `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${key}&steamids=${creator}`
+            );
+            const d = await r.json();
+            fromName = d?.response?.players?.[0]?.personaname || null;
+          } catch {}
+        }
+        invites.push({ id: rec.id, name: rec.name, fromName });
+      }
+      return res.status(200).json({ lists, invites });
     }
 
     if (req.method !== "POST") return res.status(405).json({ error: "Use GET or POST." });
@@ -81,12 +102,13 @@ export default async function handler(req, res) {
         id,
         name: String(body?.name || "Joint list").trim().slice(0, 40) || "Joint list",
         members: [uid, fuid],
-        games: [],
+        pending: fuid, // invitee must accept before the list reaches them
         updatedAt: Date.now(),
+        games: [],
       };
       await redis(["SET", `backlog:joint:${id}`, JSON.stringify(rec)]);
       await redis(["SADD", `backlog:jmem:${uid}`, id]);
-      await redis(["SADD", `backlog:jmem:${fuid}`, id]);
+      await redis(["SADD", `backlog:jinv:${fuid}`, id]);
       return res.status(200).json({ list: rec });
     }
 
@@ -97,6 +119,7 @@ export default async function handler(req, res) {
       if (!raw) return res.status(404).json({ error: "List no longer exists." });
       const rec = JSON.parse(raw);
       if (!rec.members?.includes(uid)) return res.status(403).json({ error: "Not your list." });
+      if (rec.pending === uid) return res.status(403).json({ error: "Accept the invite first." });
       rec.games = sanitizeGames(body?.games);
       if (typeof body?.name === "string" && body.name.trim()) rec.name = body.name.trim().slice(0, 40);
       rec.updatedAt = Date.now();
@@ -106,14 +129,47 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, updatedAt: rec.updatedAt });
     }
 
+    if (action === "accept") {
+      const id = String(body?.id || "");
+      const raw = await redis(["GET", `backlog:joint:${id}`]);
+      if (!raw) return res.status(404).json({ error: "That invite has expired." });
+      const rec = JSON.parse(raw);
+      if (rec.pending !== uid) return res.status(403).json({ error: "Not your invite." });
+      delete rec.pending;
+      rec.updatedAt = Date.now();
+      await redis(["SET", `backlog:joint:${id}`, JSON.stringify(rec)]);
+      await redis(["SREM", `backlog:jinv:${uid}`, id]);
+      await redis(["SADD", `backlog:jmem:${uid}`, id]);
+      return res.status(200).json({ list: rec });
+    }
+
+    if (action === "decline") {
+      const id = String(body?.id || "");
+      await redis(["SREM", `backlog:jinv:${uid}`, id]);
+      const raw = await redis(["GET", `backlog:joint:${id}`]);
+      if (raw) {
+        const rec = JSON.parse(raw);
+        if (rec.pending === uid) {
+          // cancelling the request removes the list for the creator too
+          for (const m of rec.members || []) await redis(["SREM", `backlog:jmem:${m}`, id]);
+          await redis(["DEL", `backlog:joint:${id}`]);
+        }
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     if (action === "leave") {
       const id = String(body?.id || "");
       const raw = await redis(["GET", `backlog:joint:${id}`]);
       await redis(["SREM", `backlog:jmem:${uid}`, id]);
       if (raw) {
         const rec = JSON.parse(raw);
+        if (rec.pending) { await redis(["SREM", `backlog:jinv:${rec.pending}`, id]); }
         rec.members = (rec.members || []).filter((m) => m !== uid);
-        if (!rec.members.length) await redis(["DEL", `backlog:joint:${id}`]);
+        if (!rec.members.length || rec.pending) {
+          for (const m of rec.members) await redis(["SREM", `backlog:jmem:${m}`, id]);
+          await redis(["DEL", `backlog:joint:${id}`]);
+        }
         else await redis(["SET", `backlog:joint:${id}`, JSON.stringify(rec)]);
       }
       return res.status(200).json({ ok: true });
