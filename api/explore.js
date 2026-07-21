@@ -22,8 +22,14 @@ function mapItem(it) {
     name: String(it.name || "").slice(0, 200),
     discount: it.discount_percent || 0,
     genres: [],
-    // Steam-provided art URLs — reliable, unlike constructed CDN paths
-    img: it.large_capsule_image || it.header_image || it.small_capsule_image || null,
+    // Steam-provided art URLs — capture whichever key this feed uses, and
+    // normalise protocol-relative URLs (Steam sometimes returns //host/...)
+    img: (function () {
+      const u = it.large_capsule_image || it.header_image || it.small_capsule_image ||
+                it.capsule_image || it.image || null;
+      if (!u) return null;
+      return u.startsWith("//") ? "https:" + u : u;
+    })(),
     price: it.is_free
       ? { free: true }
       : cents != null
