@@ -300,16 +300,6 @@ export default async function handler(req, res) {
         strategy = "achievement-recency";
       }
 
-      if (req.query?.debug === "1") {
-        return res.status(200).json({
-          profileStatus: prof.status,
-          strategy,
-          ordered,
-          cacheAgeMin: cached ? Math.round((Date.now() - cached.at) / 60000) : null,
-          apiSetSize: apiGames.length,
-          games,
-        });
-      }
       return res.status(200).json({ games, ordered });
     } catch (err) {
       return res.status(502).json({ error: err.message });

@@ -260,9 +260,8 @@ async function getHltbAuthInner() {
   }
 }
 
-async function hltbSearch(name, tr) {
+async function hltbSearch(name) {
   const auth = await getHltbAuth();
-  if (tr) tr.push(auth && auth.token ? `key:ok(${auth.path})` : `init:${auth ? auth.initStatus : "ERR"}`);
   const base = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").trim();
   const noDots = base.replace(/\.(?=\S)/g, "");
   const mainTitle = noDots.split(":")[0].trim();
@@ -341,13 +340,12 @@ async function hltbSearch(name, tr) {
       apiNotes[apiNotes.length - 1] += "+pageX";
     }
   }
-  if (tr) tr.push("api:" + apiNotes.join("/"));
   return null;
 }
 
 // Last-ditch: find the HLTB game page via DuckDuckGo's HTML endpoint and
 // read the times straight off the page. Survives HLTB API/key changes.
-async function hltbViaWebSearch(name, tr) {
+async function hltbViaWebSearch(name) {
   const clean = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\.(?=\S)/g, "").trim();
   // first: HLTB's own search page sometimes embeds game links server-side
   try {
@@ -361,13 +359,12 @@ async function hltbViaWebSearch(name, tr) {
     if (r0.ok) {
       const h0 = await r0.text();
       const ids0 = [...new Set([...h0.matchAll(/\/game\/(\d+)/g)].map((mm) => +mm[1]))].slice(0, 3);
-      if (tr) tr.push("self:" + r0.status + ":" + ids0.length);
       for (const id of ids0) {
         const tt = await hltbPage(id, clean);
         if (tt) return tt;
       }
-    } else if (tr) tr.push("self:" + r0.status);
-  } catch (e0) { if (tr) tr.push("self:ERR"); }
+    }
+  } catch { /* fall through to engines */ }
   const engines = [
     "https://html.duckduckgo.com/html/?q=",
     "https://www.bing.com/search?q=",
@@ -381,17 +378,16 @@ async function hltbViaWebSearch(name, tr) {
         headers: { "User-Agent": HLTB_UA, "Accept": "text/html", "Accept-Language": "en" },
       });
       clearTimeout(timer);
-      if (!r.ok) { if (tr) tr.push(base.includes("bing") ? "bing:" + r.status : "ddg:" + r.status); continue; }
+      if (!r.ok) continue;
       const html = await r.text();
       const ids = [...new Set(
         [...html.matchAll(/howlongtobeat\.com\/game\/(\d+)/g)].map((mm) => +mm[1])
       )].slice(0, 3);
-      if (tr) tr.push((base.includes("bing") ? "bing:" : "ddg:") + r.status + ":" + ids.length);
       for (const id of ids) {
         const t = await hltbPage(id, clean); // identity-checked: wrong game rejected
         if (t) return t;
       }
-    } catch { if (tr) tr.push(base.includes("bing") ? "bing:ERR" : "ddg:ERR"); }
+    } catch { /* next engine */ }
   }
   return null;
 }
@@ -413,15 +409,11 @@ async function hltbTimes(appid, name) {
   }
 }
 async function hltbTimesInner(appid, name) {
-  const tr = [];
   try {
     let d = null;
     try {
       d = await getJson(`${HLTB_BASE}/${appid}`);
-      tr.push("map:" + (Array.isArray(d) ? d.length : d ? 1 : 0));
-    } catch (eMap) {
-      tr.push("map:" + String(eMap.message || "ERR").slice(0, 12));
-    }
+    } catch { /* mapping service miss — fall through to search */ }
     // Populated single entry (object, or one-element array per the docs)
     const single = Array.isArray(d) ? (d.length === 1 ? d[0] : null) : d;
     if (single) {
@@ -443,58 +435,36 @@ async function hltbTimesInner(appid, name) {
         .slice(0, 2); // at most two page fetches per game
       for (const { e } of scored) {
         const direct = readTimes(e);
-        if (hasTimes(direct)) return { ...direct, hltbTrace: null };
+        if (hasTimes(direct)) return direct;
         if (e.hltbId != null) {
           const t = await hltbPage(e.hltbId);
-          if (t) return { ...t, hltbTrace: null };
+          if (t) return t;
         }
       }
     }
     // Last resorts: the mapping service doesn't know this game at all —
     // search HowLongToBeat by name, then via web search to their game page.
     if (name) {
-      const t = await hltbSearch(name, tr);
-      if (t) return { ...t, hltbTrace: null };
-      const t2 = await hltbViaWebSearch(name, tr);
-      if (t2) return { ...t2, hltbTrace: null };
+      const t = await hltbSearch(name);
+      if (t) return t;
+      const t2 = await hltbViaWebSearch(name);
+      if (t2) return t2;
     }
-    return { mainStory: null, completionist: null, hltbTrace: tr.join(" · ").slice(0, 180) };
-  } catch (eTop) {
-    tr.push("top:" + (eTop.message || "ERR").slice(0, 30));
+    return { mainStory: null, completionist: null };
+  } catch {
     if (name) {
       try {
-        const t = await hltbSearch(name, tr);
-        if (t) return { ...t, hltbTrace: null };
-        const t2 = await hltbViaWebSearch(name, tr);
-        if (t2) return { ...t2, hltbTrace: null };
+        const t = await hltbSearch(name);
+        if (t) return t;
+        const t2 = await hltbViaWebSearch(name);
+        if (t2) return t2;
       } catch { /* give up */ }
     }
-    return { mainStory: null, completionist: null, hltbTrace: tr.join(" · ").slice(0, 180) };
+    return { mainStory: null, completionist: null };
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method === "GET" && req.query?.hltbdebug === "1") {
-    const name = String(req.query.name || "");
-    const appid = +req.query.appid || 0;
-    const trace = { name, appid };
-    try {
-      const r = await fetch(`https://hltbapi.codepotatoes.de/steam/${appid}`);
-      trace.mappingService = r.status;
-      if (r.ok) {
-        const d = await r.json();
-        trace.mappingResult = Array.isArray(d) ? d.length + " candidates" : d && (d.hltbId || d.title) ? "single entry" : "empty";
-      }
-    } catch (e) { trace.mappingService = "error: " + e.message; }
-    const tok = await getHltbAuth();
-    trace.searchKey = tok && tok.token
-      ? `/api/${tok.path}/ (token ok)`
-      : `NO TOKEN (path:${tok ? tok.path : "?"} init:${tok ? tok.initStatus : "?"})`;
-    trace.apiSearch = (await hltbSearch(name)) || "no result";
-    trace.webSearch = trace.apiSearch === "no result" ? ((await hltbViaWebSearch(name)) || "no result") : "skipped";
-    trace.finalAnswer = await hltbTimes(appid, name);
-    return res.status(200).json(trace);
-  }
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
 

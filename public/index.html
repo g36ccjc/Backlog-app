@@ -911,7 +911,7 @@
     </div>
 
     <div class="featWrap" id="recentWrap" style="display:none">
-      <div class="featHead"><span class="featTitle" id="recentTitle" role="button" title="Tap for diagnostics">Recently played</span></div>
+      <div class="featHead"><span class="featTitle">Recently played</span></div>
       <div class="feat" id="recent"></div>
     </div>
 
@@ -1109,18 +1109,6 @@
       <div class="hint" id="guideHint">Pick a source. These are the most reliable spots to find a complete 100% or achievement guide.</div>
       <div class="gsBody" id="guideBody"></div>
       <div class="footRow"><button id="guideClose">Close</button></div>
-    </div>
-  </div>
-
-  <!-- recently played diagnostics -->
-  <div class="modal" id="diagModal">
-    <div class="sheet">
-      <h2 id="diagTitle">Diagnostics</h2>
-      <div class="gsBody"><pre id="diagOut" style="white-space:pre-wrap; font-size:12px; line-height:1.55; font-family:ui-monospace,Menlo,monospace; color:var(--ink); margin:0;">Running checks…</pre></div>
-      <div class="footRow">
-        <button id="diagCopy">Copy report</button>
-        <button class="go" id="diagClose">Close</button>
-      </div>
     </div>
   </div>
 
@@ -1677,44 +1665,6 @@
       if (need.length) fetchStats(need);
       renderRecent();
     } catch { /* section simply stays hidden */ }
-  }
-  // One-tap diagnostics: what the server did, whether the deployed backend
-  // files are current, and every candidate's recency signals — copyable.
-  async function runRecentDiag() {
-    const out = [];
-    const day = (ts) => ts ? new Date(ts).toISOString().slice(0, 10) : "—";
-    try {
-      const r = await fetch("/api/library?recent=1&debug=1");
-      const d = await r.json();
-      out.push("== SERVER ==");
-      out.push("strategy: " + (d.strategy || "(no strategy field → api/library.js is OUTDATED, re-upload it)"));
-      out.push("profile fetch: " + (d.profileStatus || "n/a"));
-      out.push("api set size: " + (d.apiSetSize ?? "n/a"));
-      out.push("server games: " + (d.games || []).map(g => `${g.name}${g.lastPlayedText ? " [" + g.lastPlayedText + "]" : g.lastPlayed ? " [" + day(g.lastPlayed * 1000) + "]" : ""}`).join(" | "));
-    } catch (e) {
-      out.push("server debug call failed: " + e.message);
-    }
-    const hasUnlock = Object.values(stats).some(s => s && ("lastUnlock" in s));
-    out.push("");
-    out.push("== DEPLOYED FILES ==");
-    out.push("api/stats.js unlock timestamps: " + (hasUnlock ? "present ✓" : "MISSING → api/stats.js is OUTDATED, re-upload it"));
-    out.push("");
-    out.push("== TOP CANDIDATES (client ranking) ==");
-    const rec2 = (g) => {
-      const st = stats[g.appid] || {};
-      return Math.max((g.lastPlayed || 0) * 1000, (st.lastUnlock || 0) * 1000, st.lastActive || 0);
-    };
-    const pool = new Map((recentGames || []).map(g => [g.appid, g]));
-    for (const g of allGames()) if (!pool.has(g.appid)) pool.set(g.appid, { appid: g.appid, name: g.name });
-    const ranked = [...pool.values()].map(g => ({ g, t: rec2(g) })).sort((a, b) => b.t - a.t).slice(0, 8);
-    for (const { g, t } of ranked) {
-      const st = stats[g.appid] || {};
-      out.push(`${g.name} — signal ${day(t)} (unlock ${day((st.lastUnlock || 0) * 1000)}, observed ${day(st.lastActive || 0)})`);
-    }
-    out.push("");
-    out.push("== SHOWN IN STRIP ==");
-    out.push((recentGames || []).map(g => g.name).join(" | ") || "(empty)");
-    return out.join("\n");
   }
   function renderRecent() {
     const wrap = $("recentWrap");
@@ -2631,14 +2581,12 @@
       { v: typeof ms==="number" ? ms : "—", k: "Metacritic", cls: metaCls },
       { v: achCell, k: "achievements", cls: achCls },
       priceCell || { v: played + (pm==null?"":`<span class="u">h</span>`), k: "played" },
-      { v: m==null?"—":m+`<span class="u">h</span>`, k: m==null&&c==null?"main story · why?":"main story", why: m==null&&c==null },
-      { v: c==null?"—":c+`<span class="u">h</span>`, k: m==null&&c==null?"100% time · why?":"100% time", why: m==null&&c==null },
+      { v: m==null?"—":m+`<span class="u">h</span>`, k: "main story" },
+      { v: c==null?"—":c+`<span class="u">h</span>`, k: "100% time" },
       { v: a && !a.none ? Math.round(a.pct*100)+`<span class="u">%</span>` : "—", k: "completion", cls: achCls },
     ];
     const gridHtml = `<div class="gsGrid">` + cells.map(x =>
-      `<div class="cell ${x.cls||""}"${x.why?` data-hltbwhy="1" role="button"`:""}><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>` +
-      (m==null && c==null && s.hltbTrace
-        ? `<div class="hltbTr">hours lookup: ${esc(s.hltbTrace)}</div>` : "");
+      `<div class="cell ${x.cls||""}"><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
 
     // external links: reviews + a picker for 100% guides.
     // Steam: the community reviews hub is a dedicated page (the old store
@@ -2685,8 +2633,6 @@
     if (gb) gb.onclick = () => openGuidePicker(g);
     const sb = $("gsBody").querySelector("[data-steamapp]");
     if (sb) sb.onclick = () => openInSteam(+sb.dataset.steamapp);
-    $("gsBody").querySelectorAll("[data-hltbwhy]").forEach(cell =>
-      cell.onclick = () => openHltbTrace(g));
     if (!sharedMode) {
       $("gsBody").querySelectorAll("[data-score]").forEach(b => b.onclick = () => {
         const n = +b.dataset.score;
@@ -4137,38 +4083,6 @@
   // ============ boot ============
   $("filter").oninput = e => { filterText = e.target.value; renderGames(); };
   $("footTop").onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  $("recentTitle").onclick = async () => {
-    $("diagTitle").textContent = "Recently played — diagnostics";
-    $("diagOut").textContent = "Running checks…";
-    $("diagModal").classList.add("show");
-    $("diagOut").textContent = await runRecentDiag();
-  };
-  async function openHltbTrace(g) {
-    $("diagTitle").textContent = "Missing hours — diagnostics";
-    $("diagOut").textContent = "Tracing HowLongToBeat lookup…";
-    $("diagModal").classList.add("show");
-    try {
-      const r = await fetch(`/api/stats?hltbdebug=1&appid=${g.appid}&name=${encodeURIComponent(g.name)}`);
-      const d = await r.json();
-      $("diagOut").textContent = JSON.stringify(d, null, 2);
-      const f = d.finalAnswer;
-      if (f && (f.mainStory != null || f.completionist != null)) {
-        stats[g.appid] = { ...(stats[g.appid] || {}), mainStory: f.mainStory, completionist: f.completionist, hltbTrace: null };
-        persist(); syncUp(); renderGames();
-        if (sheetGame === g.appid) openGameSheet(g.appid); // sheet updates behind the trace
-        toast(`Found it — ${hrs(f.mainStory) ?? "?"}h main saved`);
-      }
-    } catch (e) {
-      $("diagOut").textContent = "Trace failed: " + e.message +
-        "\n(If this says 404, api/stats.js on the server is outdated — re-upload it.)";
-    }
-  }
-  $("diagClose").onclick = () => $("diagModal").classList.remove("show");
-  $("diagModal").onclick = e => { if (e.target === $("diagModal")) $("diagModal").classList.remove("show"); };
-  $("diagCopy").onclick = async () => {
-    try { await navigator.clipboard.writeText($("diagOut").textContent); toast("Report copied — paste it to Claude"); }
-    catch { toast("Couldn't copy — screenshot it instead"); }
-  };
 
   // ---- refresh: header button + pull-to-refresh ----
   let refreshing = false;
