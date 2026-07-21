@@ -21,7 +21,9 @@ function mapItem(it) {
     appid: it.id,
     name: String(it.name || "").slice(0, 200),
     discount: it.discount_percent || 0,
-    genres: [], // featuredcategories has no genre field; filled client-side if known
+    genres: [],
+    // Steam-provided art URLs — reliable, unlike constructed CDN paths
+    img: it.large_capsule_image || it.header_image || it.small_capsule_image || null,
     price: it.is_free
       ? { free: true }
       : cents != null
@@ -109,6 +111,7 @@ export default async function handler(req, res) {
               ? { final: it.price.final, discount: 0, str: "AUD " + (it.price.final / 100).toFixed(2), orig: null }
               : it.price === undefined ? null : { free: true },
             genres: [cat],
+            img: it.tiny_image || it.large_capsule_image || null,
           })).filter((x) => x.appid);
           if (storageReady() && items.length) {
             try { await redis(["SET", key, JSON.stringify(items), "EX", String(CACHE_TTL)]); } catch {}
