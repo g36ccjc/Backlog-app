@@ -3086,6 +3086,9 @@
             stats[id] = { ...prev, ...v, ...(lastActive ? { lastActive } : {}) };
           }
           persist(); syncUp(); renderGames();
+          if (sheetGame && d.stats[sheetGame] && $("gameModal").classList.contains("show")) {
+            openGameSheet(sheetGame); // live-update the open sheet with fresh numbers
+          }
           return;
         }
       } catch { /* brief pause, then one retry */ }
@@ -4148,6 +4151,13 @@
       const r = await fetch(`/api/stats?hltbdebug=1&appid=${g.appid}&name=${encodeURIComponent(g.name)}`);
       const d = await r.json();
       $("diagOut").textContent = JSON.stringify(d, null, 2);
+      const f = d.finalAnswer;
+      if (f && (f.mainStory != null || f.completionist != null)) {
+        stats[g.appid] = { ...(stats[g.appid] || {}), mainStory: f.mainStory, completionist: f.completionist, hltbTrace: null };
+        persist(); syncUp(); renderGames();
+        if (sheetGame === g.appid) openGameSheet(g.appid); // sheet updates behind the trace
+        toast(`Found it — ${hrs(f.mainStory) ?? "?"}h main saved`);
+      }
     } catch (e) {
       $("diagOut").textContent = "Trace failed: " + e.message +
         "\n(If this says 404, api/stats.js on the server is outdated — re-upload it.)";
