@@ -215,26 +215,65 @@ async function hltbToken() {
     });
     if (!home.ok) return null;
     const html = await home.text();
-    // the key lives in the _app chunk; check that first, then a few others
-    const chunks = [...html.matchAll(/src="(\/_next\/static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]);
-    chunks.sort((a, b) => (b.includes("_app") ? 1 : 0) - (a.includes("_app") ? 1 : 0));
-    for (const src of chunks.slice(0, 5)) {
+    const chunkSrcs = [...html.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)].map((m) => m[1]);
+    chunkSrcs.sort((a, b) => (b.includes("_app") ? 1 : 0) - (a.includes("_app") ? 1 : 0));
+    const sources = [html]; // inline scripts can carry it too
+    for (const src of chunkSrcs.slice(0, 12)) {
       try {
         const r = await fetch("https://howlongtobeat.com" + src, { headers: { "User-Agent": HLTB_UA } });
-        if (!r.ok) continue;
-        const js = await r.text();
-        const pathM = js.match(/"\/api\/([a-z]+)\/"/);
-        if (!pathM) continue;
-        const keyM = js.match(
-          /\/api\/[a-z]+\/"\s*\.concat\(\s*"([^"]+)"\s*\)(?:\s*\.concat\(\s*"([^"]+)"\s*\))?/
-        );
-        if (keyM) {
-          hltbTok = { v: { path: pathM[1], key: (keyM[1] || "") + (keyM[2] || "") }, at: Date.now() };
-          return hltbTok.v;
-        }
-      } catch { /* try next chunk */ }
+        if (r.ok) sources.push(await r.text());
+      } catch { /* next chunk */ }
+    }
+    for (const js of sources) {
+      const tok = extractHltbKey(js);
+      if (tok) { hltbTok = { v: tok, at: Date.now() }; return tok; }
     }
   } catch { /* fall through */ }
+  return null;
+}
+
+// The search key is assembled in HLTB's bundle next to an "/api/<seg>/"
+// string. They keep changing HOW it's assembled, so this recognises the
+// three shapes seen in the wild: literal concat chains, variable concat
+// chains (resolved from assignments elsewhere in the file), and plain
+// "+"-joined variables.
+function extractHltbKey(js) {
+  const resolveVar = (v) => {
+    const rx = new RegExp(v.replace(/\$/g, "\\$") + '\\s*=\\s*"([A-Za-z0-9]+)"');
+    const mm = js.match(rx);
+    return mm ? mm[1] : null;
+  };
+  for (const m of js.matchAll(/"\/api\/([A-Za-z0-9_]+)\/"/g)) {
+    const path = m[1];
+    if (["user", "game", "login", "logout"].includes(path)) continue;
+    const win = js.slice(m.index, m.index + 400);
+    // A) "/api/x/".concat("a").concat("b") — also concat("a","b")
+    const lits = [...win.matchAll(/\.concat\(\s*((?:"[A-Za-z0-9]+"\s*,?\s*)+)\)/g)]
+      .flatMap((c) => [...c[1].matchAll(/"([A-Za-z0-9]+)"/g)].map((x) => x[1]));
+    if (lits.length) {
+      const key = lits.join("");
+      if (key.length >= 8) return { path, key };
+    }
+    // B) .concat(a).concat(b) / .concat(a, b) with a = "literal" elsewhere
+    const varsUsed = [...win.matchAll(/\.concat\(\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\)/g)]
+      .flatMap((c) => [c[1], c[2]].filter(Boolean));
+    if (varsUsed.length) {
+      const parts = varsUsed.map(resolveVar);
+      if (parts.length && parts.every(Boolean)) {
+        const key = parts.join("");
+        if (key.length >= 8) return { path, key };
+      }
+    }
+    // C) "/api/x/" + a + b
+    const plus = win.match(/"\s*\+\s*([A-Za-z_$][\w$]*)\s*(?:\+\s*([A-Za-z_$][\w$]*))?/);
+    if (plus) {
+      const parts = [plus[1], plus[2]].filter(Boolean).map(resolveVar);
+      if (parts.length && parts.every(Boolean)) {
+        const key = parts.join("");
+        if (key.length >= 8) return { path, key };
+      }
+    }
+  }
   return null;
 }
 
@@ -371,7 +410,13 @@ async function hltbViaWebSearch(name, tr) {
 async function hltbTimes(appid, name) {
   const tr = [];
   try {
-    const d = await getJson(`${HLTB_BASE}/${appid}`);
+    let d = null;
+    try {
+      d = await getJson(`${HLTB_BASE}/${appid}`);
+      tr.push("map:" + (Array.isArray(d) ? d.length : d ? 1 : 0));
+    } catch (eMap) {
+      tr.push("map:" + String(eMap.message || "ERR").slice(0, 12));
+    }
     // Populated single entry (object, or one-element array per the docs)
     const single = Array.isArray(d) ? (d.length === 1 ? d[0] : null) : d;
     if (single) {
@@ -430,7 +475,6 @@ export default async function handler(req, res) {
     const trace = { name, appid };
     try {
       const r = await fetch(`https://hltbapi.codepotatoes.de/steam/${appid}`);
-    tr.push("map:" + r.status);
       trace.mappingService = r.status;
       if (r.ok) {
         const d = await r.json();
