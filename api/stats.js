@@ -245,7 +245,7 @@ async function hltbSearch(name, tr) {
   const noDots = base.replace(/\.(?=\S)/g, "");            // S.T.A.L.K.E.R. -> STALKER
   const mainTitle = noDots.split(":")[0].trim();             // drop the subtitle
   const noEdition = noDots.replace(
-    /\b(remastered|remaster|definitive edition|definitive|enhanced edition|enhanced|complete edition|goty(?: edition)?|game of the year(?: edition)?|director'?s cut|anniversary edition|legendary edition|hd)\b/gi,
+    /\b(remastered|remaster|definitive edition|definitive|enhanced edition|enhanced|complete edition|deluxe edition|deluxe|ultimate edition|gold edition|premium edition|goty(?: edition)?|game of the year(?: edition)?|director'?s cut|anniversary edition|legendary edition|redux|hd)\b/gi,
     ""
   ).replace(/\s{2,}/g, " ").replace(/[:\-]\s*$/, "").trim();
   const attempts = [...new Set([base, noDots, noEdition, mainTitle])].filter((s) => s.length >= 2);
