@@ -1326,17 +1326,20 @@
   function portrait(g){ return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`; }
   // ordered list of art URLs to try for an appid (Steam serves different
   // formats per game; newer/unreleased titles often lack header.jpg)
-  function artChain(appid){
+  function artChain(g){
+    const appid = typeof g === "object" ? g.appid : g;
+    const provided = typeof g === "object" && g.img ? [g.img] : [];
     const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}`;
     const ak = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}`;
     return [
+      ...provided,
       `${cf}/header.jpg`, `${cf}/capsule_616x353.jpg`, `${cf}/capsule_231x87.jpg`,
       `${ak}/header.jpg`, `${ak}/capsule_616x353.jpg`, `${cf}/library_600x900.jpg`,
     ];
   }
   // inline onerror handler that walks the chain then hides
-  function artOnErr(appid){
-    const urls = artChain(appid);
+  function artOnErr(g){
+    const urls = artChain(g);
     return `var u=${JSON.stringify(urls)};var i=(+this.dataset.i||0)+1;if(i<u.length){this.dataset.i=i;this.src=u[i]}else{this.style.visibility='hidden'}`;
   }
 
@@ -2466,7 +2469,7 @@
     const best = (exActive === "deals" || exActive === "top") && !exQuery && !exCat ? dealPool[0] : null;
     $("exDeal").innerHTML = best ? `
       <div class="exDealCard">
-        <img src="${artChain(best.appid)[0]}" loading="lazy" alt="" onerror="${artOnErr(best.appid)}">
+        <img src="${artChain(best)[0]}" loading="lazy" alt="" onerror="${artOnErr(best)}">
         <div class="dInfo">
           <div class="dTag">★ Best deal right now</div>
           <div class="dName">${esc(best.name)}</div>
@@ -2478,7 +2481,7 @@
     if (!items.length) { $("exBody").innerHTML = `<div class="exEmpty">${exQuery||exCat?"No matches — try a different search or category.":"Nothing here right now — check back later."}</div>`; return; }
     $("exBody").innerHTML = items.map(g => {
       const owned = exOwned(g.appid);
-      const cap = artChain(g.appid)[0];
+      const cap = artChain(g)[0];
       let meta = "";
       if (g.price?.free) meta = `<span class="p">Free</span>`;
       else if (g.price?.str) meta = g.discount > 0
@@ -2487,7 +2490,7 @@
       else meta = exActive === "upcoming" ? "Coming soon" : "";
       return `<div class="exCard">
         <div class="exArt">
-          <img src="${cap}" loading="lazy" alt="" onerror="${artOnErr(g.appid)}">
+          <img src="${cap}" loading="lazy" alt="" onerror="${artOnErr(g)}">
           ${g.discount > 0 ? `<span class="exDisc">-${g.discount}%</span>` : ""}
           ${owned ? `<span class="exOwned">In your lists</span>` : ""}
         </div>
