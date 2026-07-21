@@ -3991,7 +3991,6 @@
   $("avatarBtn").onclick = () => showView("profile");
   $("topExploreBtn").onclick = () => showView("explore");
   $("topHome").onclick = () => showView("lists");
-  $("wordmark").onclick = () => showView("explore");
   $("exToLists").onclick = () => showView("lists");
   $("exTabs").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => loadExplore(b.dataset.ex));
   $("exSearch").oninput = e => { exQuery = e.target.value.trim(); renderExplore(); };
@@ -4412,8 +4411,7 @@
   })();
   document.querySelector(".wordmark").onclick = () => {
     if (sharedMode) { location.href = "/"; return; }  // leave a shared snapshot
-    showProfile(false);                               // close profile if open
-    window.scrollTo({ top: 0 });
+    showView("explore");                              // wordmark is the home button
   };
 
   // ---- silent background refresh + since-last-visit diff + history ----
