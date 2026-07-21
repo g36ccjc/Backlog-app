@@ -316,6 +316,24 @@ async function hltbSearch(name) {
 // read the times straight off the page. Survives HLTB API/key changes.
 async function hltbViaWebSearch(name) {
   const clean = String(name).replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\.(?=\S)/g, "").trim();
+  // first: HLTB's own search page sometimes embeds game links server-side
+  try {
+    const controller0 = new AbortController();
+    const t0 = setTimeout(() => controller0.abort(), 5000);
+    const r0 = await fetch("https://howlongtobeat.com/?q=" + encodeURIComponent(clean), {
+      signal: controller0.signal,
+      headers: { "User-Agent": HLTB_UA, "Accept": "text/html" },
+    });
+    clearTimeout(t0);
+    if (r0.ok) {
+      const h0 = await r0.text();
+      const ids0 = [...new Set([...h0.matchAll(/\/game\/(\d+)/g)].map((mm) => +mm[1]))].slice(0, 3);
+      for (const id of ids0) {
+        const tt = await hltbPage(id, clean);
+        if (tt) return tt;
+      }
+    }
+  } catch { /* fall through to engines */ }
   const engines = [
     "https://html.duckduckgo.com/html/?q=",
     "https://www.bing.com/search?q=",

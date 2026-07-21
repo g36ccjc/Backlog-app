@@ -1114,7 +1114,7 @@
   <!-- recently played diagnostics -->
   <div class="modal" id="diagModal">
     <div class="sheet">
-      <h2>Recently played — diagnostics</h2>
+      <h2 id="diagTitle">Diagnostics</h2>
       <div class="gsBody"><pre id="diagOut" style="white-space:pre-wrap; font-size:12px; line-height:1.55; font-family:ui-monospace,Menlo,monospace; color:var(--ink); margin:0;">Running checks…</pre></div>
       <div class="footRow">
         <button id="diagCopy">Copy report</button>
@@ -2630,12 +2630,12 @@
       { v: typeof ms==="number" ? ms : "—", k: "Metacritic", cls: metaCls },
       { v: achCell, k: "achievements", cls: achCls },
       priceCell || { v: played + (pm==null?"":`<span class="u">h</span>`), k: "played" },
-      { v: m==null?"—":m+`<span class="u">h</span>`, k: "main story" },
-      { v: c==null?"—":c+`<span class="u">h</span>`, k: "100% time" },
+      { v: m==null?"—":m+`<span class="u">h</span>`, k: m==null&&c==null?"main story · why?":"main story", why: m==null&&c==null },
+      { v: c==null?"—":c+`<span class="u">h</span>`, k: m==null&&c==null?"100% time · why?":"100% time", why: m==null&&c==null },
       { v: a && !a.none ? Math.round(a.pct*100)+`<span class="u">%</span>` : "—", k: "completion", cls: achCls },
     ];
     const gridHtml = `<div class="gsGrid">` + cells.map(x =>
-      `<div class="cell ${x.cls||""}"><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
+      `<div class="cell ${x.cls||""}"${x.why?` data-hltbwhy="1" role="button"`:""}><div class="v">${x.v}</div><div class="k">${x.k}</div></div>`).join("") + `</div>`;
 
     // external links: reviews + a picker for 100% guides.
     // Steam: the community reviews hub is a dedicated page (the old store
@@ -2682,6 +2682,8 @@
     if (gb) gb.onclick = () => openGuidePicker(g);
     const sb = $("gsBody").querySelector("[data-steamapp]");
     if (sb) sb.onclick = () => openInSteam(+sb.dataset.steamapp);
+    $("gsBody").querySelectorAll("[data-hltbwhy]").forEach(cell =>
+      cell.onclick = () => openHltbTrace(g));
     if (!sharedMode) {
       $("gsBody").querySelectorAll("[data-score]").forEach(b => b.onclick = () => {
         const n = +b.dataset.score;
@@ -4130,10 +4132,24 @@
   $("filter").oninput = e => { filterText = e.target.value; renderGames(); };
   $("footTop").onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
   $("recentTitle").onclick = async () => {
+    $("diagTitle").textContent = "Recently played — diagnostics";
     $("diagOut").textContent = "Running checks…";
     $("diagModal").classList.add("show");
     $("diagOut").textContent = await runRecentDiag();
   };
+  async function openHltbTrace(g) {
+    $("diagTitle").textContent = "Missing hours — diagnostics";
+    $("diagOut").textContent = "Tracing HowLongToBeat lookup…";
+    $("diagModal").classList.add("show");
+    try {
+      const r = await fetch(`/api/stats?hltbdebug=1&appid=${g.appid}&name=${encodeURIComponent(g.name)}`);
+      const d = await r.json();
+      $("diagOut").textContent = JSON.stringify(d, null, 2);
+    } catch (e) {
+      $("diagOut").textContent = "Trace failed: " + e.message +
+        "\n(If this says 404, api/stats.js on the server is outdated — re-upload it.)";
+    }
+  }
   $("diagClose").onclick = () => $("diagModal").classList.remove("show");
   $("diagModal").onclick = e => { if (e.target === $("diagModal")) $("diagModal").classList.remove("show"); };
   $("diagCopy").onclick = async () => {
@@ -4279,6 +4295,13 @@
     localStorage.setItem(AUTOSYNC_KEY, String(Date.now()));
     try { await syncWishlist(() => {}, true); } catch {}
     try { await scanCompleted(() => {}, true); } catch {}
+    // retry games whose hour estimates are still blank — each pass runs
+    // them through the (ever-improving) lookup chain again
+    const blank = allGames().filter(g => {
+      const st = stats[g.appid];
+      return st && st.mainStory == null && st.completionist == null;
+    });
+    for (let i = 0; i < blank.length; i += 40) await fetchStats(blank.slice(i, i + 40));
     renderAll();
   }
 
