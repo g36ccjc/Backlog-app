@@ -55,49 +55,7 @@
   }
   .wordmark { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.3px; margin-right: auto; user-select: none; cursor: pointer; }
   .wordmark b { color: var(--gold); font-weight: 700; }
-  .topExplore { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink-dim); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: color 0.15s ease, border-color 0.15s ease; }
-  .topExplore svg { display: block; }
-  .topExplore:active { color: var(--gold); }
-  @media (hover:hover) { .topExplore:hover { color: var(--gold); border-color: var(--gold); } }
-  .topExplore.navon { color: var(--gold); border-color: var(--gold); background: rgba(228,184,92,0.12); }
-  .exHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .exTitle { font-family: var(--display); font-weight: 800; font-size: 22px; }
-  .exClose { font-family: var(--display); font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-solid); cursor: pointer; }
-  .exTabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .exTabs button { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12.5px; padding: 9px 15px; border-radius: 999px; background: var(--surface-2); color: var(--ink-dim); border: 1px solid var(--line-solid); cursor: pointer; white-space: nowrap; }
-  .exTabs button.on { color: #16130a; background: var(--gold); border-color: var(--gold); }
-  .exSearchRow { margin-bottom: 12px; }
-  #exSearch { width: 100%; font-family: var(--body); font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-solid); border-radius: 12px; padding: 12px 14px; outline: none; }
-  #exSearch:focus { border-color: rgba(228,184,92,0.5); }
-  .exCats { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
-  .exCats button { font-family: var(--display); font-weight: 700; font-size: 11.5px; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); color: var(--ink-dim); border: 1px solid var(--line-solid); cursor: pointer; }
-  .exCats button.on { color: var(--gold); border-color: var(--gold); }
   .genreChip { display: inline-block; font-family: var(--display); font-weight: 700; font-size: 10.5px; color: var(--gold); background: rgba(228,184,92,0.12); border-radius: 6px; padding: 2px 7px; margin: 0 4px 4px 0; cursor: pointer; }
-  .exDealCard { display: flex; gap: 14px; cursor: pointer; background: linear-gradient(135deg, rgba(46,163,107,0.18), var(--surface)); border: 1px solid rgba(46,163,107,0.5); border-radius: 14px; padding: 12px; margin-bottom: 18px; align-items: center; }
-  .exDealCard img { width: 128px; aspect-ratio: 460/215; object-fit: cover; border-radius: 9px; flex-shrink: 0; background: var(--surface-2); }
-  .exDealCard .dInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-  .exDealCard .dTag { font-family: var(--display); font-weight: 800; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #2ea36b; }
-  .exDealCard .dName { font-size: 15px; font-weight: 700; line-height: 1.25; }
-  .exDealCard .dPrice { font-family: var(--display); font-weight: 800; font-size: 14px; }
-  .exDealCard .dPrice .off { color: #2ea36b; margin-right: 8px; }
-  .exDealCard .dPrice .old { color: var(--ink-dim); text-decoration: line-through; font-size: 11px; font-weight: 600; margin-left: 6px; }
-  .exDealCard .dAdd { align-self: flex-start; font-family: var(--display); font-weight: 700; font-size: 12px; padding: 7px 14px; border-radius: 9px; background: var(--gold); color: #16130a; border: none; cursor: pointer; }
-  .exBody { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-  .exCard { background: var(--surface); border: 1px solid var(--line-solid); border-radius: 13px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; }
-  @media (hover:hover) { .exCard:hover { border-color: rgba(228,184,92,0.4); } }
-  .exCard .exArt { position: relative; width: 100%; aspect-ratio: 460/215; overflow: hidden; background: var(--surface-2); }
-  .exCard .exArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .exCard .exDisc { position: absolute; top: 6px; left: 6px; background: #2ea36b; color: #fff; font-family: var(--display); font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 7px; }
-  .exCard .exOwned { position: absolute; top: 6px; right: 6px; background: rgba(13,17,26,0.85); color: var(--gold); font-family: var(--display); font-weight: 700; font-size: 10px; padding: 3px 7px; border-radius: 7px; backdrop-filter: blur(6px); }
-  .exCard .exInfo { padding: 9px 10px 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .exCard .exName { font-size: 12.5px; font-weight: 650; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .exCard .exMeta { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); margin-top: auto; }
-  .exCard .exMeta .p { color: var(--ink); }
-  .exCard .exMeta .d { color: #2ea36b; }
-  .exCard .exAdd { font-family: var(--display); font-weight: 700; font-size: 12px; padding: 8px; border-radius: 9px; background: var(--gold); color: #16130a; border: none; cursor: pointer; }
-  .exCard .exAdd.added { background: var(--surface-2); color: var(--ink-dim); }
-  .exEmpty { grid-column: 1/-1; text-align: center; color: var(--ink-dim); font-size: 13px; padding: 40px 0; }
-  body.light .exCard .exOwned { background: rgba(255,255,255,0.9); }
   .topRefresh { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink-dim); cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: color 0.15s ease, border-color 0.15s ease; }
   .topRefresh svg { display: block; }
   .topRefresh:active { color: var(--gold); }
@@ -226,7 +184,7 @@
     .tile:hover::after { transform: translateX(110%); }
   }
   .tile:active { transform: scale(0.97); }
-  .tile .coverBox { position: relative; width: 100%; aspect-ratio: 2/3; overflow: hidden; background: var(--surface-2); }
+  .tile .coverBox { position: relative; width: 100%; aspect-ratio: 2/3; overflow: hidden; background: var(--surface-2); border-radius: 16px 16px 0 0; }
   .tile .coverBg { position: absolute; inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(16px) saturate(1.05) brightness(0.72); }
   .tile .cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
   .tile .coverBox .wprice { position: absolute; left: 6px; bottom: 6px; z-index: 2; padding: 4px 6px; line-height: 1; background: rgba(13,17,26,0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); }
@@ -761,7 +719,7 @@
   /* full-bleed portrait cover: a slim box-art spine at the card's full
      height. Games without portrait art fall back to their wide banner,
      shown whole over a blurred fill instead of being cropped. */
-  .capBox { position: relative; width: 62px; min-height: 84px; align-self: stretch; overflow: hidden; flex-shrink: 0; background: var(--surface-2); }
+  .capBox { position: relative; width: 62px; min-height: 84px; align-self: stretch; overflow: hidden; flex-shrink: 0; background: var(--surface-2); border-radius: 18px 0 0 18px; }
   .capBox .coverBg { position: absolute; inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(12px) saturate(1.05) brightness(0.72); }
   .capBox .cap { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
   .card { border-radius: 18px; }
@@ -931,16 +889,14 @@
   <div class="ptr" id="ptr" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></div>
 
   <div class="top">
-    <div class="wordmark" id="wordmark" role="button" title="Explore">Back<b>log</b></div>
-    <button class="topExplore" id="topExploreBtn" style="display:none" aria-label="Explore"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></button>
-    <button class="topExplore" id="topHome" style="display:none" aria-label="My lists"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+    <div class="wordmark">Back<b>log</b></div>
     <button class="topRefresh" id="topRefresh" aria-label="Refresh data"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.5 11a8.5 8.5 0 1 0-1.2 5.4"/><path d="M20.5 6.5V11H16"/></svg></button>
     <button class="avatarBtn" id="avatarBtn" style="display:none" aria-label="Profile"><img id="avatarImg" src="" alt=""></button>
   </div>
 
   <div class="sharedBanner" id="sharedBanner"></div>
 
-  <div id="listView" style="display:none">
+  <div id="listView">
     <div class="listbar" id="listbar"></div>
 
     <div class="hero">
@@ -1002,23 +958,6 @@
       </div>
       <div id="obAlt" style="display:none"><b id="obAltTitle"></b><div id="obAltSub"></div></div>
     </div>
-  </div>
-
-  <div id="exploreView">
-    <div class="exHead">
-      <div class="exTitle">Explore</div>
-      <button class="exClose" id="exToLists" aria-label="Go to your lists">My lists →</button>
-    </div>
-    <div class="exTabs" id="exTabs">
-      <button class="on" data-ex="top">Popular now</button>
-      <button data-ex="new">New releases</button>
-      <button data-ex="upcoming">Coming soon</button>
-      <button data-ex="deals">Deals</button>
-    </div>
-    <div class="exSearchRow"><input id="exSearch" type="search" placeholder="Search these games or a genre…" autocapitalize="none"></div>
-    <div class="exCats" id="exCats"></div>
-    <div id="exDeal"></div>
-    <div class="exBody" id="exBody"></div>
   </div>
 
   <div class="profile" id="profileView">
@@ -1137,7 +1076,6 @@
       </div>
       <div class="gsBody" id="gsBody"></div>
       <div class="footRow">
-        <button class="go" id="gsAdd" style="display:none">+ Add to a list</button>
         <button class="danger" id="gsRemove">Remove from list</button>
         <button id="gsClose">Close</button>
       </div>
@@ -1172,15 +1110,6 @@
       <div class="hint" id="guideHint">Pick a source. These are the most reliable spots to find a complete 100% or achievement guide.</div>
       <div class="gsBody" id="guideBody"></div>
       <div class="footRow"><button id="guideClose">Close</button></div>
-    </div>
-  </div>
-
-  <!-- explore: add-to-list picker -->
-  <div class="modal" id="exAddModal">
-    <div class="sheet">
-      <h2 id="exAddTitle">Add to a list</h2>
-      <div class="gsBody"><div id="exAddOpts" class="moveOpts"></div></div>
-      <div class="footRow"><button id="exAddCancel">Cancel</button></div>
     </div>
   </div>
 
@@ -1330,37 +1259,6 @@
   function portrait(g){ return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`; }
   // ordered list of art URLs to try for an appid (Steam serves different
   // formats per game; newer/unreleased titles often lack header.jpg)
-  function artChain(g){
-    const appid = typeof g === "object" ? g.appid : g;
-    const provided = typeof g === "object" && g.img ? [g.img] : [];
-    const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}`;
-    const ak = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}`;
-    return [
-      // capsule_231x87 is what the library cards use and it loads reliably —
-      // lead with it. header.jpg 404s for many store titles, so it's a fallback.
-      `${cf}/capsule_231x87.jpg`,
-      ...provided,
-      `${cf}/capsule_616x353.jpg`, `${cf}/header.jpg`,
-      `${ak}/capsule_231x87.jpg`, `${ak}/header.jpg`, `${cf}/library_600x900.jpg`,
-    ];
-  }
-  // Probe an ordered list of art URLs with throwaway Image objects and put
-  // the FIRST that successfully loads into the target <img>. Reliable where
-  // repeated onerror-on-<img> is not. Falls back to hiding if none load.
-  function resolveArt(imgEl, g) {
-    const urls = artChain(g);
-    let i = 0;
-    const tryNext = () => {
-      if (i >= urls.length) { imgEl.style.visibility = "hidden"; return; }
-      const url = urls[i++];
-      const probe = new Image();
-      probe.onload = () => { imgEl.src = url; imgEl.style.visibility = "visible"; };
-      probe.onerror = tryNext;
-      probe.src = url;
-    };
-    tryNext();
-  }
-
   // ============ derived ============
   function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
   // cut a name to N characters without ever splitting an emoji in half
@@ -2416,160 +2314,15 @@
   }
   function renderAll(){ renderSorts(); renderGames(); }
 
-  // ---------- Explore ----------
-  let exFeeds = {};       // cached feed arrays by key
-  let exActive = "top";
-  let exQuery = "";
-  let exCat = "";         // active category chip
-  // common Steam genres surfaced as chips
-  const EX_CATS = ["Action","Adventure","RPG","Strategy","Indie","Simulation","Casual","Racing","Sports","Free to Play"];
-  // three top-level views: explore (home), lists, profile
+  // two views: lists (home) and profile
   function showView(which) {
-    $("exploreView").style.display = which === "explore" ? "block" : "none";
-    $("listView").style.display = which === "lists" ? "block" : "none";
+    $("listView").style.display = which === "profile" ? "none" : "block";
     $("profileView").classList.toggle("show", which === "profile");
+    $("dock").style.display = which === "profile" ? "none" : "flex";
     if (which === "profile") renderProfile();
-    if (which === "explore") { if (!exFeeds[exActive] && !exCat) loadExplore(exActive); }
-    const eb = $("topExploreBtn"), lb = $("topHome");
-    if (eb) eb.classList.toggle("navon", which === "explore");
-    if (lb) lb.classList.toggle("navon", which === "lists");
     window.scrollTo({ top: 0 });
   }
-  function showExplore(show) { showView(show ? "explore" : "lists"); }
-  async function loadExplore(feed) {
-    exActive = feed; exCat = ""; exCatItems = null;
-    $("exTabs").querySelectorAll("[data-ex]").forEach(b => b.classList.toggle("on", b.dataset.ex === feed));
-    if (exFeeds[feed]) { renderExplore(); return; }
-    $("exBody").innerHTML = `<div class="exEmpty">Loading <span class="spin"></span></div>`;
-    $("exDeal").innerHTML = "";
-    try {
-      // Deals tab reuses the top-sellers feed, filtered to discounted games
-      const src = feed === "deals" ? "top" : feed;
-      const r = await fetch("/api/explore?feed=" + src);
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-      exFeeds[feed] = feed === "deals" ? (d.items || []).filter(g => (g.discount || 0) > 0) : (d.items || []);
-      renderExplore();
-    } catch (e) {
-      $("exBody").innerHTML = `<div class="exEmpty">Couldn't load games: ${esc(e.message)}</div>`;
-    }
-  }
-  let exCatItems = null;   // games for the active category (null = no category)
-  function renderExCats() {
-    $("exCats").innerHTML = EX_CATS.map(c =>
-      `<button class="${exCat===c?"on":""}" data-cat="${c}">${c}</button>`).join("");
-    $("exCats").querySelectorAll("[data-cat]").forEach(b => b.onclick = () => selectCat(b.dataset.cat));
-  }
-  async function selectCat(cat) {
-    if (exCat === cat) { exCat = ""; exCatItems = null; renderExCats(); renderExplore(); return; }
-    exCat = cat; renderExCats();
-    $("exBody").innerHTML = `<div class="exEmpty">Loading ${esc(cat)} <span class="spin"></span></div>`;
-    $("exDeal").innerHTML = "";
-    try {
-      const r = await fetch("/api/explore?cat=" + encodeURIComponent(cat));
-      const d = await r.json();
-      exCatItems = d.items || [];
-    } catch { exCatItems = []; }
-    renderExplore();
-  }
-  function exOwned(appid) { return allGames().some(g => g.appid === appid); }
-  function exMatches(g) {
-    if (!exQuery) return true;
-    const q = exQuery.toLowerCase();
-    return g.name.toLowerCase().includes(q) || (g.genres || []).some(t => t.toLowerCase().includes(q));
-  }
-  function renderExplore() {
-    renderExCats();
-    const all = exCat ? (exCatItems || []) : (exFeeds[exActive] || []);
-    const items = all.filter(exMatches);
-    // best-deal highlight: biggest discount in the current (unfiltered) feed
-    const dealPool = all.filter(g => (g.discount || 0) > 0).sort((a,b) => b.discount - a.discount);
-    const best = (exActive === "deals" || exActive === "top") && !exQuery && !exCat ? dealPool[0] : null;
-    $("exDeal").innerHTML = best ? `
-      <div class="exDealCard" data-exopen="${best.appid}">
-        <img class="exImg" data-art="${best.appid}" alt="" style="visibility:hidden">
-        <div class="dInfo">
-          <div class="dTag">★ Best deal right now</div>
-          <div class="dName">${esc(best.name)}</div>
-          <div class="dPrice"><span class="off">-${best.discount}%</span>${best.price?.str?`<span class="p">${esc(best.price.str)}</span>`:""}${best.price?.orig!=null?`<span class="old">${(best.price.currency||"AUD")} ${best.price.orig.toFixed(2)}</span>`:""}</div>
-          <button class="dAdd" data-exadd="${best.appid}" data-exname="${esc(best.name)}">${exOwned(best.appid)?"Added ✓":"+ Add to list"}</button>
-        </div>
-      </div>` : "";
-    if (best) {
-      const db=$("exDeal").querySelector("[data-exadd]");
-      if(db&&!exOwned(best.appid)) db.onclick=(e)=>{e.stopPropagation();openExAdd(best.appid,best.name,db);};
-      const dc=$("exDeal").querySelector("[data-exopen]");
-      if(dc) dc.onclick=(e)=>{ if(!e.target.closest("[data-exadd]")) openGameSheet(best.appid); };
-    }
-    if (!items.length) { $("exBody").innerHTML = `<div class="exEmpty">${exQuery||exCat?"No matches — try a different search or category.":"Nothing here right now — check back later."}</div>`; return; }
-    $("exBody").innerHTML = items.map(g => {
-      const owned = exOwned(g.appid);
 
-      let meta = "";
-      if (g.price?.free) meta = `<span class="p">Free</span>`;
-      else if (g.price?.str) meta = g.discount > 0
-        ? `<span class="d">-${g.discount}%</span> <span class="p">${esc(g.price.str)}</span>`
-        : `<span class="p">${esc(g.price.str)}</span>`;
-      else meta = exActive === "upcoming" ? "Coming soon" : "";
-      return `<div class="exCard" data-exopen="${g.appid}">
-        <div class="exArt">
-          <img class="exImg" data-art="${g.appid}" alt="" style="visibility:hidden">
-          ${g.discount > 0 ? `<span class="exDisc">-${g.discount}%</span>` : ""}
-          ${owned ? `<span class="exOwned">In your lists</span>` : ""}
-        </div>
-        <div class="exInfo">
-          <div class="exName">${esc(g.name)}</div>
-          <div class="exMeta">${meta}</div>
-          <button class="exAdd${owned ? " added" : ""}" data-exadd="${g.appid}" data-exname="${esc(g.name)}">${owned ? "Added ✓" : "+ Add to list"}</button>
-        </div>
-      </div>`;
-    }).join("");
-    $("exBody").querySelectorAll("[data-exadd]").forEach(b => b.onclick = (e) => {
-      e.stopPropagation();
-      if (b.classList.contains("added")) return;
-      openExAdd(+b.dataset.exadd, b.dataset.exname, b);
-    });
-    $("exBody").querySelectorAll("[data-exopen]").forEach(card => card.onclick = (e) => {
-      if (e.target.closest("[data-exadd]")) return; // Add button handles itself
-      openGameSheet(+card.dataset.exopen);
-    });
-    // resolve artwork for every card (grid + any highlight)
-    document.querySelectorAll("#exploreView .exImg[data-art]").forEach(img => {
-      const appid = +img.dataset.art;
-      const item = (exCat ? (exCatItems||[]) : (exFeeds[exActive]||[])).find(x => x.appid === appid) || { appid };
-      resolveArt(img, item);
-      img.removeAttribute("data-art");
-    });
-  }
-
-  // list picker — same list set as everywhere else, joint lists included
-  let exAddPending = null;
-  function openExAdd(appid, name, btn) {
-    exAddPending = { appid, name, btn };
-    $("exAddTitle").textContent = `Add "${name.length > 30 ? name.slice(0,30)+"…" : name}" to…`;
-    const targets = allLists().filter(l => !l.pending);
-    $("exAddOpts").innerHTML = targets.map(l =>
-      `<button data-exto="${l.id}">${l.joint ? JICON : ""}${esc(l.name)} · ${l.games.length} games</button>`).join("");
-    $("exAddOpts").querySelectorAll("[data-exto]").forEach(b => b.onclick = () => exAddTo(b.dataset.exto));
-    $("exAddModal").classList.add("show");
-  }
-  function exAddTo(listId) {
-    const l = allLists().find(x => x.id === listId);
-    if (!l || !exAddPending) return;
-    if (l.games.some(g => g.appid === exAddPending.appid)) {
-      toast("Already in that list");
-    } else {
-      l.games.push({ appid: exAddPending.appid, name: exAddPending.name, icon: null });
-      persist(); syncUp(); renderListbar();
-      if (!stats[exAddPending.appid]) fetchStats([{ appid: exAddPending.appid, name: exAddPending.name }]);
-      toast(`Added to ${l.joint ? "joint list " : ""}"${esc(l.name)}"`);
-      if (exAddPending.btn) { exAddPending.btn.classList.add("added"); exAddPending.btn.textContent = "Added ✓"; }
-    }
-    $("exAddModal").classList.remove("show");
-    exAddPending = null;
-  }
-
-  // ---- select mode: bulk delete / move ----
   let selectMode = false;
   let selected = new Set();
   function setSelectMode(on) {
@@ -2729,12 +2482,6 @@
   $("gsClose").onclick = () => { gameModal.classList.remove("show"); sheetGame = null; };
   $("gsX").onclick = () => { gameModal.classList.remove("show"); sheetGame = null; };
   gameModal.onclick = e => { if (e.target===gameModal) { gameModal.classList.remove("show"); sheetGame = null; } };
-  $("gsAdd").onclick = () => {
-    if (!sheetGame) return;
-    gameModal.classList.remove("show");
-    openExAdd(sheetGame.appid, sheetGame.name, null);
-    sheetGame = null;
-  };
   $("gsRemove").onclick = () => {
     if (!sheetGame) return;
     removeGame(sheetGame.appid);
@@ -2795,19 +2542,12 @@
     let g = activeList().games.find(x=>x.appid===appid);
     const inActive = !!g;
     if (!g) g = allGames().find(x=>x.appid===appid) || (recentGames||[]).find(x=>x.appid===appid);
-    if (!g) {
-      // explore game not in any list — build a minimal game object from the feed
-      const feed = exCat ? (exCatItems||[]) : (exFeeds[exActive]||[]);
-      const ex = feed.find(x=>x.appid===appid) || (exFeeds.top||[]).find(x=>x.appid===appid);
-      if (ex) g = { appid: ex.appid, name: ex.name, icon: null };
-    }
     if (!g) return;
     sheetGame = g;
     openAch = null;
     $("gsName").textContent = g.name;
     $("gsMove").style.display = inActive && data.lists.length>1 ? "block" : "none";
     $("gsRemove").style.display = inActive ? "block" : "none";
-    $("gsAdd").style.display = inActive ? "none" : "block";
     if (!achCache[appid]) loadAchievements(appid);
     if (!detailsCache[appid]) loadDetails(appid);
     renderGameSheet();
@@ -3644,15 +3384,7 @@
     renderFriends();
   }
 
-    function showProfile(show) {
-    if (show) { $("exploreView").style.display = "none"; $("listView").style.display = "none"; }
-    else { $("listView").style.display = "block"; }
-    $("profileView").classList.toggle("show", show);
-    $("listView").style.display = show ? "none" : "block";
-    $("dock").style.display = show ? "none" : "flex";
-    if (show) renderProfile();
-  }
-  // Completion trophy road removed as part of the leveling-system trim.
+    // Completion trophy road removed as part of the leveling-system trim.
   function renderTrophies() { const el = $("pBadges"); if (el) el.innerHTML = ""; }
 
   // ---- most played: quiet top-5 by lifetime hours ----
@@ -4014,14 +3746,7 @@
     }
   }
   $("avatarBtn").onclick = () => showView("profile");
-  $("topExploreBtn").onclick = () => showView("explore");
-  $("topHome").onclick = () => showView("lists");
-  $("exToLists").onclick = () => showView("lists");
-  $("exTabs").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => loadExplore(b.dataset.ex));
-  $("exSearch").oninput = e => { exQuery = e.target.value.trim(); renderExplore(); };
-  $("exAddCancel").onclick = () => { $("exAddModal").classList.remove("show"); exAddPending = null; };
-  $("exAddModal").onclick = e => { if (e.target === $("exAddModal")) { $("exAddModal").classList.remove("show"); exAddPending = null; } };
-  $("backBtn").onclick = () => showView("explore");
+  $("backBtn").onclick = () => showView("lists");
 
   // ---- import fully-completed games into a "Completed" list ----
   function isHundo(l) { return l && (l.id === "hundo" || l.id === "completed" || l.name === "100%"); }
@@ -4436,7 +4161,7 @@
   })();
   document.querySelector(".wordmark").onclick = () => {
     if (sharedMode) { location.href = "/"; return; }  // leave a shared snapshot
-    showView("explore");                              // wordmark is the home button
+    showView("lists");
   };
 
   // ---- silent background refresh + since-last-visit diff + history ----
@@ -4516,28 +4241,7 @@
     try { await syncWishlist(() => {}, true); } catch {}
     try { await scanCompleted(() => {}, true); } catch {}
     await retryBlankHours(true);
-    backfillGenres();
     renderAll();
-  }
-  // Fetch store genres for tracked games that don't have them yet, so the
-  // library search can match on genre without opening each game first.
-  let genreBackfilling = false;
-  async function backfillGenres() {
-    if (sharedMode || !me || genreBackfilling) return;
-    const need = allGames().filter(g => !(stats[g.appid] && stats[g.appid].genres)).slice(0, 60);
-    if (!need.length) return;
-    genreBackfilling = true;
-    try {
-      for (const g of need) {
-        try {
-          const r = await fetch("/api/details?appid=" + g.appid);
-          const d = await r.json();
-          if (d.details?.genres?.length) stats[g.appid] = { ...(stats[g.appid] || {}), genres: d.details.genres };
-        } catch {}
-        await new Promise(r => setTimeout(r, 250)); // gentle pacing
-      }
-      persist(); renderGames();
-    } finally { genreBackfilling = false; }
   }
   // Re-runs blank-hours games through the lookup chain. Runs automatically
   // shortly after open (at most hourly) — nobody should have to tap a
@@ -4573,8 +4277,6 @@
     const ab = $("avatarBtn");
     ab.style.display = "block";
     $("topRefresh").style.display = "flex";
-    $("topHome").style.display = "flex";
-    $("topExploreBtn").style.display = "flex";
     if (me.avatar) { $("avatarImg").src = me.avatar; }
     else { $("avatarImg").remove(); ab.classList.add("letter"); ab.textContent = (me.name||me.username||"?")[0].toUpperCase(); }
     if (!allGames().length) {
@@ -4586,7 +4288,6 @@
     animateNext = true;
     await syncDown();
     loadJoint();
-    showView("explore"); // Explore is the home screen
     ensureHundo();
     ensureWishlist();
     renderAll();
