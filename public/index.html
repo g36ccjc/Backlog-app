@@ -405,10 +405,6 @@
   .tTitle { font-family: var(--display); font-weight: 700; font-size: 17px; }
   .tSub { font-size: 12px; color: var(--ink); margin-top: 2px; }
   .tSub.dim { color: var(--ink-dim); }
-  .tmini { background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 10px; padding: 8px 4px 7px; text-align: center; }
-  .tmini svg { display: block; margin: 0 auto; }
-  .tmini:not(.got) { opacity: 0.32; filter: grayscale(0.85); }
-  .tmini.got { border-color: var(--line-strong); }
   .trophyRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line-solid); }
   .trophyRow:first-of-type { border-top: none; }
   .trophyRow img { width: 36px; height: 36px; border-radius: 7px; }
@@ -678,7 +674,7 @@
     background-attachment: fixed;
   }
   .card, .tile, .chartBox, .fcard, .sheet { background: #171d2a; }
-  .tmini, .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
+  .filterBox, .viewToggle button, .listbar button, .sorts button { background: #12161f; }
 
   /* topbar: borderless fade + signature gold hairline */
   .top { border-bottom: none; background: linear-gradient(180deg, rgba(9,11,15,0.92) 55%, rgba(9,11,15,0)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -789,7 +785,7 @@
   }
   body.light .top { background: linear-gradient(180deg, rgba(247,244,236,0.94) 55%, rgba(247,244,236,0)); }
   body.light .card, body.light .tile, body.light .chartBox, body.light .fcard,
-  body.light .visitFeed, body.light .sharedBanner, body.light .cell, body.light .tmini {
+  body.light .visitFeed, body.light .sharedBanner, body.light .cell {
     background: #ffffff;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 8px 20px -14px rgba(40,45,60,0.28);
   }
@@ -864,6 +860,8 @@
   body.rm *, body.rm *::before, body.rm *::after { transition: none !important; animation: none !important; }
   .setSection { font-family: var(--display); font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; margin: 14px 2px 2px; }
   .setSection:first-child { margin-top: 2px; }
+  .setRow .sw2 { flex-shrink: 0; font-family: var(--display); font-weight: 700; font-size: 12.5px; padding: 9px 16px; border-radius: 9px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-strong); cursor: pointer; }
+  .setRow .sw2:active { border-color: var(--gold); color: var(--gold); }
   .setRow select { background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink); border-radius: 9px; padding: 9px 10px; font-family: var(--body); font-size: 13px; flex-shrink: 0; max-width: 46%; }
 
   /* ---------- page footer ---------- */
@@ -3997,6 +3995,70 @@
     document.body.classList.toggle("rm", pref("reduceMotion"));
     if (!pref("showVisitFeed")) $("visitFeed").style.display = "none";
   }
+  // ---- backup: export / restore ----
+  // Everything here is the stuff you can't get back from Steam: which games
+  // are in which lists, your custom drag order, ratings, notes and history.
+  function exportBackup() {
+    try {
+      const payload = {
+        app: "backlog",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        steamId: me?.steamId || null,
+        lists: data.lists,
+        activeId: data.activeId,
+        notes, history, showcase, prefs,
+        joint: jointLists.map(l => ({ id: l.id, name: l.name, games: l.games })),
+      };
+      const stamp = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backlog-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const n = data.lists.reduce((t, l) => t + l.games.length, 0);
+      toast(`Backup saved — ${data.lists.length} lists, ${n} games`);
+    } catch (e) {
+      toast("Couldn't create the backup: " + esc(e.message));
+    }
+  }
+  async function importBackup(file) {
+    try {
+      const text = await file.text();
+      const d = JSON.parse(text);
+      if (d.app !== "backlog" || !Array.isArray(d.lists)) {
+        toast("That doesn't look like a Backlog backup");
+        return;
+      }
+      const games = d.lists.reduce((t, l) => t + (l.games?.length || 0), 0);
+      const when = d.exportedAt ? new Date(d.exportedAt).toLocaleDateString() : "unknown date";
+      if (!confirm(
+        `Restore this backup?\n\n${d.lists.length} lists · ${games} games\nFrom ${when}\n\n` +
+        `This replaces everything currently in the app. Your current data will be lost unless you've exported it.`
+      )) return;
+      data.lists = d.lists;
+      data.activeId = d.activeId && d.lists.some(l => l.id === d.activeId) ? d.activeId : (d.lists[0]?.id || "main");
+      if (d.notes && typeof d.notes === "object") { notes = d.notes; save("backlog.notes.v4", notes); }
+      if (Array.isArray(d.history)) { history = d.history; save("backlog.history.v4", history); }
+      if (Array.isArray(d.showcase)) { showcase = d.showcase; save("backlog.showcase.v4", showcase); }
+      if (d.prefs && typeof d.prefs === "object") { prefs = d.prefs; save(PREFS_KEY, prefs); applyPrefs(); }
+      persist(); syncUp();
+      ensureHundo(); ensureWishlist();
+      renderListbar(); renderAll();
+      setModal.classList.remove("show");
+      toast(`Restored ${d.lists.length} lists · ${games} games`);
+      // refetch stats for anything we don't have cached
+      const missing = allGames().filter(g => !stats[g.appid]);
+      for (let i = 0; i < missing.length; i += 40) fetchStats(missing.slice(i, i + 40));
+    } catch (e) {
+      toast("Couldn't read that backup file: " + esc(e.message));
+    }
+  }
+
   const setModal = $("setModal");
   $("settingsBtn").onclick = () => { renderSettings(); setModal.classList.add("show"); };
   $("setClose").onclick = () => setModal.classList.remove("show");
@@ -4026,9 +4088,27 @@
           <div class="sl"><b>${d.label}</b><span>${d.desc}</span></div>
           <button class="sw ${pref(d.k) ? "on" : ""}" data-set="${d.k}" role="switch" aria-checked="${pref(d.k)}" aria-label="${d.label}"></button>
         </div>`).join("")
+      + `<div class="setSection">Backup</div>
+         <div class="setRow">
+           <div class="sl"><b>Download a backup</b><span>Saves your lists, custom order, ratings, notes and history as a file you keep</span></div>
+           <button class="sw2" id="setExport">Export</button>
+         </div>
+         <div class="setRow">
+           <div class="sl"><b>Restore from a backup</b><span>Replaces everything currently in the app with the contents of a backup file</span></div>
+           <button class="sw2" id="setImport">Restore</button>
+         </div>
+         <input type="file" id="setImportFile" accept="application/json,.json" style="display:none">`
       + `<button class="scanBtn" id="setResync">Re-sync data from cloud</button>`;
     const vs = document.getElementById("visSel");
     if (vs) { vs.value = visValue; vs.onchange = () => saveVisibility(vs.value); }
+    const ex = document.getElementById("setExport");
+    if (ex) ex.onclick = exportBackup;
+    const im = document.getElementById("setImport");
+    const imf = document.getElementById("setImportFile");
+    if (im && imf) {
+      im.onclick = () => imf.click();
+      imf.onchange = () => { if (imf.files && imf.files[0]) importBackup(imf.files[0]); imf.value = ""; };
+    }
     $("setBody").querySelectorAll("[data-theme]").forEach(b => b.onclick = () => {
       prefs.theme = b.dataset.theme; save(PREFS_KEY, prefs);
       applyTheme(); renderSettings();
