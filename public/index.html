@@ -200,6 +200,26 @@
   .tile .tstats .tna { color: var(--ink-dim); opacity: 0.6; }
   .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
   .tile .barWrap { height: 3px; background: var(--surface-2); }
+  /* rank badge — the game's position in "My order" */
+  .rankBadge { font-family: var(--display); font-weight: 800; font-size: 11px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .tile .rankBadge { position: absolute; top: 6px; left: 6px; z-index: 2; min-width: 20px; text-align: center; padding: 4px 6px; border-radius: 8px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .capBox .rankBadge { position: absolute; top: 5px; left: 5px; z-index: 2; min-width: 18px; text-align: center; padding: 3px 5px; border-radius: 7px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 10px; }
+  .trow .rankBadge { flex-shrink: 0; min-width: 16px; text-align: right; opacity: 0.85; }
+  body.light .tile .rankBadge, body.light .capBox .rankBadge { background: rgba(255,255,255,0.9); }
+
+  /* manual position control in the game sheet */
+  .gsRank { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 13px; margin-bottom: 14px; background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 12px; }
+  .gsRank .grLabel { flex: 1; min-width: 150px; }
+  .gsRank .grLabel b { display: block; font-size: 13.5px; font-weight: 650; color: var(--ink); }
+  .gsRank .grLabel span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-top: 2px; line-height: 1.45; }
+  .grCtrl { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .grNudge { width: 34px; height: 34px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-size: 11px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .grNudge:disabled { opacity: 0.35; cursor: default; }
+  .grNudge:not(:disabled):active { border-color: var(--gold); color: var(--gold); }
+  #gsRankInput { width: 58px; text-align: center; font-family: var(--display); font-weight: 800; font-size: 15px; color: var(--gold); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 4px; outline: none; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+  #gsRankInput::-webkit-outer-spin-button, #gsRankInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  #gsRankInput:focus { border-color: var(--gold); }
+  .grOf { font-size: 11.5px; color: var(--ink-dim); flex-shrink: 0; }
   .tile .mscore { position: absolute; top: 6px; right: 6px; z-index: 2; font-family: var(--display); font-weight: 700; font-size: 11px; line-height: 1; padding: 4px 6px; border-radius: 8px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); color: var(--ink); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-variant-numeric: tabular-nums; }
   .tile .mscore.hi { color: var(--teal); }
   .tile .mscore.mid { color: var(--gold); }
@@ -1903,6 +1923,12 @@
     if (dragBusy) return; // never rebuild the DOM under an active drag
     const rows = sortedGames();
     const games = activeList().games;
+    // Rank = the game's position in the list's stored order (what dragging
+    // changes). Only shown in "My order", where the numbers run 1..N in view;
+    // in other sorts the order on screen isn't the custom order.
+    const rankOf = new Map(games.map((g, i) => [g.appid, i + 1]));
+    const showRank = sort.id === "custom";
+    const rankBadge = (appid) => showRank ? `<div class="rankBadge">${rankOf.get(appid) ?? ""}</div>` : "";
     // Sync bar: visible on the Wishlist and 100% lists for Steam-linked users
     const al = activeList();
     const syncType = (!sharedMode && me && me.steamId)
@@ -1946,6 +1972,7 @@
         const msBadge = typeof s.metaScore === "number"
           ? `<div class="mscore ${s.metaScore>=75?"hi":s.metaScore>=50?"mid":""}">${s.metaScore}</div>` : "";
         return `<li class="tile${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-tile="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
+          ${rankBadge(g.appid)}
           ${msBadge}
           <div class="coverBox">
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
@@ -1983,6 +2010,7 @@
         const achTxt = !a ? `<span class="tna">—</span>` : a.none ? `<span class="tna">—</span>` : `<span class="a ${full?"full":""}">${a.u}/${a.t}</span>`;
         return `<li class="card thinrow${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <div class="trow" data-open="${g.appid}">
+            ${rankBadge(g.appid)}
             <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
             <div class="tname1">${esc(g.name)}</div>
             <div class="tmini">${priceBadge(g.appid)}${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
@@ -2027,6 +2055,7 @@
       return `<li class="card${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
         <div class="row" ${sharedMode?"":`data-open="${g.appid}"`}>
           <div class="capBox">
+            ${rankBadge(g.appid)}
             <img class="coverBg" src="${portrait(g)}" loading="lazy" alt="" aria-hidden="true" onerror="this.style.opacity=0">
             <img class="cap" src="${portrait(g)}" loading="lazy" alt=""
                  onerror="if(!this.dataset.s){this.dataset.s=1;this.src='${capsule(g)}'}else if(this.dataset.s==1){this.dataset.s=2;this.src='${safeUrl(g.icon)||""}'}else{this.style.visibility='hidden'}var b=this.previousElementSibling;if(b){b.style.opacity=1;b.src=this.src}">
@@ -2318,6 +2347,22 @@
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && li) finish(lifted); });
     cont.addEventListener("contextmenu", (e) => { if (dragActive() && li) e.preventDefault(); });
     document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
+  }
+  // Manual reorder — the typed alternative to dragging. Positions are 1-based
+  // and clamped, so a nudge at either end is a no-op rather than an error.
+  function moveToPosition(appid, newPos) {
+    const l = activeList();
+    const from = l.games.findIndex(x => x.appid === appid);
+    if (from < 0) return null;
+    const n = l.games.length;
+    const to = Math.max(1, Math.min(n, Math.round(+newPos || 1))) - 1;
+    if (to === from) return from + 1;
+    const [item] = l.games.splice(from, 1);
+    l.games.splice(to, 0, item);
+    persist(); syncUp(); renderGames();
+    // In other sorts the move is real but invisible, so say so.
+    if (sort.id !== "custom") toast(`Moved to #${to + 1} in your order`);
+    return to + 1;
   }
   function commitCustomOrder() {
     const ids = [...$("games").children].map(li => +(li.dataset.card || li.dataset.tile)).filter(Boolean);
@@ -2653,7 +2698,19 @@
        <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
-    $("gsBody").innerHTML = detailHtml + gridHtml + linksHtml + reviewHtml
+    const rankPos = inActive ? activeList().games.findIndex(x => x.appid === g.appid) + 1 : 0;
+    const rankTotal = inActive ? activeList().games.length : 0;
+    const rankHtml = (inActive && !sharedMode && rankTotal > 1) ? `
+      <div class="gsRank">
+        <div class="grLabel"><b>Position in your order</b><span>Set it here, or drag the card in “My order”</span></div>
+        <div class="grCtrl">
+          <button class="grNudge" data-rank="up" aria-label="Move up one"${rankPos<=1?" disabled":""}>▲</button>
+          <input id="gsRankInput" type="number" inputmode="numeric" min="1" max="${rankTotal}" value="${rankPos}" aria-label="Position in your order">
+          <span class="grOf">of ${rankTotal}</span>
+          <button class="grNudge" data-rank="down" aria-label="Move down one"${rankPos>=rankTotal?" disabled":""}>▼</button>
+        </div>
+      </div>` : "";
+    $("gsBody").innerHTML = detailHtml + gridHtml + rankHtml + linksHtml + reviewHtml
       + `<div class="gsSection">Achievements</div>` + achPanelHtml(g);
     $("gsBody").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
       openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
@@ -2663,6 +2720,15 @@
     if (gb) gb.onclick = () => openGuidePicker(g);
     const sb = $("gsBody").querySelector("[data-steamapp]");
     if (sb) sb.onclick = () => openInSteam(+sb.dataset.steamapp);
+    const ri = document.getElementById("gsRankInput");
+    if (ri) {
+      const applyRank = (v) => { if (moveToPosition(g.appid, v) != null) renderGameSheet(); };
+      ri.onchange = () => applyRank(ri.value);
+      ri.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); ri.blur(); } };
+      ri.onfocus = () => ri.select();
+      $("gsBody").querySelectorAll("[data-rank]").forEach(b => b.onclick = () =>
+        applyRank(rankPos + (b.dataset.rank === "up" ? -1 : 1)));
+    }
     $("gsBody").querySelectorAll("[data-genre]").forEach(chip => chip.onclick = () => {
       $("gameModal").classList.remove("show"); sheetGame = null;
       filterText = chip.dataset.genre; $("filter").value = filterText; renderGames();
