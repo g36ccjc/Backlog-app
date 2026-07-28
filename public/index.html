@@ -201,7 +201,7 @@
   .tile .tstats i { font-style: normal; color: var(--ink-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 3px; }
   .tile .barWrap { height: 3px; background: var(--surface-2); }
   /* rank badge — the game's position in "My order" */
-  .rankBadge { font-family: var(--display); font-weight: 800; font-size: 11px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .rankBadge { font-family: var(--display); font-weight: 800; font-size: 11px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
   .tile .rankBadge { position: absolute; top: 6px; left: 6px; z-index: 2; min-width: 20px; text-align: center; padding: 4px 6px; border-radius: 8px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .capBox .rankBadge { position: absolute; top: 5px; left: 5px; z-index: 2; min-width: 18px; text-align: center; padding: 3px 5px; border-radius: 7px; background: rgba(13,17,26,0.82); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 10px; }
   .trow .rankBadge { flex-shrink: 0; min-width: 16px; text-align: right; opacity: 0.85; }
@@ -2698,9 +2698,11 @@
        <textarea class="noteBox" id="gsNote" placeholder="Personal notes">${esc(myNote.note||"")}</textarea>
        <div style="height:12px"></div>`;
 
-    const rankPos = inActive ? activeList().games.findIndex(x => x.appid === g.appid) + 1 : 0;
-    const rankTotal = inActive ? activeList().games.length : 0;
-    const rankHtml = (inActive && !sharedMode && rankTotal > 1) ? `
+    // membership must be computed here — openGameSheet's copy is out of scope
+    const rankIdx = activeList().games.findIndex(x => x.appid === g.appid);
+    const rankPos = rankIdx + 1;
+    const rankTotal = rankIdx >= 0 ? activeList().games.length : 0;
+    const rankHtml = (rankIdx >= 0 && !sharedMode && rankTotal > 1) ? `
       <div class="gsRank">
         <div class="grLabel"><b>Position in your order</b><span>Set it here, or drag the card in “My order”</span></div>
         <div class="grCtrl">
