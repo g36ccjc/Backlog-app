@@ -291,6 +291,8 @@
   .achRow { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-radius: 8px; cursor: pointer; }
   .achRow:hover { background: var(--surface-2); }
   .achRow img { width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0; }
+  .achRow img.imgfail { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-solid); }
+  .achNoIcon { width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-solid); }
   .achRow.locked img { filter: grayscale(1); opacity: 0.55; }
   .achRow .an { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
   .achRow.locked .an { color: var(--ink-dim); }
@@ -298,8 +300,21 @@
   .achRow .pctTag { font-family: var(--display); font-weight: 700; font-size: 11px; color: var(--ink-dim); flex-shrink: 0; }
   .achRow .pctTag.rare { color: var(--gold); }
   .achRow .tick { color: var(--teal); font-size: 14px; flex-shrink: 0; }
-  .achDetail { margin: 2px 4px 8px 48px; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
+  .achDetail { margin: 2px 4px 8px 48px; padding: 12px 13px; background: var(--surface-2); border-radius: 10px; font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
   .achDetail .when { color: var(--teal); margin-bottom: 6px; }
+  .achDetailTop { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .achBig { width: 52px; height: 52px; border-radius: 9px; flex-shrink: 0; }
+  .achBig.lk { filter: grayscale(1); opacity: 0.6; }
+  .achDetailMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .achStat { font-family: var(--display); font-weight: 700; font-size: 12px; color: var(--ink-dim); }
+  .achStat.done { color: var(--teal); }
+  .achRarity { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .rTier { font-family: var(--display); font-weight: 800; font-size: 12.5px; }
+  .rTier.t-ultra { color: #c264ff; } .rTier.t-vrare { color: #e4b85c; } .rTier.t-rare { color: #ffb347; }
+  .rTier.t-unc { color: var(--teal); } .rTier.t-com { color: var(--ink-dim); }
+  .rPct { font-size: 11px; color: var(--ink-dim); }
+  .achFullDesc { color: var(--ink); line-height: 1.55; }
+  .achFindOut { margin-top: 9px; color: var(--ink-dim); }
   .achLinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
   .achLinks a { font-family: var(--display); font-weight: 700; font-size: 11.5px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line-solid); border-radius: 999px; padding: 6px 12px; }
   .achLinks a:hover { border-color: var(--gold); color: var(--gold); }
@@ -2770,13 +2785,37 @@
       const opened = openAch === a.id;
       let detail = "";
       if (opened) {
-        const when = a.unlockTime ? `<div class="when">Unlocked ${new Date(a.unlockTime*1000).toLocaleDateString()}</div>` : "";
-        const rarity = a.globalPercent != null ? `${a.globalPercent}% of players have this.` : "";
-        detail = `<div class="achDetail">${when}${esc(desc)}${desc&&rarity?" · ":""}${rarity}
-          <div style="margin-top:7px">Find out how to get it:</div>${guideLinks(g, a)}</div>`;
+        // Steam's Web API only exposes name, description, rarity, and unlock
+        // state — so surface all of that clearly rather than restating one line.
+        const pct = a.globalPercent;
+        let tier = "", tierCls = "";
+        if (pct != null) {
+          if (pct < 1)       { tier = "Ultra rare";  tierCls = "t-ultra"; }
+          else if (pct < 5)  { tier = "Very rare";   tierCls = "t-vrare"; }
+          else if (pct < 10) { tier = "Rare";        tierCls = "t-rare"; }
+          else if (pct < 25) { tier = "Uncommon";    tierCls = "t-unc"; }
+          else if (pct < 50) { tier = "Fairly common"; tierCls = "t-com"; }
+          else               { tier = "Common";      tierCls = "t-com"; }
+        }
+        const bigIcon = safeUrl(a.unlocked ? a.icon : (a.iconLocked || a.icon));
+        const status = a.unlocked
+          ? `<span class="achStat done">✔ Unlocked${a.unlockTime ? " · " + new Date(a.unlockTime*1000).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}) : ""}</span>`
+          : `<span class="achStat">Locked${a.hidden ? " · hidden" : ""}</span>`;
+        const fullDesc = a.description || (a.hidden ? "Steam hides this achievement's details until you unlock it." : "No description provided.");
+        detail = `<div class="achDetail">
+          <div class="achDetailTop">
+            ${bigIcon?`<img class="achBig ${a.unlocked?"":"lk"}" src="${bigIcon}" alt="" onerror="this.classList.add('imgfail');this.removeAttribute('src')">`:`<span class="achBig achNoIcon"></span>`}
+            <div class="achDetailMeta">
+              ${status}
+              ${pct!=null?`<div class="achRarity"><span class="rTier ${tierCls}">${tier}</span><span class="rPct">${pct}% of players have this</span></div>`:""}
+            </div>
+          </div>
+          <div class="achFullDesc">${esc(fullDesc)}</div>
+          ${!a.unlocked?`<div class="achFindOut">Find out how to get it:</div>${guideLinks(g, a)}`:""}
+        </div>`;
       }
       return `<div class="achRow ${locked?"locked":""}" data-ach="${esc(a.id)}">
-          ${icon?`<img src="${icon}" alt="" loading="lazy">`:""}
+          ${icon?`<img src="${icon}" alt="" loading="lazy" onerror="this.classList.add('imgfail');this.removeAttribute('src')">`:`<span class="achNoIcon"></span>`}
           <div class="an">${esc(a.name)}${desc?`<div class="ad">${esc(desc)}</div>`:""}</div>
           ${a.globalPercent!=null?`<span class="pctTag ${rare?"rare":""}">${a.globalPercent}%</span>`:""}
           ${a.unlocked?`<span class="tick">✔</span>`:""}
