@@ -1277,7 +1277,11 @@
       const url = urls[i++];
       const probe = new Image();
       probe.referrerPolicy = "no-referrer"; // some Steam images block hotlink referrers
-      probe.onload = () => { imgEl.src = url; imgEl.classList.remove("imgfail"); };
+      probe.onload = () => {
+        if (probe.naturalWidth < 24 || probe.naturalHeight < 12) { next(); return; }
+        imgEl.src = url;
+        imgEl.classList.remove("imgfail");
+      };
       probe.onerror = next;
       probe.referrerPolicy = "no-referrer";
       probe.src = url;
@@ -1318,6 +1322,11 @@
   function gameArtUrls(appid) {
     const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}`;
     const ak = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}`;
+    // The game's own icon URL (straight from Steam's API) is what the list
+    // view falls back to, and for sparse titles it's the only art that exists.
+    const g = (recentGames || []).find(x => x.appid === appid) ||
+              allGames().find(x => x.appid === appid) || null;
+    const own = g ? safeUrl(g.icon) : null;
     return [
       `${cf}/capsule_231x87.jpg`,
       `${cf}/header.jpg`,
@@ -1325,6 +1334,7 @@
       `${ak}/capsule_231x87.jpg`,
       `${ak}/header.jpg`,
       `${cf}/library_600x900.jpg`,
+      ...(own ? [own] : []),
     ];
   }
   // Resolve every pending <img data-art="appid"> to the first URL that loads.
