@@ -1,10 +1,7 @@
-// Shared account storage helpers for auth endpoints.
+// Shared storage helpers (Upstash Redis over REST).
 // Records:
-//   backlog:auth:{usernameLower} -> { uid, username, salt, hash }
-//   backlog:profile:{uid}        -> { username, steamId|null }
-//   backlog:link:{steamId}       -> uid  (Steam identity linked to a local account)
-
-import crypto from "crypto";
+//   backlog:profile:{uid}  -> { username, steamId|null }
+//   backlog:link:{steamId} -> uid  (legacy Steam links from the old account system)
 
 const REST_URL =
   process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -25,17 +22,3 @@ export async function redis(command) {
   return data.result;
 }
 
-export function hashPassword(password, salt) {
-  const s = salt || crypto.randomBytes(16).toString("base64url");
-  const hash = crypto.scryptSync(password, s, 64).toString("base64url");
-  return { salt: s, hash };
-}
-export function verifyPassword(password, salt, hash) {
-  const attempt = crypto.scryptSync(password, salt, 64).toString("base64url");
-  const a = Buffer.from(attempt), b = Buffer.from(hash);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
-export function validUsername(u) {
-  return typeof u === "string" && /^[a-zA-Z0-9_]{3,20}$/.test(u);
-}
