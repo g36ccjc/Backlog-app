@@ -133,6 +133,7 @@
   .feat { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
   .feat::-webkit-scrollbar { display: none; }
   .fcard { flex: 0 0 128px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; overflow: hidden; cursor: pointer; }
+  .fcard img[data-art], .tcap[data-art] { background: var(--surface-2); }
   .fcard img { width: 100%; height: 60px; object-fit: cover; display: block; background: var(--surface-2); }
   .fcard.dice { border-style: dashed; border-color: rgba(228,184,92,0.45); cursor: pointer; }
   .fcard.dice .diceFace { height: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: linear-gradient(180deg, rgba(228,184,92,0.10), transparent), var(--surface-2); }
@@ -1311,8 +1312,36 @@
   }
   function capsule(g){ return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/capsule_231x87.jpg`; }
   function portrait(g){ return `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`; }
-  // ordered list of art URLs to try for an appid (Steam serves different
-  // formats per game; newer/unreleased titles often lack header.jpg)
+  // Steam hosts game art in several formats across two CDNs and not every
+  // game has every format — capsule_231x87 is the most reliable, so lead with
+  // it and fall through the rest rather than hiding the image on first miss.
+  function gameArtUrls(appid) {
+    const cf = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}`;
+    const ak = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}`;
+    return [
+      `${cf}/capsule_231x87.jpg`,
+      `${cf}/header.jpg`,
+      `${cf}/capsule_616x353.jpg`,
+      `${ak}/capsule_231x87.jpg`,
+      `${ak}/header.jpg`,
+      `${cf}/library_600x900.jpg`,
+    ];
+  }
+  // Resolve every pending <img data-art="appid"> to the first URL that loads.
+  function resolveGameArt(root) {
+    (root || document).querySelectorAll("img[data-art]").forEach(img => {
+      const id = +img.dataset.art;
+      img.removeAttribute("data-art");
+      probeImg(img, gameArtUrls(id));
+    });
+  }
+  // Renders have several return paths; scheduling on the next frame catches
+  // whichever branch ran without needing a call site in each one.
+  let artRaf = null;
+  function scheduleArt() {
+    if (artRaf) return;
+    artRaf = requestAnimationFrame(() => { artRaf = null; resolveGameArt(document); });
+  }
   // ============ derived ============
   function hrs(v){ return (v==null) ? null : (v>=100?Math.round(v):Math.round(v*10)/10); }
   // cut a name to N characters without ever splitting an emoji in half
@@ -1723,6 +1752,7 @@
     } catch { /* section simply stays hidden */ }
   }
   function renderRecent() {
+    scheduleArt();
     const wrap = $("recentWrap");
     // the 100% list swaps the strip for a completion-count banner
     const hundoHere = !sharedMode && isHundo(activeList());
@@ -1747,7 +1777,7 @@
         ? (/^in-game/i.test(g.lastPlayedText) ? g.lastPlayedText : "Played " + g.lastPlayedText)
         : days == null ? null : days <= 0 ? "Today" : days === 1 ? "Yesterday" : days + "d ago";
       return `<div class="fcard" data-recent="${g.appid}">
-        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <img data-art="${g.appid}" alt="" referrerpolicy="no-referrer">
         <div class="fbody">
           <div class="fwhy ${full ? "teal" : ""}">${pct != null ? pct + "% complete" : "Playing"}</div>
           <div class="fname">${esc(g.name)}</div>
@@ -1758,11 +1788,13 @@
     }).join("");
     $("recent").querySelectorAll("[data-recent]").forEach(el =>
       el.onclick = () => openGameSheet(+el.dataset.recent));
+    scheduleArt();
   }
 
   // ---- Up Next: reason-based picks from the active list ----
   const wildcardPick = {}; // listId -> appid, stable per session
   function renderFeatured() {
+    scheduleArt();
     const wrap = $("featWrap");
     if (sharedMode) { wrap.style.display = "none"; return; }
     if (!pref("showUpNext")) { wrap.style.display = "none"; renderRecent(); return; }
@@ -1825,8 +1857,7 @@
     wrap.style.display = "block";
     $("feat").innerHTML = picks.slice(0,5).map(({g, why, sub, cls}) =>
       `<div class="fcard" data-feat="${g.appid}">
-        <img src="${capsule(g)}" loading="lazy" alt=""
-             onerror="this.onerror=null;this.src='${safeUrl(g.icon)||""}';if(!this.src)this.style.visibility='hidden'">
+        <img data-art="${g.appid}" alt="" referrerpolicy="no-referrer">
         <div class="fbody">
           <div class="fwhy ${cls||""}">${why}</div>
           <div class="fname">${esc(g.name)}</div>
@@ -1938,6 +1969,7 @@
 
   let animateNext = false;
   function renderGames() {
+    scheduleArt();
     if (dragBusy && !document.querySelector(".dragGhost")) dragBusy = false; // self-heal a stuck flag
     if (dragBusy) return; // never rebuild the DOM under an active drag
     const rows = sortedGames();
@@ -2030,7 +2062,7 @@
         return `<li class="card thinrow${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
           <div class="trow" data-open="${g.appid}">
             ${rankBadge(g.appid)}
-            <img class="tcap" src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+            <img class="tcap" data-art="${g.appid}" alt="" referrerpolicy="no-referrer">
             <div class="tname1">${esc(g.name)}</div>
             <div class="tmini">${priceBadge(g.appid)}${achTxt}<span class="${m==null?"tna":""}">${m==null?"—":m+"h"}<i>main</i></span><span class="${c100==null?"tna":""}">${c100==null?"—":c100+"h"}<i>100%</i></span></div>
             ${sharedMode ? "" : `<button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">✕</button>`}
@@ -2115,6 +2147,7 @@
   // Cross-list matches: when filtering, also surface games tracked in your
   // other lists so "do I already have this anywhere?" is one search away.
   function renderXlist() {
+    scheduleArt();
     const el = $("xlist");
     const q = filterText.trim().toLowerCase();
     if (!q || sharedMode) { el.innerHTML = ""; return; }
@@ -2133,7 +2166,7 @@
     if (!rows.length) { el.innerHTML = ""; return; }
     el.innerHTML = `<div class="xlHead">In your other lists</div>` + rows.map(({ g, list }) =>
       `<div class="xlRow" data-xl="${g.appid}">
-        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <img data-art="${g.appid}" alt="" referrerpolicy="no-referrer">
         <span class="xn">${esc(g.name)}</span><span class="xl">${esc(list)}</span>
       </div>`).join("");
     el.querySelectorAll("[data-xl]").forEach(r => r.onclick = () => openGameSheet(+r.dataset.xl));
@@ -3786,6 +3819,7 @@
     });
   }
   function renderFvList(lists) {
+    scheduleArt();
     const l = lists.find(x => x.id === fvTab) || lists[0];
     const st = fvData.stats || {};
     $("fvBody").innerHTML = `<div class="fvList">` + l.games.slice(0, 300).map(g => {
@@ -3796,7 +3830,7 @@
       if (typeof s.metaScore === "number") bits.push(`${s.metaScore}mc`);
       if (typeof s.mainStory === "number") bits.push(`${hrs(s.mainStory)}h`);
       return `<div class="fvRow">
-        <img src="${capsule(g)}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <img data-art="${g.appid}" alt="" referrerpolicy="no-referrer">
         <div class="fvNm">${esc(g.name)}</div>
         <div class="fvNum">${bits.join(" · ")}</div>
       </div>`;
