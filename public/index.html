@@ -1326,12 +1326,17 @@
     const id = g.appid;
     const u1 = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/capsule_231x87.jpg`;
     const u2 = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`;
-    const u3 = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/library_600x900.jpg`;
-    const u4 = safeUrl(g.icon) || "";
+    const u3 = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/capsule_616x353.jpg`;
+    const u3b = `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/library_600x900.jpg`;
+    // Recent entries come from the profile scrape and may carry no icon of
+    // their own, so fall back to the copy held in the user's lists.
+    const listed = allGames().find(x => x.appid === id);
+    const u4 = safeUrl(g.icon) || (listed ? safeUrl(listed.icon) : null) || "";
     const oe = "var s=(+this.dataset.s||0)+1;this.dataset.s=s;"
       + `if(s===1){this.src='${u2}'}`
       + `else if(s===2){this.src='${u3}'}`
-      + (u4 ? `else if(s===3){this.src='${u4}'}` : "")
+      + `else if(s===3){this.src='${u3b}'}`
+      + (u4 ? `else if(s===4){this.src='${u4}'}` : "")
       + "else{this.style.visibility='hidden'}";
     return `<img ${cls ? `class="${cls}" ` : ""}src="${u1}" loading="lazy" alt="" referrerpolicy="no-referrer" onerror="${oe}">`;
   }

@@ -211,10 +211,19 @@ export default async function handler(req, res) {
         if (r.ok) apiGames = (await r.json())?.response?.games || [];
       } catch {}
       const api = new Map(apiGames.map((g) => [g.appid, g]));
-      const decorate = (g) => ({ ...g,
-        playtime2w: api.get(g.appid)?.playtime_2weeks ?? g.playtime2w ?? 0,
-        playtimeForever: api.get(g.appid)?.playtime_forever ?? g.playtimeForever ?? 0,
-      });
+      const decorate = (g) => {
+        const a = api.get(g.appid);
+        return { ...g,
+          playtime2w: a?.playtime_2weeks ?? g.playtime2w ?? 0,
+          playtimeForever: a?.playtime_forever ?? g.playtimeForever ?? 0,
+          // Profile-scraped entries have no icon; the owned-games API does.
+          // Without it the client loses its last art fallback for games that
+          // have no capsule/portrait art on the CDN.
+          icon: g.icon || (a?.img_icon_url
+            ? `https://media.steampowered.com/steamcommunity/public/images/apps/${g.appid}/${a.img_icon_url}.jpg`
+            : null),
+        };
+      };
 
       let games = [];
       let ordered = false;
