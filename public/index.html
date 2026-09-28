@@ -231,7 +231,7 @@
   .gsHead .gsName { flex: 1; font-family: var(--display); font-weight: 700; font-size: 16px; min-width: 0; }
   .gsHead button { background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); border-radius: 9px; padding: 8px 12px; cursor: pointer; font-size: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
   .ico { display: block; flex-shrink: 0; }
-  .rm, .det, .mv, .listRow .ldel, .listRow [data-lup], .listRow [data-ldown], .vfTitle button, .addOne {
+  .rm, .mv, .listRow .ldel, .listRow [data-lup], .listRow [data-ldown], .vfTitle button, .addOne {
     display: inline-flex; align-items: center; justify-content: center;
   }
   .sorts button .ico { display: inline-block; vertical-align: -1px; margin-left: 2px; }
@@ -311,7 +311,6 @@
   .cardBtns button { background: none; border: none; color: var(--ink-dim); opacity: 0.55; font-size: 15px; padding: 5px 6px; cursor: pointer; }
   .cardBtns .rm:hover { color: var(--danger); opacity: 1; }
   .cardBtns .mv:hover { color: var(--gold); opacity: 1; }
-  .cardBtns .det:hover { color: var(--gold); opacity: 1; }
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-2); }
   .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #c9962f, var(--gold)); box-shadow: var(--glow); }
   .bar.full > i { background: var(--teal); }
@@ -1374,7 +1373,6 @@
     `<svg class="ico" width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
   const ICO_X     = svgIco(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`);
   const ICO_CHECK = svgIco(`<path d="m5 13 4 4L19 7"/>`, 14, 3);
-  const ICO_INFO  = svgIco(`<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>`, 15, 2);
   const ICO_MOVE  = svgIco(`<path d="M3 8h14l-3-3"/><path d="M21 16H7l3 3"/>`, 15, 2.2);
   const ICO_UP    = svgIco(`<path d="m18 15-6-6-6 6"/>`, 13, 2.6);
   const ICO_DOWN  = svgIco(`<path d="m6 9 6 6 6-6"/>`, 13, 2.6);
@@ -2130,10 +2128,8 @@
       const btns = sharedMode ? "" :
         `<div class="cardBtns">
            <button class="rm" data-rm="${g.appid}" aria-label="Remove ${esc(g.name)}">${ICO_X}</button>
-           <button class="det" data-det="${g.appid}" aria-label="Details for ${esc(g.name)}">${ICO_INFO}</button>
            ${data.lists.length>1 ? `<button class="mv" data-mv="${g.appid}" aria-label="Move ${esc(g.name)}">${ICO_MOVE}</button>` : ""}
          </div>`;
-      const open = !sharedMode && openGame === g.appid;
       return `<li class="card${animateNext?" enter":""}${selected.has(g.appid)?" selon":""}" data-card="${g.appid}"${animateNext?` style="animation-delay:${Math.min(gi,10)*28}ms"`:""}>
         <div class="row" ${sharedMode?"":`data-open="${g.appid}"`}>
           <div class="capBox">
@@ -2156,20 +2152,14 @@
           </div>
           ${btns}
         </div>
-        ${open ? achPanelHtml(g) : ""}
         <div class="bar ${a&&!a.none&&a.pct===1?"full":""}"><i style="width:${pct}%"></i></div>
       </li>`;
     }).join("");
     if (!sharedMode) {
       $("games").querySelectorAll("[data-rm]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.rm); removeGame(+b.dataset.rm); });
       $("games").querySelectorAll("[data-mv]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.mv); openMove(+b.dataset.mv); });
-      $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => { if (selectMode) return toggleSelect(+el.dataset.open); toggleGame(+el.dataset.open); });
-      $("games").querySelectorAll("[data-det]").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (selectMode) return toggleSelect(+b.dataset.det); openGameSheet(+b.dataset.det); });
+      $("games").querySelectorAll("[data-open]").forEach(el => el.onclick = () => { if (selectMode) return toggleSelect(+el.dataset.open); openGameSheet(+el.dataset.open); });
       wireSwipes();
-      $("games").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
-        openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
-        renderGames();
-      });
     }
     animateNext = false;
     renderHero(); renderListbar();
@@ -2594,16 +2584,9 @@
   }
 
   // ============ achievement dropdown ============
-  let openGame = null;   // appid of the expanded card
   let openAch = null;    // id of the expanded achievement
   const achCache = {};   // appid -> { loading, error, list }
 
-  function toggleGame(appid) {
-    openGame = openGame === appid ? null : appid;
-    openAch = null;
-    if (openGame && !achCache[appid]) loadAchievements(appid);
-    renderGames();
-  }
   async function loadAchievements(appid) {
     achCache[appid] = { loading: true };
     try {
@@ -2614,7 +2597,6 @@
     } catch (e) {
       achCache[appid] = { error: e.message };
     }
-    if (openGame === appid) renderGames();
     if (sheetGame && sheetGame.appid === appid) renderGameSheet();
   }
 
@@ -2651,7 +2633,6 @@
     } catch (e) {
       detailsCache[appid] = { error: e.message };
     }
-    if (openGame === appid) renderGames();
     if (sheetGame && sheetGame.appid === appid) renderGameSheet();
   }
 
