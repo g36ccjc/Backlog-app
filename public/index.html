@@ -866,15 +866,13 @@
     body { max-width: 1180px; }
 
     /* game lists become multi-column */
-    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
 
-    /* uniform tiles: reserve two lines for the title and two for the stats so
-       a long name can't make one card taller than its neighbours */
-    .games > li.card { height: 100%; }
-    .games > li.card .row { height: 100%; align-items: stretch; }
-    .games > li.card .info { display: flex; flex-direction: column; }
-    .games > li.card .gname { min-height: 2.6em; }
-    .games > li.card .nums { min-height: 2.8em; align-content: flex-start; }
+    /* Uniform tiles: reserve two lines for the title and two for the stats so
+       a long name can't make one card taller than its neighbours. Scoped to
+       the standard card view only — .compact and .grid have their own markup. */
+    .games:not(.compact):not(.grid) .card .gname { min-height: 2.6em; }
+    .games:not(.compact):not(.grid) .card .nums { min-height: 2.8em; align-content: flex-start; }
     .games.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
     .games.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 
