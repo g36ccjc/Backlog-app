@@ -323,6 +323,8 @@
   .achRow img { width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0; }
   .achRow img.imgfail, .achBig.imgfail { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-solid); }
   img.achIco { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-solid); } /* tile look until a source resolves */
+  .achLetter { display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 15px; color: var(--ink-dim); }
+  .achBig.achLetter { font-size: 22px; }
   .achNoIcon { width: 34px; height: 34px; border-radius: 6px; flex-shrink: 0; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-solid); }
   .achRow.locked img { filter: grayscale(1); opacity: 0.55; }
   .achRow .an { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
@@ -864,7 +866,15 @@
     body { max-width: 1180px; }
 
     /* game lists become multi-column */
-    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+
+    /* uniform tiles: reserve two lines for the title and two for the stats so
+       a long name can't make one card taller than its neighbours */
+    .games > li.card { height: 100%; }
+    .games > li.card .row { height: 100%; align-items: stretch; }
+    .games > li.card .info { display: flex; flex-direction: column; }
+    .games > li.card .gname { min-height: 2.6em; }
+    .games > li.card .nums { min-height: 2.8em; align-content: flex-start; }
     .games.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
     .games.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 
@@ -1272,8 +1282,12 @@
     if (m) {
       for (const h of [
         "https://cdn.cloudflare.steamstatic.com",
+        "https://shared.cloudflare.steamstatic.com",
+        "https://community.cloudflare.steamstatic.com",
         "https://cdn.akamai.steamstatic.com",
         "https://shared.akamai.steamstatic.com",
+        "https://community.akamai.steamstatic.com",
+        "https://steamcdn-a.akamaihd.net",
         "https://media.steampowered.com",
       ]) {
         const alt = h + m[0];
@@ -1284,10 +1298,10 @@
   }
   // Probe candidates with throwaway Image objects; first that loads wins.
   // (Reassigning .src on a live <img> after onerror is unreliable in Safari.)
-  function probeImg(imgEl, urls) {
+  function probeImg(imgEl, urls, onFail) {
     let i = 0;
     const next = () => {
-      if (i >= urls.length) { imgEl.classList.add("imgfail"); return; }
+      if (i >= urls.length) { imgEl.classList.add("imgfail"); if (onFail) onFail(imgEl); return; }
       const url = urls[i++];
       const probe = new Image();
       probe.referrerPolicy = "no-referrer"; // some Steam images block hotlink referrers
@@ -2786,8 +2800,15 @@
       + `<div class="gsSection">Achievements</div>` + achPanelHtml(g);
     $("gsBody").querySelectorAll("img.achIco[data-icon]").forEach(img => {
       const u = img.dataset.icon;
+      const letter = (img.dataset.letter || "").trim().slice(0, 1).toUpperCase();
       img.removeAttribute("data-icon");
-      probeImg(img, achIconUrls(u));
+      probeImg(img, achIconUrls(u), (el) => {
+        if (!letter) return;
+        const span = document.createElement("span");
+        span.className = el.classList.contains("achBig") ? "achBig achNoIcon achLetter" : "achNoIcon achLetter";
+        span.textContent = letter;
+        el.replaceWith(span);
+      });
     });
     $("gsBody").querySelectorAll("[data-ach]").forEach(el => el.onclick = () => {
       openAch = openAch === el.dataset.ach ? null : el.dataset.ach;
@@ -2947,7 +2968,7 @@
         const fullDesc = a.description || (a.hidden ? "Steam hides this achievement's details until you unlock it." : "No description provided.");
         detail = `<div class="achDetail">
           <div class="achDetailTop">
-            ${bigIcon?`<img class="achBig achIco imgfail ${a.unlocked?"":"lk"}" data-icon="${esc(bigIcon)}" alt="" referrerpolicy="no-referrer">`:`<span class="achBig achNoIcon"></span>`}
+            ${bigIcon?`<img class="achBig achIco imgfail ${a.unlocked?"":"lk"}" data-icon="${esc(bigIcon)}" data-letter="${esc((a.name||"?").slice(0,1))}" alt="" referrerpolicy="no-referrer">`:`<span class="achBig achNoIcon"></span>`}
             <div class="achDetailMeta">
               ${status}
               ${pct!=null?`<div class="achRarity"><span class="rTier ${tierCls}">${tier}</span><span class="rPct">${pct}% of players have this</span></div>`:""}
@@ -2958,7 +2979,7 @@
         </div>`;
       }
       return `<div class="achRow ${locked?"locked":""}" data-ach="${esc(a.id)}">
-          ${icon?`<img class="achIco imgfail" data-icon="${esc(icon)}" alt="" referrerpolicy="no-referrer">`:`<span class="achNoIcon"></span>`}
+          ${icon?`<img class="achIco imgfail" data-icon="${esc(icon)}" data-letter="${esc((a.name||"?").slice(0,1))}" alt="" referrerpolicy="no-referrer">`:`<span class="achNoIcon"></span>`}
           <div class="an">${esc(a.name)}${desc?`<div class="ad">${esc(desc)}</div>`:""}</div>
           ${a.globalPercent!=null?`<span class="pctTag ${rare?"rare":""}">${a.globalPercent}%</span>`:""}
           ${a.unlocked?`<span class="tick"><svg class="extIco" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>`:""}
