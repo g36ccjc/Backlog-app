@@ -278,9 +278,11 @@
   .card.swiping { transition: none; }
   .row { display: flex; align-items: center; gap: 13px; padding: 13px 13px 15px 12px; }
   .cap { width: 106px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
-  .info { flex: 1; min-width: 0; }
+  .info { flex: 1; min-width: 0; padding-top: 1px; }
   .gname { font-weight: 650; font-size: 15.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .nums { display: flex; flex-wrap: wrap; gap: 4px 13px; margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .nums { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .numsRow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-height: 18px; }
+  .numsRow.times { gap: 4px 12px; font-size: 12px; }
   .nums .played { color: var(--ink); }
   .nums .meta { padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #16130a; }
   .hundoBanner { display: none; margin: 2px 0 12px; padding: 18px 16px 20px; text-align: center; border-radius: 16px; position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(228,184,92,0.10), rgba(228,184,92,0.02) 60%), var(--surface); border: 1px solid rgba(228,184,92,0.35); }
@@ -762,7 +764,8 @@
   .hero .xp { height: 9px; border-radius: 5px; }
 
   /* game cards: balanced media rows, art at its native ratio */
-  .row { padding: 0 10px 0 0; gap: 13px; min-height: 78px; align-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s ease; }
+  .row { padding: 0 10px 0 0; gap: 13px; min-height: 78px; align-items: stretch; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s ease; }
+  .row .info { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; }
   .row:active { background: rgba(255,255,255,0.035); }
   /* full-bleed portrait cover: a slim box-art spine at the card's full
      height. Games without portrait art fall back to their wide banner,
@@ -881,7 +884,6 @@
        a long name can't make one card taller than its neighbours. Scoped to
        the standard card view only — .compact and .grid have their own markup. */
     .games:not(.compact):not(.grid) .card .gname { min-height: 2.6em; }
-    .games:not(.compact):not(.grid) .card .nums { min-height: 2.8em; align-content: flex-start; }
     .games.compact { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
     .games.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 
@@ -2154,13 +2156,14 @@
           <div class="info">
             <div class="gname">${esc(g.name)}</div>
             <div class="nums">
-              ${priceBadge(g.appid)}
-              ${metaBadge}
-              ${starBadge}
-              ${achTxt}
-              ${played!=null?`<span class="played">${played} played</span>`:""}
-              <span class="${m==null?"na":""}">${m==null?"—":m+"h"} main</span>
-              <span class="${c==null?"na":""}">${c==null?"—":c+"h"} 100%</span>
+              <div class="numsRow badges">
+                ${priceBadge(g.appid)}${metaBadge}${starBadge}${achTxt}
+              </div>
+              <div class="numsRow times">
+                ${played!=null?`<span class="played">${played} played</span>`:""}
+                <span class="${m==null?"na":""}">${m==null?"—":m+"h"} main</span>
+                <span class="${c==null?"na":""}">${c==null?"—":c+"h"} 100%</span>
+              </div>
             </div>
           </div>
           ${btns}
