@@ -129,7 +129,6 @@
   .featWrap { margin: 14px 0 2px; }
   .featHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .featTitle { font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-  .dice { background: none; border: none; font-size: 17px; cursor: pointer; padding: 0 2px; margin-left: auto; }
   .feat { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
   .feat::-webkit-scrollbar { display: none; }
   .fcard { flex: 0 0 128px; background: var(--surface); border: 1px solid var(--line-solid); border-radius: 11px; overflow: hidden; cursor: pointer; }
@@ -264,7 +263,8 @@
   .gsLists { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
   .gsListChip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-weight: 700; font-size: 12.5px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-solid); border-radius: 999px; padding: 8px 14px 8px 11px; cursor: pointer; }
   .gsListChip .ico { color: var(--ink-dim); }
-  .gsListChip.on { color: var(--gold); border-color: rgba(228,184,92,0.45); background: rgba(228,184,92,0.1); cursor: default; }
+  .gsListChip.on { color: var(--gold); border-color: rgba(228,184,92,0.45); background: rgba(228,184,92,0.1); }
+  @media (hover:hover) { .gsListChip.on:hover { border-color: var(--danger); color: var(--danger); } .gsListChip.on:hover .ico { color: var(--danger); } }
   .gsListChip.on .ico { color: var(--gold); }
   @media (hover:hover) { .gsListChip:not(.on):hover { border-color: var(--gold); color: var(--gold); } .gsListChip:not(.on):hover .ico { color: var(--gold); } }
   .gsLink .a { display: flex; align-items: center; color: var(--ink-dim); transition: color 0.15s ease; }
@@ -548,8 +548,6 @@
   .moveOpts button { text-align: left; font-family: var(--display); font-weight: 700; font-size: 14px; padding: 13px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line-solid); background: var(--surface-2); color: var(--ink); }
   .moveOpts button:hover { border-color: var(--gold); }
 
-  .wheelCover { width: 231px; max-width: 80%; aspect-ratio: 231/87; object-fit: cover; border-radius: 10px; background: var(--surface-2); margin: 6px 0 10px; }
-  .wheelName { font-family: var(--display); font-weight: 700; font-size: 16px; min-height: 1.4em; margin-bottom: 6px; }
   .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: var(--surface-2); border: 1px solid var(--line-solid); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; }
   .toast { box-shadow: 0 6px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(232,182,76,0.12); }
@@ -978,7 +976,6 @@
     <div class="featWrap" id="featWrap" style="display:none">
       <div class="featHead">
         <span class="featTitle">Up next</span>
-        <button class="dice" id="diceBtn" aria-label="Random pick"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.6" cy="8.6" r="1.35" fill="currentColor" stroke="none"/><circle cx="15.4" cy="8.6" r="1.35" fill="currentColor" stroke="none"/><circle cx="8.6" cy="15.4" r="1.35" fill="currentColor" stroke="none"/><circle cx="15.4" cy="15.4" r="1.35" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none"/></svg></button>
       </div>
       <div class="feat" id="feat"></div>
     </div>
@@ -1142,19 +1139,6 @@
   </div>
 
   <!-- spin the wheel -->
-  <div class="modal" id="wheelModal">
-    <div class="sheet" style="align-items:center; text-align:center">
-      <h2>Random pick</h2>
-      <img class="wheelCover" id="wheelCover" src="" alt="">
-      <div class="wheelName" id="wheelName"></div>
-      <div class="footRow" style="width:100%">
-        <button id="wheelClose">Close</button>
-        <button class="go" id="wheelGo" style="display:none">Open game</button>
-        <button class="go" id="wheelSpin">Spin</button>
-      </div>
-    </div>
-  </div>
-
   <div class="selBar" id="selBar">
     <span id="selCount">0 selected</span>
     <button id="selAll" aria-label="Select all">All</button>
@@ -2815,7 +2799,7 @@
     const listsHtml = listTargets.length ? `<div class="gsSection">Lists</div>
       <div class="gsLists">${listTargets.map(l => {
         const inIt = l.games.some(x => x.appid === g.appid);
-        return `<button class="gsListChip${inIt ? " on" : ""}" data-addto="${l.id}"${inIt ? ' aria-pressed="true"' : ""}>
+        return `<button class="gsListChip${inIt ? " on" : ""}" data-addto="${l.id}" aria-pressed="${inIt}" title="${inIt ? "Remove from" : "Add to"} ${esc(l.name)}">
           ${inIt ? ICO_CHECK : ICO_PLUS}${l.joint ? JICON : ""}${esc(l.name)}
         </button>`;
       }).join("")}</div>` : "";
@@ -2823,15 +2807,35 @@
     $("gsBody").innerHTML = detailHtml + gridHtml + rankHtml + listsHtml + linksHtml + reviewHtml
       + `<div class="gsSection">Achievements</div>` + achPanelHtml(g);
 
+    // Chips toggle: tap to add, tap again to remove from that list. No confirm
+    // dialog here — removal is always undoable, same as the ✕ on a card.
     $("gsBody").querySelectorAll("[data-addto]").forEach(b => b.onclick = () => {
-      const l = allLists().find(x => x.id === b.dataset.addto);
+      const listId = b.dataset.addto;
+      const l = allLists().find(x => x.id === listId);
       if (!l) return;
-      if (l.games.some(x => x.appid === g.appid)) { toast(`Already in "${esc(l.name)}"`); return; }
-      l.games.push({ appid: g.appid, name: g.name, icon: g.icon || null });
-      persist(); syncUp();
-      if (!stats[g.appid]) fetchStats([{ appid: g.appid, name: g.name }]);
-      renderListbar(); renderGames(); renderGameSheet();
-      toast(`Added to "${esc(l.name)}"`);
+      const idx = l.games.findIndex(x => x.appid === g.appid);
+      const stillOpen = () => sheetGame && sheetGame.appid === g.appid;
+      if (idx >= 0) {
+        const [removed] = l.games.splice(idx, 1);
+        persist(); syncUp();
+        renderListbar(); renderGames();
+        if (stillOpen()) renderGameSheet();
+        toastAction(`Removed from ${esc(l.name)}`, "Undo", () => {
+          const back = allLists().find(x => x.id === listId);
+          if (back && !back.games.some(x => x.appid === removed.appid)) {
+            back.games.splice(Math.min(idx, back.games.length), 0, removed);
+            persist(); syncUp(); renderListbar(); renderGames();
+            if (stillOpen()) renderGameSheet();
+          }
+        });
+      } else {
+        l.games.push({ appid: g.appid, name: g.name, icon: g.icon || null });
+        persist(); syncUp();
+        if (!stats[g.appid]) fetchStats([{ appid: g.appid, name: g.name }]);
+        renderListbar(); renderGames();
+        if (stillOpen()) renderGameSheet();
+        toast(`Added to ${esc(l.name)}`);
+      }
     });
     $("gsBody").querySelectorAll("img.achIco[data-icon]").forEach(img => {
       const u = img.dataset.icon;
@@ -2902,55 +2906,6 @@
   };
 
   // ---- spin the wheel ----
-  const wheelModal = $("wheelModal");
-  let wheelResult = null, wheelTimer = null;
-  $("diceBtn").onclick = () => {
-    wheelModal.classList.add("show");
-    $("wheelGo").style.display = "none";
-    $("wheelSpin").style.display = "block";
-    $("wheelName").textContent = "";
-    $("wheelCover").src = "";
-    spinWheel();
-  };
-  $("wheelClose").onclick = () => { clearTimeout(wheelTimer); wheelModal.classList.remove("show"); };
-  wheelModal.onclick = e => { if (e.target===wheelModal) { clearTimeout(wheelTimer); wheelModal.classList.remove("show"); } };
-  $("wheelSpin").onclick = spinWheel;
-  $("wheelGo").onclick = () => { wheelModal.classList.remove("show"); if (wheelResult) openGameSheet(wheelResult.appid); };
-
-  function spinWheel() {
-    const pool = activeList().games.filter(g => {
-      const a = achOf(g.appid);
-      return !(a && !a.none && a.pct === 1);
-    });
-    if (pool.length < 2) { toast("Not enough games to spin"); return; }
-    $("wheelGo").style.display = "none";
-    $("wheelSpin").disabled = true;
-    clearTimeout(wheelTimer);
-    const order = [...pool].sort(() => Math.random() - 0.5);
-    wheelResult = order[Math.floor(Math.random() * order.length)];
-    let i = 0, delay = 60;
-    const tick = () => {
-      const g = order[i % order.length];
-      $("wheelCover").src = capsule(g);
-      $("wheelName").textContent = g.name;
-      i++;
-      delay *= 1.13; // decelerate
-      if (delay < 420) {
-        wheelTimer = setTimeout(tick, delay);
-      } else {
-        // land on the result
-        $("wheelCover").src = capsule(wheelResult);
-        $("wheelName").textContent = wheelResult.name;
-        $("wheelGo").style.display = "block";
-        $("wheelSpin").style.display = "none";
-        $("wheelSpin").disabled = false;
-        $("wheelSpin").textContent = "Spin again";
-        $("wheelSpin").style.display = "block";
-        $("wheelGo").style.display = "block";
-      }
-    };
-    tick();
-  }
 
   // ---- view toggle ----
   $("viewList").onclick = () => { view = "list"; save(VIEW_KEY, view); animateNext = true; renderGames(); };
