@@ -1325,6 +1325,26 @@
     };
     next();
   }
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  async function api(path, opts, tries = 2) {
+    let lastErr;
+    for (let i = 0; i < tries; i++) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 15000);
+      try {
+        const r = await fetch(path, { ...(opts || {}), signal: ctl.signal });
+        clearTimeout(timer);
+        // 5xx is usually a cold serverless function — one more go fixes it
+        if (r.status >= 500 && i < tries - 1) { await sleep(500 * (i + 1)); continue; }
+        return r;
+      } catch (e) {
+        clearTimeout(timer);
+        lastErr = e;
+        if (i < tries - 1) await sleep(500 * (i + 1));
+      }
+    }
+    throw lastErr || new Error("Network error");
+  }
   function safeUrl(u){ return (typeof u === "string" && /^https:\/\/[^"'<>\s\\]+$/.test(u)) ? u : null; }
   function toast(msg) {
     const t = document.getElementById("toast");
@@ -1533,7 +1553,7 @@
     $("listRows").querySelectorAll("[data-jleave]").forEach(b => b.onclick = async () => {
       if (!confirm("Leave this joint list? Your friend keeps their copy.")) return;
       const id = b.dataset.jleave;
-      try { await fetch("/api/joint?a=leave", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) }); } catch {}
+      try { await api("/api/joint?a=leave", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) }); } catch {}
       jointLists = jointLists.filter(l => l.id !== id);
       if (data.activeId === id) data.activeId = "main";
       persist(); renderListbar(); renderListEditor(); renderAll();
@@ -1744,7 +1764,7 @@
   async function loadRecent() {
     if (sharedMode || !me || !me.steamId) return;
     try {
-      const r = await fetch("/api/library?recent=1");
+      const r = await api("/api/library?recent=1");
       const d = await r.json();
       if (d.error || !Array.isArray(d.games)) return;
       // best-known recency per game: Steam's timestamp when provided, else
@@ -2606,7 +2626,7 @@
   async function loadAchievements(appid) {
     achCache[appid] = { loading: true };
     try {
-      const r = await fetch("/api/achievements?appid=" + appid);
+      const r = await api("/api/achievements?appid=" + appid);
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       achCache[appid] = { list: d.achievements || [], note: d.note };
@@ -2637,7 +2657,7 @@
   async function loadDetails(appid) {
     detailsCache[appid] = { loading: true };
     try {
-      const r = await fetch("/api/details?appid=" + appid);
+      const r = await api("/api/details?appid=" + appid);
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       detailsCache[appid] = { details: d.details, note: d.note };
@@ -2687,8 +2707,8 @@
     $("gsName").textContent = g.name;
     $("gsMove").style.display = inActive && data.lists.length>1 ? "block" : "none";
     $("gsRemove").style.display = inActive ? "block" : "none";
-    if (!achCache[appid]) loadAchievements(appid);
-    if (!detailsCache[appid]) loadDetails(appid);
+    if (!achCache[appid] || achCache[appid].error) loadAchievements(appid);
+    if (!detailsCache[appid] || detailsCache[appid].error) loadDetails(appid);
     renderGameSheet();
     gameModal.classList.add("show");
   }
@@ -3041,7 +3061,7 @@
     syncPending = true;
     syncTimer = setTimeout(async () => {
       try {
-        await fetch("/api/list", {
+        await api("/api/list", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ lists: data.lists, stats, notes, history, showcase })
         });
@@ -3055,7 +3075,7 @@
         const h = JSON.stringify([jl.name, jl.games]);
         if (jointHashes[jl.id] === h) continue;
         try {
-          const r = await fetch("/api/joint?a=save", {
+          const r = await api("/api/joint?a=save", {
             method:"POST", headers:{"Content-Type":"application/json"},
             body: JSON.stringify({ id: jl.id, name: jl.name, games: jl.games })
           });
@@ -3071,7 +3091,7 @@
   async function loadJoint() {
     if (sharedMode || !me) return;
     try {
-      const r = await fetch("/api/joint");
+      const r = await api("/api/joint");
       if (!r.ok) return;
       const d = await r.json();
       const activeBefore = JSON.stringify(allLists().find(l => l.id === data.activeId)?.games || null);
@@ -3109,7 +3129,7 @@
     $("jinvAccept").onclick = async () => {
       $("jinvAccept").disabled = true;
       try {
-        const r = await fetch("/api/joint?a=accept", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) });
+        const r = await api("/api/joint?a=accept", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) });
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         const rec = { ...d.list, joint: true };
@@ -3124,7 +3144,7 @@
       setTimeout(showNextInvite, 350);
     };
     $("jinvDecline").onclick = async () => {
-      try { await fetch("/api/joint?a=decline", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) }); } catch {}
+      try { await api("/api/joint?a=decline", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id: inv.id }) }); } catch {}
       jointInvites.shift();
       $("jinvModal").classList.remove("show");
       toast("Invite declined");
@@ -3138,7 +3158,7 @@
   async function syncDown() {
     if (sharedMode) return;
     try {
-      const r = await fetch("/api/list");
+      const r = await api("/api/list");
       const d = await r.json();
       if (d.error) { toast("Couldn't load your synced list: " + esc(d.error)); return; }
       if (Array.isArray(d.lists)) {
@@ -3250,7 +3270,7 @@
     if (!items.length || sharedMode) return;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const r = await fetch("/api/stats", {
+        const r = await api("/api/stats", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ achOnly: !!achOnly, items: items.map(g=>{
             const it = { appid: g.appid, name: g.name };
@@ -3383,7 +3403,7 @@
       if (!q) { $("addResults").innerHTML=""; return; }
       $("addResults").innerHTML = `<div class="hint">Searching <span class="spin"></span></div>`;
       try {
-        const r = await fetch("/api/search?q="+encodeURIComponent(q));
+        const r = await api("/api/search?q="+encodeURIComponent(q));
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         const items = d.results||[];
@@ -3399,7 +3419,7 @@
     if (libCache) { renderResults($("addResults"), libCache, { confirmFirst: true }); return; }
     $("addResults").innerHTML = `<div class="hint">Loading your library <span class="spin"></span></div>`;
     try {
-      const r = await fetch("/api/library");
+      const r = await api("/api/library");
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const items = d.games||[];
@@ -3516,7 +3536,7 @@
       while (queue.length) {
         const m = queue.shift();
         try {
-          const r = await fetch("/api/search?q=" + encodeURIComponent(m.title));
+          const r = await api("/api/search?q=" + encodeURIComponent(m.title));
           const d = await r.json();
           m.options = rankOptions(m.title, d.results || []); // best first, DLC pushed down
         } catch { m.options = []; }
@@ -3667,7 +3687,7 @@
     render(cached);
 
     try {
-      const r = await fetch("/api/library?yearly=1");
+      const r = await api("/api/library?yearly=1");
       const d = await r.json();
       if (d.error) { el.innerHTML = ""; return; }
       yearlyCache = d;
@@ -3706,7 +3726,7 @@
       const g = candidates[i];
       toast(`Scanning… ${i+1}/${candidates.length} <span class="spin"></span>`);
       try {
-        const r = await fetch("/api/achievements?appid=" + g.appid);
+        const r = await api("/api/achievements?appid=" + g.appid);
         const d = await r.json();
         for (const a of d.achievements || []) {
           if (a.unlocked && a.globalPercent != null) {
@@ -3795,10 +3815,10 @@
       const btn = document.getElementById("fvJSend");
       btn.disabled = true; btn.textContent = "Sending…";
       try {
-        const r = await fetch("/api/joint?a=create", {
+        const r = await api("/api/joint?a=create", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ friendId: fvId, name })
-        });
+        }, 1); // never retry: a duplicate would create a second list
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         const rec = { ...d.list, joint: true };
@@ -3834,7 +3854,7 @@
     $("fvAvatar").src = "";
     fvModal.classList.add("show");
     try {
-      const r = await fetch("/api/friends?view=" + encodeURIComponent(friendId));
+      const r = await api("/api/friends?view=" + encodeURIComponent(friendId));
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Couldn't load profile");
       fvData = d;
@@ -3894,7 +3914,7 @@
   let visValue = "private";
   async function loadVisibility() {
     try {
-      const r = await fetch("/api/friends?visibility=1");
+      const r = await api("/api/friends?visibility=1");
       const d = await r.json();
       if (d.value) visValue = d.value;
       const vs = document.getElementById("visSel");
@@ -3903,7 +3923,7 @@
   }
   async function saveVisibility(v) {
     try {
-      const r = await fetch("/api/friends?visibility=1", {
+      const r = await api("/api/friends?visibility=1", {
         method: "POST", headers: {"Content-Type":"application/json"},
         body: JSON.stringify({ value: v })
       });
@@ -3950,7 +3970,7 @@
     }
     el.innerHTML = `<div class="chartBox"><div class="ct">Friends</div><div class="hint" style="margin:0">Checking your Steam friends <span class="spin"></span></div></div>`;
     try {
-      const r = await fetch("/api/friends");
+      const r = await api("/api/friends");
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       friendsCache = { friends: d.friends || [], note: d.note };
@@ -3986,7 +4006,7 @@
   }
   async function scanCompleted(progress, quiet) {
     try {
-      const r = await fetch("/api/library");
+      const r = await api("/api/library");
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const owned = d.games || [];
@@ -4023,7 +4043,7 @@
         for (let attempt = 0; attempt < 3 && !ok; attempt++) {
           if (attempt) await new Promise(res => setTimeout(res, 700));
           try {
-            const sr = await fetch("/api/stats", {
+            const sr = await api("/api/stats", {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ achOnly: true, items: chunk.map(g => ({ appid: g.appid, name: g.name })) })
             });
@@ -4096,7 +4116,7 @@
   async function syncWishlist(progress, quiet) {
     try {
       progress("Reading your Steam wishlist…");
-      const r = await fetch("/api/library?wishlist=1");
+      const r = await api("/api/library?wishlist=1");
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const items = d.games || [];
@@ -4350,7 +4370,7 @@
 
   $("logoutBtn").onclick = async () => {
     if (!confirm("Log out?")) return;
-    await fetch("/api/auth/logout", { method:"POST" });
+    await api("/api/auth/logout", { method:"POST" });
     localStorage.removeItem(DATA_KEY); localStorage.removeItem(STATS_KEY);
     location.href = "/";
   };
@@ -4359,10 +4379,10 @@
     if (!l.games.length) { toast("This list is empty"); return; }
     $("shareBtn").disabled = true; $("shareBtn").textContent = "Creating link…";
     try {
-      const r = await fetch("/api/share", {
+      const r = await api("/api/share", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ list: l.games, stats, ownerName: (me?.name ? `${me.name} — ${l.name}` : l.name) })
-      });
+      }, 1); // never retry: would mint a second link
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       const url = `${location.origin}/?s=${d.id}`;
@@ -4384,7 +4404,7 @@
     $("login").style.display = "none";
     $("listbar").style.display = "none";
     try {
-      const r = await fetch("/api/share?id="+encodeURIComponent(id));
+      const r = await api("/api/share?id="+encodeURIComponent(id));
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       data = { lists: [{ id:"main", name:"Shared", games: d.list||[] }], activeId: "main" };
@@ -4556,7 +4576,8 @@
     localStorage.setItem(HLTBRETRY_KEY, String(Date.now()));
     const blank = allGames().filter(g => {
       const st = stats[g.appid];
-      return st && st.mainStory == null && st.completionist == null;
+      if (!st) return true; // fetch never landed for this game
+      return st.mainStory == null && st.completionist == null;
     });
     for (let i = 0; i < blank.length; i += 40) {
       await fetchStats(blank.slice(i, i + 40));
@@ -4570,7 +4591,7 @@
 
     renderAll();
     let user = null;
-    try { const r = await fetch("/api/auth/me"); user = (await r.json()).user; } catch {}
+    try { const r = await api("/api/auth/me"); user = (await r.json()).user; } catch {}
     if (!user) { $("login").style.display = "flex"; return; }
     me = user;
     $("login").style.display = "none";
